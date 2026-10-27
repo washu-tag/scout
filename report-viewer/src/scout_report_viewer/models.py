@@ -42,6 +42,22 @@ SEARCH_REQUIRED_COLUMNS: tuple[str, ...] = (
     "accession_number",
 )
 
+# Report bodies: too large for the grid or the model's context, so query and
+# cohort results drop them. Readers fetch them per report via /reports/read.
+REPORT_BODY_COLUMNS: frozenset[str] = frozenset(
+    {
+        "report_text",
+        "report_section_findings",
+        "report_section_impression",
+        "report_section_addendum",
+        "report_section_technician_note",
+    }
+)
+
+# A cohort is one row per report; a query is any result shape.
+SEARCH_KIND_COHORT = "cohort"
+SEARCH_KIND_QUERY = "query"
+
 # Tables /reports/read may target; renders default to reports_curated, epic
 # views are opt-in for resolved cross-version patient identity.
 READ_REPORTS_TABLES: tuple[str, ...] = (
@@ -99,22 +115,29 @@ class CreateFromFileResponse(BaseModel):
 
 
 class QueryRequest(BaseModel):
-    """One-shot SQL query - runs against Trino, returns rows directly,
-    persists nothing. Backs the `scout_query_sql` tool surface for
-    aggregate / COUNT / GROUP BY questions where the user wants prose,
-    not a search viewer."""
+    """Run SQL against Trino and return its rows. Backs `scout_query_sql`.
+    With `save`, a result of more than one row is also saved as a query
+    the search viewer can show."""
 
     sql: str = Field(..., description="Trino SQL to execute.")
+    save: bool = Field(
+        default=False,
+        description="Save the result as a query and return its view_url.",
+    )
+    owui_chat_id: str | None = None
 
 
 class QueryResponse(BaseModel):
     columns: list[str]
     rows: list[dict[str, Any]]
+    # Report-body columns the SQL projected but the response left out.
+    dropped_columns: list[str] = []
+    # Set only when the query was saved.
+    id: str | None = None
+    view_url: str | None = None
 
 
-class QueryFromFileResponse(BaseModel):
-    columns: list[str]
-    rows: list[dict[str, Any]]
+class QueryFromFileResponse(QueryResponse):
     id_column: str
     column_inferred: bool
 
@@ -196,6 +219,7 @@ class SearchMeta(BaseModel):
     # OWUI conversation ID - drives the SPA homepage's per-chat
     # grouping. Empty when the caller didn't supply it.
     owui_chat_id: str = ""
+    kind: str = SEARCH_KIND_COHORT
 
 
 class RowsResponse(BaseModel):

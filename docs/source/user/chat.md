@@ -60,12 +60,12 @@ When you ask a question, Scout Chat:
 2. **Calls a tool** to fetch data. Five tools are available:
    - `scout_find_reports` for cohort building.
    - `scout_get_reports` for looking up specific reports.
-   - `scout_query_sql` for aggregate analytics like counts, distributions, and groupings.
+   - `scout_query_sql` for any other table: counts, distributions, groupings, one row per patient or diagnosis.
    - `scout_chart_sql` for turning an aggregate query into a chart.
    - `scout_get_chart_data` for analyzing a chart with the AI.
 3. **Analyzes** the returned data and provides a natural language answer
 
-A cohort search (`scout_find_reports`) renders the report viewer, an interactive table above the reply. Aggregate questions are answered in the reply itself, without the viewer.
+A cohort search (`scout_find_reports`) renders the report viewer, an interactive table above the reply. A query (`scout_query_sql`) whose result has more than one row renders the same viewer, up to two per reply, so you can sort, filter, and export it too. Single-value answers, and quick checks the AI runs for itself before answering, appear only in the reply.
 
 The AI sees the SQL it wrote and a handful of sample rows, not the whole cohort and not the values in a chart it drew. To have it comment on the data, ask: it can count, group, read individual reports, chart something about the cohort, or read a chart's data back with **Discuss in Chat**.
 
@@ -80,6 +80,8 @@ Click a column header to sort. Under each header is a one-line summary of that c
 - **Explain Search** shows what the search matched, which table it read, and the SQL.
 - **Download CSV** exports your current filters, sort order, and visible columns, not the whole original search. If the Matched on column is visible, the export includes the matched phrases, negated phrases, and diagnosis codes.
 - **Give the table more room** with the four-arrow icon at the right end of the toolbar. Click it again to shrink back.
+
+Any column the AI adds to its SQL appears in the table, the **Columns** list, and the CSV. A query result has no **Matched on** column or report-specific actions, and clicking a row opens a report only when the result includes report IDs. Report text is never shown in the table; open a report to read it.
 
 ### Why Each Report Matched
 

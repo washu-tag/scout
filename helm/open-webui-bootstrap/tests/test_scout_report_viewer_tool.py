@@ -495,9 +495,21 @@ class _Emitter:
 def _routing_handler():
     """Answers /api/searches and /api/plots with ids derived from a counter,
     so each call yields a distinguishable view_url."""
-    counts = {"searches": 0, "plots": 0}
+    counts = {"searches": 0, "plots": 0, "queries": 0}
 
     def handler(request):
+        if request.url.path == "/api/reports/query":
+            body = json.loads(request.content)
+            out = {
+                "columns": ["modality", "n"],
+                "rows": [{"modality": "CT", "n": 5}, {"modality": "MR", "n": 3}],
+            }
+            if body.get("save"):
+                counts["queries"] += 1
+                n = counts["queries"]
+                out["id"] = f"q_{n}"
+                out["view_url"] = f"https://rv/spa/searches/q_{n}"
+            return httpx.Response(200, json=out)
         if request.url.path.startswith("/api/plots"):
             counts["plots"] += 1
             n = counts["plots"]
@@ -655,6 +667,73 @@ async def test_without_message_id_emits_single_embed_and_stores_nothing(monkeypa
     await _cohort(tool, emitter, message_id=None)
     assert emitter.last_embeds == ["https://rv/spa/searches/ds_1"]
     assert _mod._TURN_EMBEDS == {}
+
+
+async def _query(tool, emitter, show_user=True, message_id="m1"):
+    return await tool.scout_query_sql(
+        sql="SELECT modality, count(*) n FROM reports_latest GROUP BY modality",
+        show_user=show_user,
+        __event_emitter__=emitter,
+        __oauth_token__="tok",
+        __metadata__={"chat_id": "c1"},
+        __message_id__=message_id,
+    )
+
+
+@pytest.mark.asyncio
+async def test_shown_query_embeds_and_tells_the_model_not_to_retype(monkeypatch):
+    tool = _tool_with_transport(_routing_handler(), monkeypatch)
+    emitter = _Emitter()
+    result = await _query(tool, emitter)
+    assert emitter.last_embeds == ["https://rv/spa/searches/q_1"]
+    assert "| CT | 5 |" in result
+    assert "Do not retype the table" in result
+
+
+@pytest.mark.asyncio
+async def test_scouting_query_is_not_saved_or_embedded(monkeypatch):
+    seen = {}
+
+    def handler(request):
+        seen["body"] = json.loads(request.content)
+        return httpx.Response(200, json={"columns": ["n"], "rows": [{"n": 1}]})
+
+    tool = _tool_with_transport(handler, monkeypatch)
+    emitter = _Emitter()
+    result = await _query(tool, emitter, show_user=False)
+    assert seen["body"]["save"] is False
+    assert emitter.last_embeds == []
+    assert "cannot see these rows" in result
+
+
+@pytest.mark.asyncio
+async def test_query_viewers_capped_per_turn_alongside_cohort_and_chart(monkeypatch):
+    tool = _tool_with_transport(_routing_handler(), monkeypatch)
+    emitter = _Emitter()
+    await _chart(tool, emitter)
+    for _ in range(_mod._MAX_QUERIES_PER_TURN):
+        await _query(tool, emitter)
+    result = await _query(tool, emitter)
+    await _cohort(tool, emitter)
+    assert emitter.last_embeds == [
+        "https://rv/spa/plots/pl_1",
+        "https://rv/spa/searches/q_2",
+        "https://rv/spa/searches/q_3",
+        "https://rv/spa/searches/ds_1",
+    ]
+    assert "was dropped" in result
+
+
+def test_query_notes_report_text_left_out():
+    result = Tools._format_aggregate(
+        {
+            "columns": ["primary_report_identifier"],
+            "rows": [{"primary_report_identifier": "r1"}],
+            "dropped_columns": ["report_text"],
+        }
+    )
+    assert "report_text" in result
+    assert "scout_get_reports" in result
 
 
 @pytest.mark.asyncio

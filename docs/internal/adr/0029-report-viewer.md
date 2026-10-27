@@ -13,6 +13,19 @@ spec is sanitized server-side before it's persisted or rendered, and the fronten
 renders it in CSP-safe mode, consistent with this ADR's existing iframe security
 posture.
 
+**Addendum** (2026-10-27): `scout_query_sql` is no longer transient. With
+`show_user` (the default), a result of more than one row is saved as a search of
+`kind = 'query'` and shown in the same search viewer, re-run on each view like a
+cohort; with `show_user=False`, or a result of 0–1 rows, nothing persists, which
+keeps the model's scouting queries out of the user's view. A query has no
+required projections and no evidence rewrite. The viewer gates its report-only
+parts (opening a report from a row, the reader, non-`client` actions) on the
+rows carrying `primary_report_identifier`, and the service rejects backend
+actions on a query. Report-body columns are dropped from every
+`scout_query_sql` result, so the model no longer receives report text through
+it; `scout_get_reports` remains the way to read reports. At most two query
+viewers render per turn.
+
 ## Context
 
 Scout's chat surface (Open WebUI) is an effective natural-language entry point for cohort building. Researchers describe what they want, an LLM translates it to Trino SQL against the Delta Lake radiology reports, and a cohort emerges through follow-up questions. The chat context is not designed for large-data interaction though. Dumping thousands of rows into the LLM's window blows its context budget and produces worse answers on the next turn. Rendering the same rows as chat markdown gives researchers a text surface but no browse, sort, filter, or export affordances, and it still puts the payload into the model's context.

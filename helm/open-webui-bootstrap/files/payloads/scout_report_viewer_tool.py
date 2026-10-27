@@ -27,10 +27,16 @@ log = logging.getLogger(__name__)
 _MAX_GET_IDS = 100
 _MD_CELL_MAX = 400
 _MAX_UPLOAD_BYTES = 32 * 1024 * 1024
-EmbedKind = Literal["cohort", "chart"]
+EmbedKind = Literal["cohort", "chart", "query"]
 _EMBED_COHORT: EmbedKind = "cohort"
 _EMBED_CHART: EmbedKind = "chart"
+_EMBED_QUERY: EmbedKind = "query"
 _MAX_CHARTS_PER_TURN = 4
+_MAX_QUERIES_PER_TURN = 2
+_EMBED_CAPS: dict[str, int] = {
+    _EMBED_CHART: _MAX_CHARTS_PER_TURN,
+    _EMBED_QUERY: _MAX_QUERIES_PER_TURN,
+}
 _MAX_TURNS_TRACKED = 64
 # turn key -> {"embeds": [(kind, url)], "lock": asyncio.Lock()}, LRU by write.
 _TURN_EMBEDS: OrderedDict[str, dict[str, Any]] = OrderedDict()
@@ -433,6 +439,7 @@ class Tools:
     async def scout_query_sql(
         self,
         sql: str,
+        show_user: bool = True,
         file_id: Optional[str] = None,
         id_column: Optional[str] = None,
         __event_emitter__: Optional[Callable[[Any], Awaitable[None]]] = None,
@@ -440,42 +447,73 @@ class Tools:
         __event_call__: Optional[Callable[[Any], Awaitable[Any]]] = None,
         __request__: Any = None,
         __user__: Optional[dict] = None,
+        __metadata__: Optional[dict] = None,
+        __message_id__: Optional[str] = None,
     ) -> Any:
-        """Run an ad-hoc SQL query and return rows inline.
+        """Run an ad-hoc SQL query and return its rows to you.
 
-        No search is persisted; no iframe is rendered.
+        With `show_user` (the default), a result of more than one row is
+        also shown to the user in a viewer above your reply, where they
+        can sort, filter, and export it. At most two query viewers show
+        per turn; a third replaces the oldest.
 
         :param sql: Trino SQL. Default to `reports_latest`
             (`reports_curated` for report history); use an `_epic_view`
             only for patient-across-reports questions. When `file_id`
             is set, include `{{cohort}}` exactly once and the backend
             substitutes the CSV cohort predicate.
+        :param show_user: Pass false for queries that only check your
+            own assumptions before answering (distinct values, whether a
+            column is populated, counts used to tune SQL). Leave it true
+            for results the user asked for.
         :param file_id: Optional. OWUI file id for a cohort CSV.
         :param id_column: Optional (file mode only).
-        :return: Markdown table of rows for direct inclusion in your
-            prose reply.
+        :return: The rows as a markdown table, for you to read and
+            interpret.
         """
         auth = _Auth(__oauth_token__, __event_call__, __request__, __user__)
+        chat_id = _chat_id(__metadata__)
         if file_id:
-            return await self._query_from_file(
-                file_id=file_id,
-                sql=sql,
-                id_column=id_column,
-                __event_emitter__=__event_emitter__,
-                auth=auth,
-            )
-        await self._emit(__event_emitter__, "Running query…", done=False)
+            fetched = await self._fetch_owui_file(file_id)
+            if isinstance(fetched, str):
+                return fetched
+            contents, filename = fetched
+            form: dict[str, str] = {"sql": sql}
+            if id_column:
+                form["id_column"] = id_column
+            if show_user:
+                form["save"] = "true"
+                form["owui_chat_id"] = chat_id
+            label = f"Querying {filename}\u2026"
+            path = "/api/reports/query/from-file"
+            kwargs: dict[str, Any] = {
+                "files": {"file": (filename, contents, "text/csv")},
+                "data": form,
+            }
+        else:
+            label = "Running query\u2026"
+            path = "/api/reports/query"
+            kwargs = {"json": {"sql": sql, "save": show_user, "owui_chat_id": chat_id}}
+
+        await self._emit(__event_emitter__, label, done=False)
         try:
-            agg = await self._request(
-                "POST", "/api/reports/query", auth, json={"sql": sql}
-            )
+            agg = await self._request("POST", path, auth, **kwargs)
         except ReportViewerServiceError as exc:
             await self._emit(
                 __event_emitter__, self._status_error(exc, "Query failed"), done=True
             )
             return self._error_text(exc, "Error running query")
         await self._emit(__event_emitter__, "Query complete", done=True)
-        return self._format_aggregate(agg)
+
+        shown = bool(agg.get("view_url"))
+        evicted = shown and await self._emit_embed(
+            __event_emitter__,
+            agg["view_url"],
+            kind=_EMBED_QUERY,
+            message_id=__message_id__,
+            metadata=__metadata__,
+        )
+        return self._format_aggregate(agg, shown=shown, evicted=evicted)
 
     async def _fetch_owui_file(self, file_id: str) -> tuple[bytes, str] | str:
         """Read an OWUI-uploaded file. Returns (contents, filename) or
@@ -599,41 +637,6 @@ class Tools:
             metadata=__metadata__,
         )
         return self._render_from_file_summary(created, filename)
-
-    async def _query_from_file(
-        self,
-        file_id: str,
-        sql: str,
-        id_column: Optional[str] = None,
-        __event_emitter__: Optional[Callable[[Any], Awaitable[None]]] = None,
-        auth: Optional[_Auth] = None,
-    ) -> Any:
-        """One-shot cohort-scoped query. `sql` must include `{{cohort}}`
-        exactly once."""
-        fetched = await self._fetch_owui_file(file_id)
-        if isinstance(fetched, str):
-            return fetched
-        contents, filename = fetched
-
-        await self._emit(__event_emitter__, f"Querying {filename}…", done=False)
-        form: dict[str, str] = {"sql": sql}
-        if id_column:
-            form["id_column"] = id_column
-        try:
-            agg = await self._request(
-                "POST",
-                "/api/reports/query/from-file",
-                auth,
-                files={"file": (filename, contents, "text/csv")},
-                data=form,
-            )
-        except ReportViewerServiceError as exc:
-            await self._emit(
-                __event_emitter__, self._status_error(exc, "Query failed"), done=True
-            )
-            return self._error_text(exc, "Error running query")
-        await self._emit(__event_emitter__, "Query complete", done=True)
-        return self._format_aggregate(agg)
 
     async def scout_get_reports(
         self,
@@ -818,16 +821,42 @@ class Tools:
         return "\n".join(parts)
 
     @staticmethod
-    def _format_aggregate(agg: dict) -> str:
-        """Render an aggregate result as a small markdown table so the
-        LLM can drop it straight into its prose reply. Service returns
-        `{columns, rows}`. Empty result → a literal "no rows" marker the
-        LLM can phrase around."""
+    def _format_aggregate(
+        agg: dict, *, shown: bool = False, evicted: bool = False
+    ) -> str:
+        """Query rows as a markdown table, plus whether the user can see them
+        and which report-text columns the service left out."""
         cols: list[str] = agg.get("columns") or []
         rows: list[dict] = agg.get("rows") or []
+        dropped: list[str] = agg.get("dropped_columns") or []
         if not rows:
-            return "Aggregate query returned no rows."
-        return "\n".join(_md_table(cols, rows))
+            return "Query returned no rows."
+        parts = _md_table(cols, rows)
+        if dropped:
+            parts += [
+                "",
+                f"Report text columns were left out ({', '.join(dropped)}). "
+                "Use scout_get_reports to read reports.",
+            ]
+        parts.append("")
+        if shown:
+            parts.append(
+                "The user sees these rows in a viewer above your reply, where "
+                "they can sort, filter, and export them. Do not retype the "
+                "table. Reply with what the result means: patterns, outliers, "
+                "and follow-ups worth running."
+                + (
+                    f" An earlier query viewer from this turn was dropped (max "
+                    f"{_MAX_QUERIES_PER_TURN} per turn)."
+                    if evicted
+                    else ""
+                )
+            )
+        else:
+            parts.append(
+                "The user cannot see these rows; show them what the answer needs."
+            )
+        return "\n".join(parts)
 
     @staticmethod
     def _render_chart_data(plot: dict) -> str:
@@ -1074,17 +1103,20 @@ def _turn_key(message_id: Any, meta: Any) -> str:
 def _next_embeds(
     prev: list[tuple[str, str]], kind: str, url: str
 ) -> tuple[list[tuple[str, str]], bool]:
-    """Fold one embed into a turn's list. Charts accumulate in emission
-    order; at most one cohort viewer survives, and a newer one lands last.
-    Over the cap the oldest chart is dropped, never the cohort."""
+    """Fold one embed into a turn's list. Charts and query viewers accumulate
+    in emission order up to their own caps, dropping their own oldest; at
+    most one cohort viewer survives, and a newer one lands last."""
     out = [
         e
         for e in prev
         if e != (kind, url) and not (kind == _EMBED_COHORT and e[0] == _EMBED_COHORT)
     ]
     out.append((kind, url))
-    charts = [i for i, e in enumerate(out) if e[0] == _EMBED_CHART]
-    dropped = charts[: max(0, len(charts) - _MAX_CHARTS_PER_TURN)]
+    cap = _EMBED_CAPS.get(kind)
+    if cap is None:
+        return out, False
+    same = [i for i, e in enumerate(out) if e[0] == kind]
+    dropped = same[: max(0, len(same) - cap)]
     for i in reversed(dropped):
         del out[i]
     return out, bool(dropped)

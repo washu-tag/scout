@@ -314,6 +314,65 @@ def test_query_from_file_returns_rows_and_substitutes_cohort(
     ]
 
 
+def test_query_leaves_out_report_text(client, auth_headers, fake_trino):
+    fake_trino(
+        ["primary_report_identifier", "report_text"],
+        [{"primary_report_identifier": "r1", "report_text": "long body"}],
+    )
+    r = client.post(
+        "/api/reports/query",
+        json={"sql": "SELECT primary_report_identifier, report_text FROM reports"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["columns"] == ["primary_report_identifier"]
+    assert body["rows"] == [{"primary_report_identifier": "r1"}]
+    assert body["dropped_columns"] == ["report_text"]
+    assert body["view_url"] is None
+
+
+def test_saved_query_opens_in_the_viewer_without_evidence_or_server_actions(
+    client, auth_headers, fake_trino
+):
+    rows = [{"modality": "CT", "n": 5}, {"modality": "MR", "n": 3}]
+    fake_trino(["modality", "n"], rows)
+    sql = "SELECT modality, COUNT(*) AS n FROM reports_latest GROUP BY modality"
+    r = client.post(
+        "/api/reports/query",
+        json={"sql": sql + ";", "save": True, "owui_chat_id": "c1"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["view_url"].endswith(f"/spa/searches/{body['id']}")
+
+    meta = client.get(f"/api/searches/{body['id']}", headers=auth_headers).json()
+    assert meta["kind"] == "query"
+    assert meta["sql"] == sql
+    assert meta["executed_sql"] == ""
+
+    fake_trino(["modality", "n"], rows)
+    got = client.get(f"/api/searches/{body['id']}/rows", headers=auth_headers)
+    assert got.status_code == 200, got.text
+    assert got.json()["rows"] == rows
+    assert "ev_" not in fake_trino.calls[-1][0]
+
+    actions = client.get(f"/api/searches/{body['id']}/actions", headers=auth_headers)
+    assert all(a["action_type"] == "client" for a in actions.json())
+
+
+def test_one_row_query_is_not_saved(client, auth_headers, fake_trino):
+    fake_trino(["n"], [{"n": 42}])
+    r = client.post(
+        "/api/reports/query",
+        json={"sql": "SELECT COUNT(*) AS n FROM reports_latest", "save": True},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["id"] is None
+
+
 def test_search_meta_exposes_the_executed_sql() -> None:
     """The rewrite happens server-side, so the viewer cannot show what really
     ran unless the metadata carries it."""

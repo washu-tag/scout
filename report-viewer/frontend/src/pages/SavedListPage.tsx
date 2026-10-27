@@ -12,7 +12,7 @@ import { chatOrigin, chatUrl } from '../chat';
 // Searches and charts are separate resources server-side, but a user thinks
 // of them as one pile of saved work from their chats, so the homepage merges
 // them and each row says which kind it is.
-type Kind = 'search' | 'chart';
+type Kind = 'search' | 'query' | 'chart';
 
 interface SavedItem {
   kind: Kind;
@@ -64,15 +64,20 @@ function plural(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`;
 }
 
+const KIND_LABELS: Record<Kind, [string, string, string]> = {
+  search: ['Search', 'search', 'searches'],
+  query: ['Query', 'query', 'queries'],
+  chart: ['Chart', 'chart', 'charts'],
+};
+
 // "12 searches · 3 charts", dropping whichever kind isn't there rather than
 // printing "0 charts".
 function countLabel(items: SavedItem[]): string {
-  const searches = items.filter((d) => d.kind === 'search').length;
-  const charts = items.length - searches;
-  const parts: string[] = [];
-  if (searches > 0) parts.push(plural(searches, 'search', 'searches'));
-  if (charts > 0) parts.push(plural(charts, 'chart', 'charts'));
-  return parts.join(' · ');
+  return (Object.keys(KIND_LABELS) as Kind[])
+    .map((kind) => [kind, items.filter((d) => d.kind === kind).length] as const)
+    .filter(([, n]) => n > 0)
+    .map(([kind, n]) => plural(n, KIND_LABELS[kind][1], KIND_LABELS[kind][2]))
+    .join(' · ');
 }
 
 export default function SavedListPage() {
@@ -94,7 +99,7 @@ export default function SavedListPage() {
   ].filter((m): m is string => m !== null);
 
   const items = [
-    ...(searchesQuery.data ?? []).map((s) => toItem('search', s)),
+    ...(searchesQuery.data ?? []).map((s) => toItem(s.kind === 'query' ? 'query' : 'search', s)),
     ...(plotsQuery.data ?? []).map((p) => toItem('chart', p)),
   ].sort((a, b) => b.created_at.localeCompare(a.created_at));
 
@@ -108,7 +113,8 @@ export default function SavedListPage() {
         ))}
         {failures.length === 0 && (
           <p style={{ color: 'var(--rv-muted)' }}>
-            Nothing saved yet. Searches and charts you create in Scout Chat will show up here.
+            Nothing saved yet. Searches, queries, and charts you create in Scout Chat will show up
+            here.
           </p>
         )}
       </div>
@@ -131,7 +137,7 @@ export default function SavedListPage() {
           marginBottom: '1rem',
         }}
       >
-        <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Your searches and charts</h2>
+        <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Your saved work</h2>
         <span style={{ color: 'var(--rv-muted)', fontSize: '0.85rem' }}>
           {countLabel(items)}
           {groups.length > 1 ? ` across ${groups.length} chats` : ''}
@@ -241,7 +247,7 @@ function KindBadge(props: { kind: Kind }) {
         letterSpacing: '0.02em',
       }}
     >
-      {isChart ? 'Chart' : 'Search'}
+      {KIND_LABELS[props.kind][0]}
     </span>
   );
 }

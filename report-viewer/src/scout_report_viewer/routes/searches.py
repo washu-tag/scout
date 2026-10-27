@@ -58,6 +58,9 @@ from ..csv_upload import (
 from ..ids import new_search_id
 from ..logging_setup import scrub_for_log
 from ..models import (
+    REPORT_BODY_COLUMNS,
+    SEARCH_KIND_COHORT,
+    SEARCH_KIND_QUERY,
     SEARCH_REQUIRED_COLUMNS,
     ActionInvokeRequest,
     ActionInvokeResponse,
@@ -108,19 +111,6 @@ async def _run_with_fallback(
         return columns, rows, False
 
 
-# Report-body columns never sent to the grid: too large for 50k-row payloads,
-# and the SPA fetches them per-row via /reports/read on expand. Shared by the
-# create-sample response and the full-cohort fetch.
-_HEAVY_COLS: frozenset[str] = frozenset(
-    {
-        "report_text",
-        "report_section_findings",
-        "report_section_impression",
-        "report_section_addendum",
-    }
-)
-
-
 def _assert_required_projections(columns: list[str]) -> None:
     missing = [c for c in SEARCH_REQUIRED_COLUMNS if c not in columns]
     if missing:
@@ -133,7 +123,7 @@ def _assert_required_projections(columns: list[str]) -> None:
         )
 
 
-def _view_url(search_id: str) -> str:
+def view_url(search_id: str) -> str:
     return f"{settings.external_url.rstrip('/')}/spa/searches/{search_id}"
 
 
@@ -143,8 +133,13 @@ def _wrap_sql(sql: str) -> str:
 
 
 def _meta_from_row(r: dict[str, Any], *, with_executed: bool = False) -> SearchMeta:
+    kind = r.get("kind") or SEARCH_KIND_COHORT
     # Off by default: the list view shows no sql, so parsing every row is waste.
-    scored, rewritten = with_evidence(r["sql"]) if with_executed else ("", False)
+    scored, rewritten = (
+        with_evidence(r["sql"])
+        if with_executed and kind != SEARCH_KIND_QUERY
+        else ("", False)
+    )
     return SearchMeta(
         id=r["id"],
         sql=r["sql"],
@@ -155,6 +150,7 @@ def _meta_from_row(r: dict[str, Any], *, with_executed: bool = False) -> SearchM
         match_diagnoses=r.get("match_diagnoses") or [],
         sql_explanation=r.get("sql_explanation") or "",
         owui_chat_id=r.get("owui_chat_id") or "",
+        kind=kind,
     )
 
 
@@ -221,7 +217,7 @@ async def create_search(
 
     # Evidence comes from the query's own predicates, evaluated by Trino in the
     # sample query above, so no extra read and no whole-cohort count.
-    _drop_cols = _HEAVY_COLS | set(EV_COLUMNS)
+    _drop_cols = REPORT_BODY_COLUMNS | set(EV_COLUMNS)
     sample: list[dict[str, Any]] = []
     evidence: list[dict[str, Any]] = []
     for r in sample_rows:
@@ -264,7 +260,7 @@ async def create_search(
     return CreateSearchResponse(
         id=stored["id"],
         id_column=id_column,
-        view_url=_view_url(search_id),
+        view_url=view_url(search_id),
         columns=[c for c in columns if c not in _drop_cols],
         sample=sample,
         evidence=evidence,
@@ -434,7 +430,7 @@ async def create_search_from_file(
         sample=sample_rows,
         unmatched=unmatched[:UNMATCHED_SAMPLE_CAP],
         unmatched_count=len(unmatched),
-        view_url=_view_url(search_id),
+        view_url=view_url(search_id),
     )
 
 
@@ -470,7 +466,11 @@ async def get_search_actions(
     ds = await store.get_search(search_id, owner_sub=user.sub)
     if ds is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    return list_actions(user.roles)
+    actions = list_actions(user.roles)
+    # Server-side actions act on a cohort of reports, which a query is not.
+    if ds["kind"] == SEARCH_KIND_QUERY:
+        return [a for a in actions if a.action_type == "client"]
+    return actions
 
 
 @router.post(
@@ -502,7 +502,7 @@ async def invoke_search_action(
     sending no body still gets the full cohort, unchanged.
     """
     ds = await store.get_search(search_id, owner_sub=user.sub)
-    if ds is None:
+    if ds is None or ds["kind"] == SEARCH_KIND_QUERY:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
     action = next((a for a in list_actions(user.roles) if a.id == action_id), None)
@@ -656,8 +656,10 @@ async def get_search_rows(
     cap = settings.max_cohort_rows
     # Derived per read, not stored, so the saved search stays a verbatim record
     # of what the model wrote. Falls back to the original sql for any shape it
-    # cannot rewrite.
-    scored_sql, _ = with_evidence(source_sql)
+    # cannot rewrite. Queries carry no evidence.
+    scored_sql = (
+        source_sql if ds["kind"] == SEARCH_KIND_QUERY else with_evidence(source_sql)[0]
+    )
     # Fetch cap+1 so we can flag truncation without a separate COUNT.
     limit = f" s LIMIT {cap + 1}"
     token = progress.valid_token(progress_id)
@@ -695,8 +697,10 @@ async def get_search_rows(
     if truncated:
         rows = rows[:cap]
     metrics.RESULT_ROWS.labels(op="rows_query").observe(len(rows))
-    lean_columns = [c for c in columns if c not in _HEAVY_COLS]
-    lean_rows = [{k: v for k, v in r.items() if k not in _HEAVY_COLS} for r in rows]
+    lean_columns = [c for c in columns if c not in REPORT_BODY_COLUMNS]
+    lean_rows = [
+        {k: v for k, v in r.items() if k not in REPORT_BODY_COLUMNS} for r in rows
+    ]
     return RowsResponse(
         id=search_id,
         columns=lean_columns,

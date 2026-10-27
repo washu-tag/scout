@@ -1,7 +1,8 @@
-"""HTTP routes for `/api/reports` - RPC-style operations that don't
-persist state. Used by `scout_query_sql` and `scout_get_reports` in
-the OWUI tool, and by the SPA row-expand panel (which posts an array
-of one ID to /api/reports/read)."""
+"""HTTP routes for `/api/reports` - RPC-style operations. Used by
+`scout_query_sql` and `scout_get_reports` in the OWUI tool, and by the SPA
+row-expand panel (which posts an array of one ID to /api/reports/read).
+Only a query run with `save` persists anything: it becomes a search the
+viewer can show."""
 
 from __future__ import annotations
 
@@ -15,6 +16,7 @@ from .. import metrics, trino_client
 from ..auth import User, get_current_user
 from ..config import settings
 from ..evidence import highlight_hits_expression
+from ..ids import new_search_id
 from ..store import SearchStore, get_store
 from ..csv_upload import (
     assert_cohort_placeholder,
@@ -30,12 +32,15 @@ from ..models import (
     EPIC_VIEW_TABLES,
     INPUT_ID_COLUMNS,
     READ_REPORTS_TABLES,
+    REPORT_BODY_COLUMNS,
+    SEARCH_KIND_QUERY,
     QueryFromFileResponse,
     QueryRequest,
     QueryResponse,
     ReadReportsRequest,
     ReadReportsResponse,
 )
+from .searches import view_url
 
 log = logging.getLogger(__name__)
 
@@ -50,12 +55,14 @@ router = APIRouter(prefix="/api/reports", tags=["reports"])
 async def query_reports(
     body: QueryRequest,
     user: User = Depends(get_current_user),
+    store: SearchStore = Depends(get_store),
 ) -> QueryResponse:
-    """Run SQL once, return rows directly. No search persisted, no
-    iframe rendered. Backs `scout_query_sql` in the OWUI tool."""
+    """Run SQL once and return its rows. Backs `scout_query_sql` in the OWUI
+    tool; with `save`, the result is also saved for the viewer."""
+    sql = body.sql.rstrip().rstrip(";")
     try:
         with metrics.time_trino("query_reports"):
-            columns, rows = await trino_client.execute(body.sql, user=user.sub)
+            columns, rows = await trino_client.execute(sql, user=user.sub)
     except Exception as exc:
         log.exception("trino query failed")
         raise HTTPException(
@@ -63,7 +70,58 @@ async def query_reports(
             detail=f"trino query failed: {exc}",
         )
     metrics.RESULT_ROWS.labels(op="query_reports").observe(len(rows))
-    return QueryResponse(columns=columns, rows=rows)
+    return QueryResponse(
+        **await _query_result(
+            columns,
+            rows,
+            save=body.save,
+            sql=sql,
+            user=user,
+            store=store,
+            owui_chat_id=body.owui_chat_id,
+        )
+    )
+
+
+# A one-row result reads better in the reply than in a grid.
+_VIEWER_MIN_ROWS = 2
+
+
+async def _query_result(
+    columns: list[str],
+    rows: list[dict[str, Any]],
+    *,
+    save: bool,
+    sql: str,
+    user: User,
+    store: SearchStore,
+    owui_chat_id: str | None,
+    uploaded_ids: list[str] | None = None,
+) -> dict[str, Any]:
+    """Response fields for a query: rows without report bodies, plus the
+    saved query's id and view_url when it was saved."""
+    dropped = [c for c in columns if c in REPORT_BODY_COLUMNS]
+    out: dict[str, Any] = {
+        "columns": [c for c in columns if c not in REPORT_BODY_COLUMNS],
+        "rows": [
+            {k: v for k, v in r.items() if k not in REPORT_BODY_COLUMNS} for r in rows
+        ],
+        "dropped_columns": dropped,
+    }
+    if save and len(rows) >= _VIEWER_MIN_ROWS:
+        search_id = new_search_id()
+        await store.insert_search(
+            search_id=search_id,
+            sql=sql,
+            owner_sub=user.sub,
+            owui_chat_id=owui_chat_id or "",
+            uploaded_ids=uploaded_ids,
+            kind=SEARCH_KIND_QUERY,
+        )
+        log.info("query saved", extra={"search_id": search_id, "user_sub": user.sub})
+        out["id"] = search_id
+        out["view_url"] = view_url(search_id)
+    return out
 
 
 @router.post(
@@ -75,12 +133,15 @@ async def query_from_file(
     file: UploadFile = File(...),
     sql: str = Form(...),
     id_column: str | None = Form(default=None),
+    save: bool = Form(default=False),
+    owui_chat_id: str | None = Form(default=None),
     user: User = Depends(get_current_user),
+    store: SearchStore = Depends(get_store),
 ) -> QueryFromFileResponse:
-    """One-shot Trino query scoped to a CSV cohort. `sql` must include
-    `{{cohort}}` exactly once; backend substitutes the appropriate
-    `IN (...)` predicate. Nothing persists. Backs `scout_query_sql` in
-    file mode."""
+    """Trino query scoped to a CSV cohort. `sql` must include `{{cohort}}`
+    exactly once; backend substitutes a bound `contains(?, col)` predicate.
+    Backs `scout_query_sql` in file mode; with `save`, the result is saved
+    with its ID list so the viewer can re-run it."""
     try:
         raw = await file.read()
     finally:
@@ -94,7 +155,7 @@ async def query_from_file(
 
     # All IDs are bound; the custom SQL's own predicate decides what matches.
     predicate = f"contains(?, {col_q})"
-    query_sql = substitute_cohort(sql, predicate)
+    query_sql = substitute_cohort(sql.rstrip().rstrip(";"), predicate)
     try:
         with metrics.time_trino("query_from_file"):
             columns, rows = await trino_client.execute(
@@ -112,8 +173,16 @@ async def query_from_file(
 
     metrics.RESULT_ROWS.labels(op="query_from_file").observe(len(rows))
     return QueryFromFileResponse(
-        columns=columns,
-        rows=rows,
+        **await _query_result(
+            columns,
+            rows,
+            save=save,
+            sql=query_sql,
+            user=user,
+            store=store,
+            owui_chat_id=owui_chat_id,
+            uploaded_ids=cleaned,
+        ),
         id_column=resolved_id_column,
         column_inferred=column_inferred,
     )

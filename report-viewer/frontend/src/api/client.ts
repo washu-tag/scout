@@ -70,6 +70,8 @@ export interface SearchMeta {
   match_diagnoses: string[];
   sql_explanation: string;
   owui_chat_id: string;
+  // 'query' results are any shape; 'cohort' rows are one per report.
+  kind: 'cohort' | 'query';
 }
 
 export function listSearches(): Promise<SearchMeta[]> {

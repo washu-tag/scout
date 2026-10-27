@@ -90,6 +90,11 @@ const OTHER_TOOLBAR_SIBLINGS = 3 + (embedded ? 1 : 0);
 // Exported with Matched on so the CSV has the phrases, not just the category.
 const EVIDENCE_EXPORT = ['ev_positive_span', 'ev_negative_span', 'ev_dx_codes', 'ev_dx_text'];
 
+const CONFIGURED_FIELDS = new Set(COLUMNS_CONFIG.map((c) => c.field));
+// Used by the page but never shown as a column of their own.
+const INTERNAL_FIELDS = new Set(['primary_report_identifier', ...EVIDENCE_EXPORT]);
+const EXTRA_COLUMN_WIDTH = 110;
+
 const columnHelper = createColumnHelper<Row>();
 
 // Lets the empty table render its headers before the first fetch returns.
@@ -174,16 +179,23 @@ export default function SearchDetailPage() {
     setReview(null);
   }, [rowsQ.data]);
 
-  // Four columns reads thin for a plain "latest reports" search. Once per
-  // search, so hiding them again survives a refetch.
-  const demographicsFor = useRef<string | null>(null);
+  const isQuery = meta.data?.kind === 'query';
+
+  // Once per search, so hiding columns again survives a refetch. A query shows
+  // everything it projects; four columns read thin for a plain "latest
+  // reports" search.
+  const defaultsFor = useRef<string | null>(null);
   useEffect(() => {
     const columns = rowsQ.data?.columns;
-    if (!columns || demographicsFor.current === searchId) return;
-    demographicsFor.current = searchId;
+    if (!columns || !meta.data || defaultsFor.current === searchId) return;
+    defaultsFor.current = searchId;
+    if (meta.data.kind === 'query') {
+      setColumnVisibility((v) => ({ ...v, ...Object.fromEntries(columns.map((c) => [c, true])) }));
+      return;
+    }
     const bare = !columns.includes('ev_source');
     setColumnVisibility((v) => ({ ...v, patient_age: bare, sex: bare }));
-  }, [rowsQ.data, searchId]);
+  }, [rowsQ.data, meta.data, searchId]);
 
   // MPI-only legacy cohorts would otherwise show no patient ID.
   const autoMpiFor = useRef<string | null>(null);
@@ -213,6 +225,16 @@ export default function SearchDetailPage() {
   }, [colPickerOpen]);
 
   const available = useMemo<string[]>(() => rowsQ.data?.columns ?? DEFAULT_COLUMNS, [rowsQ.data]);
+  // Opening a report, its evidence, and server-side actions all need report
+  // ids, which a query result may not have.
+  const hasReportIds = available.includes('primary_report_identifier');
+
+  // Fetch position, since report ids repeat in a row-per-diagnosis result and
+  // a query may have none. Stable across client-side sort/filter/paginate.
+  const rowIds = useMemo(
+    () => new WeakMap<Row, string>((rowsQ.data?.rows ?? []).map((r, i) => [r, String(i)])),
+    [rowsQ.data],
+  );
 
   // Distinct modalities present in the loaded cohort, for the filter dialog -
   // derived client-side from the full result set (no separate endpoint).
@@ -297,9 +319,14 @@ export default function SearchDetailPage() {
     [],
   );
 
-  const columns = useMemo(
-    () =>
-      COLUMNS_CONFIG.filter((c) => available.includes(c.field)).map((c) =>
+  const columns = useMemo(() => {
+    const rows = rowsQ.data?.rows ?? [];
+    const isNumeric = (field: string) => {
+      const v = rows.find((r) => r[field] != null)?.[field];
+      return typeof v === 'number';
+    };
+    return [
+      ...COLUMNS_CONFIG.filter((c) => available.includes(c.field)).map((c) =>
         columnHelper.accessor((row: Row) => row[c.field], {
           id: c.field,
           header: c.title,
@@ -318,8 +345,19 @@ export default function SearchDetailPage() {
           meta: { align: c.align, mono: c.mono },
         }),
       ),
-    [available],
-  );
+      ...available
+        .filter((f) => !CONFIGURED_FIELDS.has(f) && !INTERNAL_FIELDS.has(f))
+        .map((field) =>
+          columnHelper.accessor((row: Row) => row[field], {
+            id: field,
+            header: field,
+            size: EXTRA_COLUMN_WIDTH,
+            cell: (info) => fmtCell(info.getValue()),
+            meta: { align: isNumeric(field) ? 'right' : undefined },
+          }),
+        ),
+    ];
+  }, [available, rowsQ.data]);
 
   // Filter the full in-memory cohort in fetch order (the order the search SQL
   // returned) so the initial view preserves the LLM's ORDER BY; TanStack then
@@ -339,9 +377,7 @@ export default function SearchDetailPage() {
     },
     onColumnVisibilityChange: setColumnVisibility,
     onPaginationChange: setPagination,
-    // Stable id so selection survives client-side sort/filter/paginate.
-    getRowId: (row: Row, index) =>
-      row.primary_report_identifier != null ? String(row.primary_report_identifier) : String(index),
+    getRowId: (row: Row, index) => rowIds.get(row) ?? String(index),
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -353,8 +389,8 @@ export default function SearchDetailPage() {
   const queue = table.getSortedRowModel().rows;
   const pageSize = pagination.pageSize;
 
-  // Position first, since report ids repeat on a row-per-diagnosis cohort;
-  // the id only re-finds the row after a filter reshuffles the queue.
+  // Position first; the id only re-finds the row after a filter reshuffles
+  // the queue.
   const reviewAt =
     review === null
       ? -1
@@ -427,7 +463,10 @@ export default function SearchDetailPage() {
           showLoading &&
           !rowsQ.error && (
             <>
-              <QueryProgressInline {...loadingState} doneLabel="Reports loaded" />
+              <QueryProgressInline
+                {...loadingState}
+                doneLabel={isQuery ? 'Rows loaded' : 'Reports loaded'}
+              />
               {!rowsQ.data && (
                 <button
                   type="button"
@@ -585,11 +624,11 @@ export default function SearchDetailPage() {
                     return (
                       <React.Fragment key={row.id}>
                         <tr
-                          className={active ? undefined : 'scout-row'}
-                          onClick={() => setReview({ id: row.id, at })}
+                          className={active || !hasReportIds ? undefined : 'scout-row'}
+                          onClick={hasReportIds ? () => setReview({ id: row.id, at }) : undefined}
                           style={{
                             borderBottom: '1px solid var(--rv-border)',
-                            cursor: 'pointer',
+                            cursor: hasReportIds ? 'pointer' : 'default',
                             background: active ? ROW_ACTIVE_BG : 'transparent',
                           }}
                         >
@@ -628,7 +667,9 @@ export default function SearchDetailPage() {
                       >
                         {anyFilterActive(appliedFilters)
                           ? 'No rows match your filters.'
-                          : 'No reports in this search.'}
+                          : isQuery
+                            ? 'This query returned no rows.'
+                            : 'No reports in this search.'}
                       </td>
                     </tr>
                   )}
@@ -653,7 +694,7 @@ export default function SearchDetailPage() {
                 </div>
               )}
             </div>
-            {reviewAt >= 0 && (
+            {hasReportIds && reviewAt >= 0 && (
               <ReviewPanel
                 queue={queue.map((r) => r.original)}
                 index={reviewAt}
@@ -868,7 +909,9 @@ export default function SearchDetailPage() {
               // yet) is a page-level concern, not something the backend
               // catalog encodes.
               actions={(actionsQ.data ?? []).filter(
-                (a) => a.id !== 'explain-search' || meta.data?.sql_explanation || meta.data?.sql,
+                (a) =>
+                  (hasReportIds || a.action_type === 'client') &&
+                  (a.id !== 'explain-search' || meta.data?.sql_explanation || meta.data?.sql),
               )}
               clientHandlers={{
                 'explain-search': () => setSqlModalOpen(true),
@@ -877,7 +920,7 @@ export default function SearchDetailPage() {
                   // identifiable even if the user hid the id/accession
                   // columns.
                   const cols = table.getVisibleLeafColumns().map((c) => c.id);
-                  if (!cols.includes('primary_report_identifier')) {
+                  if (hasReportIds && !cols.includes('primary_report_identifier')) {
                     cols.unshift('primary_report_identifier');
                   }
                   if (cols.includes('ev_source')) {

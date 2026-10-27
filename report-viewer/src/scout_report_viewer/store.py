@@ -11,6 +11,7 @@ from psycopg_pool import AsyncConnectionPool
 
 from . import metrics
 from .db import get_pool
+from .models import SEARCH_KIND_COHORT
 
 log = logging.getLogger(__name__)
 
@@ -32,6 +33,7 @@ class SearchStore:
         sql_explanation: str | None = None,
         owui_chat_id: str | None = None,
         uploaded_ids: list[str] | None = None,
+        kind: str = SEARCH_KIND_COHORT,
     ) -> dict[str, Any]:
         with metrics.time_postgres("insert_search"):
             async with self._pool.connection() as conn:
@@ -41,12 +43,12 @@ class SearchStore:
                         INSERT INTO searches
                           (id, sql, sql_explanation,
                            match_terms, match_diagnoses,
-                           uploaded_ids, owner_sub, owui_chat_id)
+                           uploaded_ids, owner_sub, owui_chat_id, kind)
                         VALUES
-                          (%s, %s, %s, %s, %s, %s, %s, %s)
+                          (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                         RETURNING id, sql, sql_explanation,
                                   match_terms, match_diagnoses,
-                                  uploaded_ids, owner_sub, owui_chat_id, created_at
+                                  uploaded_ids, owner_sub, owui_chat_id, kind, created_at
                         """,
                         (
                             search_id,
@@ -57,6 +59,7 @@ class SearchStore:
                             uploaded_ids,
                             owner_sub,
                             owui_chat_id or "",
+                            kind,
                         ),
                     )
                     row = await cur.fetchone()
@@ -74,7 +77,7 @@ class SearchStore:
                         """
                         SELECT id, sql, sql_explanation,
                                match_terms, match_diagnoses,
-                               uploaded_ids, owner_sub, owui_chat_id, created_at
+                               uploaded_ids, owner_sub, owui_chat_id, kind, created_at
                         FROM searches
                         WHERE id = %s
                           AND owner_sub = %s
@@ -110,7 +113,7 @@ class SearchStore:
                         """
                         SELECT id, sql, sql_explanation,
                                match_terms, match_diagnoses,
-                               uploaded_ids, owner_sub, owui_chat_id, created_at
+                               uploaded_ids, owner_sub, owui_chat_id, kind, created_at
                         FROM searches
                         WHERE owner_sub = %s
                         ORDER BY created_at DESC
@@ -241,6 +244,7 @@ def _row_to_dict(row: tuple) -> dict[str, Any]:
         uploaded_ids,
         owner_sub,
         owui_chat_id,
+        kind,
         created_at,
     ) = row
     return {
@@ -252,5 +256,6 @@ def _row_to_dict(row: tuple) -> dict[str, Any]:
         "uploaded_ids": uploaded_ids,
         "owner_sub": owner_sub,
         "owui_chat_id": owui_chat_id or "",
+        "kind": kind,
         "created_at": created_at,
     }
