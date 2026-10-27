@@ -103,6 +103,15 @@ actions:
   #       endpointUrl: http://xnat-explore-poc.<namespace>.svc.cluster.local:8000/invoke
   #       invokeToken: <matches xnat-explore-poc's invokeToken value>
   custom: []
+  # Buttons other charts publish as ConfigMaps labeled
+  # report-viewer.scout.xnat.org/actions: "true", read through the Kubernetes
+  # API (templates/rbac.yaml grants the cluster-wide ConfigMap list). The
+  # authoring guide covers the document and the token Secret grant.
+  discovery:
+    enabled: true
+    # ALL, or a comma-separated namespace list.
+    namespace: ALL
+    ttlSeconds: 30
 
 # Env vars injected as REPORT_VIEWER_* - see scout_report_viewer.config.Settings.
 # Populated by the Ansible role's values.yaml.j2 in production.

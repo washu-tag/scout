@@ -73,3 +73,13 @@ report_viewer_explain_search_default:
 report_viewer_download_csv_default:
   enabled: true
   requiredRole: ''
+
+# Buttons other charts publish as labeled ConfigMaps (helm/report-viewer's
+# actions.discovery). Deep-merged like the two above, e.g. to scope it:
+#
+# report_viewer_action_discovery:
+#   namespace: datasets,xnat-explore-poc
+report_viewer_action_discovery_default:
+  enabled: true
+  namespace: ALL
+  ttlSeconds: 30

@@ -1,6 +1,6 @@
 # ADR 0039: Extensible Report-Viewer Search Actions
 
-**Date:** 2026-09
+**Date:** 2026-09 (published actions added 2026-10)
 **Status:** Accepted
 **Decision Owner:** TAG Team
 
@@ -57,9 +57,8 @@ via its own `actions.explainSearch`/`actions.downloadCsv` object (`enabled`,
 `requiredRole`) — plus any site-admin-authored `actions.custom` entries, into a
 ConfigMap mounted directly into the pod at `settings.action_catalog_path`, read
 once at process start — the same "core chips ride a chart-rendered ConfigMap" delivery
-ADR 0034 uses for the launchpad's *own* tiles, deliberately not attempting that ADR's
-cross-namespace sidecar-discovery increment here (every action today ships from
-report-viewer's own chart; nothing yet needs a third party to contribute one). Graded
+ADR 0034 uses for the launchpad's *own* tiles. Actions another chart contributes are
+discovered at runtime instead; see "Other charts publish their own actions" below. Graded
 degradation mirrors ADR 0034: an unparseable file falls back to `_DEFAULT_CATALOG`; one
 invalid entry is skipped and logged without affecting the rest; a duplicate `id` rejects
 the later entry; a genuinely empty file yields a genuinely empty catalog rather than
@@ -109,6 +108,46 @@ Three `action_type` values, matched to what the SPA can do with a click:
   Ansible role — proving the mechanism crosses a real service boundary without doing any
   real XNAT integration work. Its own copy of the shared invoke token is likewise a real
   Secret, not a plain Deployment env value.
+
+### Other charts publish their own actions
+
+A separately installed app (the "Apps" tier from #595) ships its button in its own
+chart, the way ADR 0034 lets it ship a launchpad chip and ADR 0037 a Keycloak client,
+instead of asking each site admin to add it to `actions.custom`. It publishes a
+ConfigMap labeled `report-viewer.scout.xnat.org/actions: "true"` in its own namespace.
+Each data key holds one document identified by `apiVersion:
+report-viewer.scout.xnat.org/v1alpha1` and `kind: ActionCatalog`, with an `actions`
+list in the field names `actions.custom` already uses. Only `open-url` and
+`backend-call` entries are accepted, since a `client` action needs a frontend handler.
+
+A `backend-call` entry names its token by reference, `invokeTokenSecret: {name, key}`,
+never by value: the same rule as `actions-secret.yaml`, applied across charts. The
+publishing chart grants report-viewer's ServiceAccount `get` on that one Secret with a
+`resourceNames`-scoped Role and RoleBinding in its own namespace, the grant ADR 0037
+uses for a fragment's client secret. report-viewer reads the Secret through the
+Kubernetes API on every invoke, so a rotation needs no restart, and an unreadable token
+fails the invoke with a 502 rather than calling the target without it. The Secret's
+namespace always comes from the ConfigMap's own metadata, never from the document, so a
+document can't point report-viewer at a token another namespace granted for its own
+button. That would let a ConfigMap writer in one namespace send another app's token to
+an endpoint of its choosing.
+
+Discovery is an in-process LIST of labeled ConfigMaps
+(`scout_report_viewer/kube.py`), cluster-wide or over a configured namespace list,
+cached for `actions.discovery.ttlSeconds` (30 seconds by default) and re-parsed only
+when a ConfigMap's `resourceVersion` changes. A failed LIST keeps the last snapshot, so
+published buttons go stale rather than missing while the API is unreachable. The
+chart's own catalog wins every id collision, published entries are read in namespace,
+ConfigMap name and data key order, and the later duplicate is skipped and logged.
+Degradation is graded as for the mounted catalog: a bad document costs its entries, and
+a bad entry costs itself. Unlike a launchpad chip, an entry with an unknown field is
+rejected rather than read without it, because `requiredRole` is an authorization
+boundary and a misspelling must not publish an ungated button. Any other discovery
+failure keeps the last snapshot, so a published document can never cost the chart's own
+buttons. `helm/report-viewer` grants the LIST through a ClusterRole
+(`templates/rbac.yaml`, `list` only) and projects the service-account token into the
+app container only while `actions.discovery.enabled` is on. It is on by default, like
+the launchpad's discovery.
 
 ### The invoke boundary relies on network isolation, not a signed assertion
 
@@ -229,13 +268,16 @@ three were removed outright rather than left in place once that was confirmed.
   than a config error, not a loud failure. Worth checking the rendered ConfigMap
   (`kubectl get configmap <release>-actions -o yaml`) after any gating change, not just
   assuming the values diff did what was intended.
-- The catalog is read once at process start; a ConfigMap edit needs the pod to restart
-  to take effect. The chart's `checksum/actions-configmap` Deployment annotation already
-  forces this on every relevant change, but there is no live re-read or TTL snapshot,
-  unlike ADR 0034's launchpad catalog.
-- Cross-namespace sidecar discovery (ADR 0034's mechanism for third-party contributions)
-  is not attempted here. A future need for actions contributed by a chart other than
-  report-viewer's own would require that increment.
+- The chart's own catalog is read once at process start; a ConfigMap edit needs the pod
+  to restart to take effect. The chart's `checksum/actions-configmap` Deployment
+  annotation already forces this on every relevant change. Published actions are
+  re-listed on a TTL instead and need no restart.
+- With discovery on, report-viewer's pod holds a service-account token that can list
+  ConfigMaps in every namespace (or the configured ones) and get each Secret an app has
+  granted it. Any workload that can create a labeled ConfigMap in a listed namespace can
+  add a button for users holding its `requiredRole`, or for everyone without one. The
+  same namespace-trust trade-off ADR 0034 accepts for launchpad chips; a site can narrow
+  `actions.discovery.namespace`.
 - The invoke boundary relies entirely on the shared invoke token plus network isolation
   (see above) — it does not cryptographically bind the request body: nothing ties the
   `reports` payload to a specific invocation beyond trusting report-viewer's own
@@ -307,7 +349,10 @@ change in OWUI's embedding, not in this repo.
 | Option | Verdict |
 | --- | --- |
 | Keeping Keycloak group membership (the design this ADR shipped with first) | Superseded: it existed only because the SPA's own requests had no way to carry a Bearer JWT. Once Traefik could inject one on every request (739-bearer-token-spike), the reason to prefer groups over client roles — Scout's normal per-service role-vocabulary pattern — no longer applied |
-| Cross-namespace sidecar ConfigMap discovery (full ADR 0034 parity) | Deferred: every action today ships from report-viewer's own chart; no third-party-contribution use case yet to justify the RBAC/sidecar cost |
+| Sidecar file-sync discovery of published actions (full ADR 0034 parity) | Rejected for actions: the token Secret's namespace must come from the ConfigMap's metadata, which the sidecar only exposes through the filenames it generates, and report-viewer needs API access for the by-name Secret read anyway. An in-process LIST keeps the namespace in hand, adds no image to pin or carry into an air-gapped install, and needs only `list` on ConfigMaps |
+| Token value in the published ConfigMap | Rejected for the reason `actions-secret.yaml` exists: a ConfigMap has no access-control distinction from other config |
+| Cluster-wide Secret `list`/`watch` so a sidecar could sync published tokens | Rejected: it would hand report-viewer every Secret in the cluster; a `resourceNames` grant from each app limits it to the one Secret that app chose to share |
+| Projected, audience-bound service-account tokens instead of a shared invoke token | Deferred: removes shared secrets entirely, but changes every target's contract (each would verify report-viewer's token, e.g. by TokenReview). Out of scope for letting a chart publish a button |
 | Client-side-only visibility (hide with CSS/JS, no server-side filter) | Rejected outright: the full descriptor, including any secret material, would round-trip to every browser regardless of role membership |
 | `invoke_token` as an `ActionDescriptor` field (`Field(exclude=True)`), catalog stays a single ConfigMap | Rejected: `exclude=True` only stops it leaving the process over the API — it would still sit in plaintext in the catalog ConfigMap, readable by anyone with ConfigMap-read RBAC in the namespace. Moved to a Secret-backed volume keyed by action id instead |
 | Self-signed HS256 `X-Report-Viewer-User-Assertion`, independent of `invoke_token` | Superseded: implemented first, removed after review revealed the scenario it defended against (the invoke token leaking in isolation, without report-viewer's own pod also being compromised) doesn't survive the invoke endpoint's required network isolation — see the invoke-boundary section above |

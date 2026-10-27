@@ -62,6 +62,16 @@ spec:
           env:
             - name: REPORT_VIEWER_PORT
               value: {{ .Values.service.port | quote }}
+            {{- with .Values.actions.discovery }}
+            {{- if .enabled }}
+            - name: REPORT_VIEWER_ACTION_DISCOVERY_ENABLED
+              value: 'true'
+            - name: REPORT_VIEWER_ACTION_DISCOVERY_NAMESPACE
+              value: {{ .namespace | quote }}
+            - name: REPORT_VIEWER_ACTION_DISCOVERY_TTL_SECONDS
+              value: {{ .ttlSeconds | quote }}
+            {{- end }}
+            {{- end }}
             {{- if .Values.trinoCaCert }}
             - name: REPORT_VIEWER_TRINO_CA_CERT
               value: /etc/trino-ca/ca.crt
@@ -111,6 +121,12 @@ spec:
             - name: action-tokens
               mountPath: /app/action-tokens
               readOnly: true
+            {{- if .Values.actions.discovery.enabled }}
+            # Action discovery's Kubernetes API reads (scout_report_viewer/kube.py).
+            - name: kube-api-access
+              mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+              readOnly: true
+            {{- end }}
             {{- if .Values.trinoCaCert }}
             - name: trino-ca
               mountPath: /etc/trino-ca
@@ -130,6 +146,24 @@ spec:
         - name: action-tokens
           secret:
             secretName: {{ include "report-viewer.fullname" . }}-action-tokens
+        {{- if .Values.actions.discovery.enabled }}
+        - name: kube-api-access
+          projected:
+            sources:
+              - serviceAccountToken:
+                  path: token
+                  expirationSeconds: 3607
+              - configMap:
+                  name: kube-root-ca.crt
+                  items:
+                    - key: ca.crt
+                      path: ca.crt
+              - downwardAPI:
+                  items:
+                    - path: namespace
+                      fieldRef:
+                        fieldPath: metadata.namespace
+        {{- end }}
         {{- if .Values.trinoCaCert }}
         - name: trino-ca
           secret:

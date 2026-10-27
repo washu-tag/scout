@@ -34,12 +34,12 @@ from fastapi import (
     status,
 )
 
-from .. import metrics, progress, trino_client
+from .. import kube, metrics, progress, trino_client
 from ..actions import (
     ActionDescriptor,
+    current_catalog,
     is_safe_action_url,
     list_actions,
-    load_invoke_token,
 )
 from ..evidence import EV_COLUMNS, with_evidence
 from ..store import SearchStore, get_store
@@ -470,7 +470,7 @@ async def get_search_actions(
     ds = await store.get_search(search_id, owner_sub=user.sub)
     if ds is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    return list_actions(user.roles)
+    return await list_actions(user.roles)
 
 
 @router.post(
@@ -489,7 +489,7 @@ async def invoke_search_action(
     does - it forwards the search's context to the action's own
     endpoint_url (a separately deployed service, e.g. xnat-explore-poc)
     and relays back whatever result URL it returns. Looked up through
-    list_actions(user.roles), not the raw catalog, so a role-gated
+    Catalog.visible(user.roles), not the raw catalog, so a role-gated
     action the caller can't even see can't be invoked either - visibility
     is UX, but the boundary is still enforced here too.
 
@@ -505,7 +505,8 @@ async def invoke_search_action(
     if ds is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
-    action = next((a for a in list_actions(user.roles) if a.id == action_id), None)
+    catalog = await current_catalog()
+    action = next((a for a in catalog.visible(user.roles) if a.id == action_id), None)
     if (
         action is None
         or action.action_type != "backend-call"
@@ -564,7 +565,14 @@ async def invoke_search_action(
         reports = [r for r in reports if r["primary_report_identifier"] in visible]
 
     headers = {}
-    invoke_token = load_invoke_token(action.id)
+    try:
+        invoke_token = await catalog.invoke_token(action.id)
+    except kube.KubeError:
+        log.exception("action %s invoke token unavailable", scrub_for_log(action_id))
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="action invoke failed: its token is unavailable",
+        )
     if invoke_token:
         headers["X-Report-Viewer-Action-Token"] = invoke_token
     try:

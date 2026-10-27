@@ -10,11 +10,14 @@ shared JWKS-mocking/`mint_token` fixtures these tests use.
 
 from __future__ import annotations
 
+import base64
+
 import httpx
 import pytest
+import yaml
 from pydantic import ValidationError
 
-from scout_report_viewer import actions
+from scout_report_viewer import actions, kube
 from scout_report_viewer.actions import (
     ActionDescriptor,
     is_safe_action_url,
@@ -26,16 +29,15 @@ from scout_report_viewer.config import settings
 
 from .conftest import mint_token
 
-
 # --- Pure-function tests: no fixtures required ---------------------------
 
 
-def test_default_catalog_matches_shipped_toolbar():
+async def test_default_catalog_matches_shipped_toolbar():
     """The no-ConfigMap-mounted floor must be exactly today's real
     toolbar (explain-search, download-csv) - see actions.py's
     _DEFAULT_CATALOG docstring. Demo/example entries belong in a test's
     own monkeypatched catalog, not this fallback."""
-    ids = {a.id for a in list_actions(frozenset())}
+    ids = {a.id for a in await list_actions(frozenset())}
     assert ids == {"explain-search", "download-csv"}
 
 
@@ -60,21 +62,23 @@ def catalog_with_admin_action(monkeypatch):
     return demo_catalog
 
 
-def test_list_actions_excludes_role_gated_action_without_role(
+async def test_list_actions_excludes_role_gated_action_without_role(
     catalog_with_admin_action,
 ):
-    ids = {a.id for a in list_actions(frozenset())}
+    ids = {a.id for a in await list_actions(frozenset())}
     assert "admin-only-demo" not in ids
     assert "download-csv" in ids
 
 
-def test_list_actions_includes_role_gated_action_with_role(catalog_with_admin_action):
-    ids = {a.id for a in list_actions(frozenset({_ADMIN_ROLE}))}
+async def test_list_actions_includes_role_gated_action_with_role(
+    catalog_with_admin_action,
+):
+    ids = {a.id for a in await list_actions(frozenset({_ADMIN_ROLE}))}
     assert "admin-only-demo" in ids
 
 
-def test_list_actions_sorted_by_weight(catalog_with_admin_action):
-    result = list_actions(frozenset({_ADMIN_ROLE}))
+async def test_list_actions_sorted_by_weight(catalog_with_admin_action):
+    result = await list_actions(frozenset({_ADMIN_ROLE}))
     weights = [a.weight for a in result]
     assert weights == sorted(weights)
 
@@ -523,3 +527,338 @@ def test_invoke_cohort_id_query_failure_returns_502(
         headers=bearer_headers,
     )
     assert r.status_code == 502
+
+
+# --- Discovery: actions other charts publish as labeled ConfigMaps --------
+
+
+def _configmap(namespace: str, name: str, **docs: str) -> dict:
+    return {
+        "metadata": {
+            "namespace": namespace,
+            "name": name,
+            "uid": f"{namespace}-{name}",
+            "resourceVersion": "1",
+        },
+        "data": docs,
+    }
+
+
+_SEND_TO_XNAT = """
+apiVersion: report-viewer.scout.xnat.org/v1alpha1
+kind: ActionCatalog
+actions:
+  - id: send-to-xnat
+    title: Send to XNAT
+    weight: 50
+    actionType: backend-call
+    endpointUrl: http://datasets-invoke.datasets.svc.cluster.local:8002/invoke
+    requiredRole: datasets-user
+    invokeTokenSecret: {name: datasets-invoke-token}
+"""
+
+
+def test_parse_discovered_reads_actions_and_token_refs():
+    found = actions.parse_discovered(
+        [_configmap("datasets", "datasets-actions", **{"actions.yaml": _SEND_TO_XNAT})],
+        reserved_ids=set(),
+    )
+    (action,) = found.actions
+    assert action.id == "send-to-xnat"
+    assert action.action_type == "backend-call"
+    assert action.required_role == "datasets-user"
+    assert found.tokens == {
+        "send-to-xnat": actions.TokenRef("datasets", "datasets-invoke-token", "token")
+    }
+
+
+@pytest.mark.parametrize(
+    "doc",
+    [
+        "not: [valid",
+        "apiVersion: report-viewer.scout.xnat.org/v1beta9\nkind: ActionCatalog\nactions: []",
+        "apiVersion: report-viewer.scout.xnat.org/v1alpha1\nkind: Catalog\nactions: []",
+        "apiVersion: report-viewer.scout.xnat.org/v1alpha1\nkind: ActionCatalog\nactions: {}",
+        "- id: a-list-not-a-document",
+        "[" * 5000,
+    ],
+)
+def test_parse_discovered_skips_a_bad_document_but_keeps_its_siblings(doc):
+    found = actions.parse_discovered(
+        [
+            _configmap(
+                "datasets", "x", **{"a-bad.yaml": doc, "b-good.yaml": _SEND_TO_XNAT}
+            )
+        ],
+        reserved_ids=set(),
+    )
+    assert [a.id for a in found.actions] == ["send-to-xnat"]
+
+
+@pytest.mark.parametrize(
+    "entry",
+    [
+        # A client action needs a frontend handler, so it can't be published.
+        {"id": "x", "title": "X", "actionType": "client", "clientHandler": "x"},
+        {"id": "x", "title": "X", "url": "javascript:alert(1)"},
+        {"id": "Bad_ID", "title": "X", "url": "https://example.org"},
+        {"id": "x", "title": "", "url": "https://example.org"},
+        # An unknown field, here the snake_case spelling, rejects the entry
+        # rather than publishing it without its role gate.
+        {
+            "id": "x",
+            "title": "X",
+            "url": "https://example.org",
+            "required_role": "report-viewer-admin",
+        },
+        {
+            "id": "x",
+            "title": "X",
+            "url": "https://example.org",
+            "invokeTokenSecret": {"name": "s"},
+        },
+        # The Secret's namespace is never taken from the document.
+        {
+            "id": "x",
+            "title": "X",
+            "actionType": "backend-call",
+            "endpointUrl": "http://t.svc:8000/invoke",
+            "invokeTokenSecret": {"name": "s", "namespace": "other"},
+        },
+    ],
+)
+def test_parse_discovered_skips_an_invalid_entry_but_keeps_the_rest(entry):
+    doc = yaml.safe_dump(
+        {
+            "apiVersion": actions.CATALOG_API_VERSION,
+            "kind": actions.CATALOG_KIND,
+            "actions": [entry, {"id": "ok", "title": "OK", "url": "https://ok.org"}],
+        }
+    )
+    found = actions.parse_discovered(
+        [_configmap("ns", "cm", **{"a.yaml": doc})], reserved_ids=set()
+    )
+    assert [a.id for a in found.actions] == ["ok"]
+
+
+def test_parse_discovered_rejects_taken_ids_in_a_stable_order():
+    doc = _SEND_TO_XNAT.replace("datasets-invoke-token", "{ns}-token")
+    found = actions.parse_discovered(
+        [
+            _configmap("zeta", "cm", **{"a.yaml": doc.replace("{ns}", "zeta")}),
+            _configmap("alpha", "cm", **{"a.yaml": doc.replace("{ns}", "alpha")}),
+            _configmap(
+                "alpha",
+                "cm2",
+                **{
+                    "a.yaml": doc.replace("send-to-xnat", "download-csv").replace(
+                        "{ns}", "alpha"
+                    )
+                },
+            ),
+        ],
+        reserved_ids={"download-csv"},
+    )
+    assert [a.id for a in found.actions] == ["send-to-xnat"]
+    assert found.tokens["send-to-xnat"].namespace == "alpha"
+
+
+@pytest.fixture
+def discovery(monkeypatch):
+    """Discovery on, a fresh snapshot, and a fake Kubernetes API that serves
+    `configmaps` (per namespace, None = all) and records each list."""
+    monkeypatch.setattr(settings, "action_discovery_enabled", True)
+    monkeypatch.setattr(settings, "action_discovery_namespace", "ALL")
+    monkeypatch.setattr(actions, "_snapshot", actions._Snapshot())
+    state = {
+        "configmaps": {
+            None: [_configmap("datasets", "cm", **{"a.yaml": _SEND_TO_XNAT})]
+        },
+        "lists": [],
+        "fail": False,
+        "secrets": {},
+    }
+
+    async def list_configmaps(label_selector, namespace):
+        assert label_selector == f"{actions.DISCOVERY_LABEL}=true"
+        state["lists"].append(namespace)
+        if state["fail"]:
+            raise kube.KubeError("API unreachable")
+        return state["configmaps"].get(namespace, [])
+
+    async def secret_value(namespace, name, key):
+        try:
+            return state["secrets"][(namespace, name, key)]
+        except KeyError:
+            raise kube.KubeError("forbidden") from None
+
+    monkeypatch.setattr(kube, "list_configmaps", list_configmaps)
+    monkeypatch.setattr(kube, "secret_value", secret_value)
+    return state
+
+
+async def test_discovery_off_lists_nothing(discovery, monkeypatch):
+    monkeypatch.setattr(settings, "action_discovery_enabled", False)
+    ids = {a.id for a in await list_actions(frozenset({"datasets-user"}))}
+    assert ids == {"explain-search", "download-csv"}
+    assert discovery["lists"] == []
+
+
+async def test_discovered_action_is_role_gated_and_merged(discovery):
+    assert "send-to-xnat" not in {a.id for a in await list_actions(frozenset())}
+    visible = await list_actions(frozenset({"datasets-user"}))
+    assert [a.id for a in visible] == ["explain-search", "download-csv", "send-to-xnat"]
+
+
+async def test_discovery_relists_only_after_the_ttl(discovery, monkeypatch):
+    await list_actions(frozenset())
+    await list_actions(frozenset())
+    assert discovery["lists"] == [None]
+    monkeypatch.setattr(actions._snapshot, "checked_at", float("-inf"))
+    discovery["configmaps"] = {None: []}
+    assert {a.id for a in await list_actions(frozenset({"datasets-user"}))} == {
+        "explain-search",
+        "download-csv",
+    }
+
+
+async def test_discovery_failure_keeps_the_last_catalog(discovery, monkeypatch):
+    await list_actions(frozenset())
+    monkeypatch.setattr(actions._snapshot, "checked_at", float("-inf"))
+    discovery["fail"] = True
+    ids = {a.id for a in await list_actions(frozenset({"datasets-user"}))}
+    assert "send-to-xnat" in ids
+
+
+async def test_discovery_error_of_any_kind_keeps_the_chart_catalog(
+    discovery, monkeypatch
+):
+    await list_actions(frozenset())
+    monkeypatch.setattr(actions._snapshot, "checked_at", float("-inf"))
+
+    def broken(*args):
+        raise RuntimeError("unexpected")
+
+    monkeypatch.setattr(actions, "parse_discovered", broken)
+    discovery["configmaps"][None][0]["metadata"]["resourceVersion"] = "2"
+    ids = [a.id for a in await list_actions(frozenset({"datasets-user"}))]
+    assert ids == ["explain-search", "download-csv", "send-to-xnat"]
+    assert discovery["lists"] == [None, None]
+    await list_actions(frozenset())
+    assert discovery["lists"] == [None, None]
+
+
+async def test_discovery_lists_each_configured_namespace(discovery, monkeypatch):
+    monkeypatch.setattr(settings, "action_discovery_namespace", "datasets, other")
+    await list_actions(frozenset())
+    assert sorted(discovery["lists"]) == ["datasets", "other"]
+
+
+async def test_discovered_token_is_read_from_its_own_namespace(discovery):
+    discovery["secrets"][("datasets", "datasets-invoke-token", "token")] = "s3cret"
+    catalog = await actions.current_catalog()
+    assert await catalog.invoke_token("send-to-xnat") == "s3cret"
+
+
+async def test_discovered_action_never_uses_a_chart_token_file(
+    discovery, tmp_path, monkeypatch
+):
+    doc = _SEND_TO_XNAT.replace(
+        "    invokeTokenSecret: {name: datasets-invoke-token}\n", ""
+    )
+    discovery["configmaps"] = {None: [_configmap("datasets", "cm", **{"a.yaml": doc})]}
+    monkeypatch.setattr(settings, "action_tokens_path", str(tmp_path))
+    (tmp_path / "send-to-xnat").write_text("chart-token")
+    catalog = await actions.current_catalog()
+    assert await catalog.invoke_token("send-to-xnat") is None
+
+
+async def test_unreadable_discovered_token_raises(discovery):
+    catalog = await actions.current_catalog()
+    with pytest.raises(kube.KubeError):
+        await catalog.invoke_token("send-to-xnat")
+
+
+def test_invoke_discovered_action_sends_its_secret_token(
+    client, keypair, fake_trino, discovery, monkeypatch
+):
+    discovery["secrets"][("datasets", "datasets-invoke-token", "token")] = "s3cret"
+    monkeypatch.setattr(httpx, "AsyncClient", _FakeAsyncClient)
+    _FakeAsyncClient.last_call = None
+    priv, _ = keypair
+    headers = _bearer_headers(priv, roles=["datasets-user"])
+    search_id = _create_search(client, headers, fake_trino)
+    fake_trino(
+        ["primary_report_identifier", "accession_number"],
+        [{"primary_report_identifier": "s3://x/1", "accession_number": "ACC1"}],
+    )
+    r = client.post(
+        f"/api/searches/{search_id}/actions/send-to-xnat/invoke", headers=headers
+    )
+    assert r.status_code == 200, r.text
+    call = _FakeAsyncClient.last_call
+    assert (
+        call["url"] == "http://datasets-invoke.datasets.svc.cluster.local:8002/invoke"
+    )
+    assert call["headers"]["X-Report-Viewer-Action-Token"] == "s3cret"
+
+
+def test_invoke_discovered_action_without_its_token_is_502(
+    client, keypair, fake_trino, discovery, monkeypatch
+):
+    monkeypatch.setattr(httpx, "AsyncClient", _FakeAsyncClient)
+    _FakeAsyncClient.last_call = None
+    priv, _ = keypair
+    headers = _bearer_headers(priv, roles=["datasets-user"])
+    search_id = _create_search(client, headers, fake_trino)
+    fake_trino(
+        ["primary_report_identifier", "accession_number"],
+        [{"primary_report_identifier": "s3://x/1", "accession_number": "ACC1"}],
+    )
+    r = client.post(
+        f"/api/searches/{search_id}/actions/send-to-xnat/invoke", headers=headers
+    )
+    assert r.status_code == 502
+    assert _FakeAsyncClient.last_call is None
+
+
+# --- kube -----------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("host", "expected"),
+    [
+        ("10.43.0.1", "https://10.43.0.1:443"),
+        ("fd00:10:96::1", "https://[fd00:10:96::1]:443"),
+    ],
+)
+def test_base_url_brackets_an_ipv6_host(monkeypatch, host, expected):
+    monkeypatch.setenv("KUBERNETES_SERVICE_HOST", host)
+    monkeypatch.setenv("KUBERNETES_SERVICE_PORT", "443")
+    assert kube._base_url() == expected
+    httpx.URL(kube._base_url())
+
+
+@pytest.mark.parametrize(
+    ("data", "expected"),
+    [
+        ({"token": base64.b64encode(b" s3cret\n").decode()}, "s3cret"),
+        ({}, None),
+        ({"token": ""}, None),
+        ({"token": "%%%"}, None),
+    ],
+)
+async def test_secret_value(monkeypatch, data, expected):
+    async def get(path):
+        assert path == "/api/v1/namespaces/datasets/secrets/datasets-invoke-token"
+        return {"data": data}
+
+    monkeypatch.setattr(kube, "_get", get)
+    if expected is None:
+        with pytest.raises(kube.KubeError):
+            await kube.secret_value("datasets", "datasets-invoke-token", "token")
+    else:
+        assert (
+            await kube.secret_value("datasets", "datasets-invoke-token", "token")
+            == expected
+        )
