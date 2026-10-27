@@ -48,6 +48,9 @@ spec:
     dataStorage:
       enabled: true
       requestedSize: '${valkey_storage_size}'
+    # One replica on a ReadWriteOnce volume: a RollingUpdate surge pod waits on the volume
+    # the old pod holds, so the Helm upgrade times out. Recreate frees it first.
+    deploymentStrategy: Recreate
     resources:
       requests:
         cpu: 100m
