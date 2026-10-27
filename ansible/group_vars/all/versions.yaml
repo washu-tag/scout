@@ -188,6 +188,11 @@ xnat_chart_version: 4.0.1
 # data-generator Helm chart, OCI artifact on GHCR (Renovate-monitored, ADR 0015).
 # renovate: datasource=docker depName=ghcr.io/washu-tag/charts/data-generator
 data_generator_chart_version: 1.0.0
+
+# Telepresence traffic manager Helm chart, OCI artifact on GHCR (Renovate-monitored, ADR 0015).
+# Developers' telepresence CLI should match this version.
+# renovate: datasource=docker depName=ghcr.io/telepresenceio/telepresence-oss
+telepresence_chart_version: 2.26.0
 # Built + published by this repo's CI (ADR 0030 phase 0); NOT Renovate-tracked (self-ref).
 # On-prem Ansible pin only; the GitOps lane owns the real version (OCIRepository, ADR 0031).
 hl7_transformer_chart_version: 0.0.0

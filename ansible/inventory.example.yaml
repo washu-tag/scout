@@ -711,6 +711,11 @@ k3s_cluster:
     # enable_hl7_listener: true
 
     #---------------------------------------------------------------------------
+    # Telepresence (developer access to the cluster network; ansible/roles/telepresence)
+    #---------------------------------------------------------------------------
+    # enable_telepresence: true
+
+    #---------------------------------------------------------------------------
     # Chatbot (Open WebUI)
     #---------------------------------------------------------------------------
     # Uncomment the following line to enable the Chat service

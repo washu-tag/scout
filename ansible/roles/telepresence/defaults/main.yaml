@@ -1,0 +1,14 @@
+---
+# Telepresence traffic manager (OSS chart, OCI artifact on GHCR). The chart version
+# is pinned in group_vars/all/versions.yaml (telepresence_chart_version).
+telepresence_chart_oci_ref: oci://ghcr.io/telepresenceio/telepresence-oss
+
+# The telepresence CLI looks for the traffic manager in "ambassador" unless
+# --manager-namespace is passed, so keep this default unless clients are told otherwise.
+telepresence_namespace: ambassador
+telepresence_helm_release_name: traffic-manager
+telepresence_helm_timeout: 5m
+
+# Passed through to the chart as-is (e.g. to restrict the namespaces the traffic
+# manager may intercept in).
+telepresence_helm_values: {}

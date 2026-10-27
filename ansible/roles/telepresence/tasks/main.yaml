@@ -1,0 +1,20 @@
+---
+- name: Create Telepresence namespace
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ telepresence_namespace }}'
+
+- name: Deploy Telepresence traffic manager
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: '{{ telepresence_helm_release_name }}'
+    helm_chart_ref: '{{ telepresence_chart_oci_ref }}'
+    helm_chart_version: '{{ telepresence_chart_version }}'
+    helm_chart_namespace: '{{ telepresence_namespace }}'
+    helm_chart_create_namespace: false
+    helm_chart_timeout: '{{ telepresence_helm_timeout }}'
+    helm_chart_values: '{{ telepresence_helm_values }}'
