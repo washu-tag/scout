@@ -13,19 +13,13 @@
 - name: Configure staging CA trust
   when: package_proxy_mode == 'nexus'
   block:
-    - name: Check if staging node uses self-signed cert
-      ansible.builtin.set_fact:
-        _staging_uses_self_signed: >-
-          {{ (hostvars[(groups['staging'] | default([inventory_hostname]))[0]].tls_cert_path | default(staging_self_signed_tls_cert_path)) == staging_self_signed_tls_cert_path }}
-      run_once: true
-
     - name: Slurp staging CA certificate
       ansible.builtin.slurp:
-        src: '{{ hostvars[(groups["staging"] | default([inventory_hostname]))[0]].tls_cert_path | default(staging_self_signed_tls_cert_path) }}'
-      delegate_to: "{{ (groups['staging'] | default([inventory_hostname]))[0] }}"
+        src: '{{ staging_tls_cert_path }}'
+      delegate_to: "{{ (groups['staging'] | default([inventory_hostname], true))[0] }}"
       register: _staging_ca_cert
       run_once: true
-      when: _staging_uses_self_signed | bool
+      when: staging_uses_self_signed_cert | bool
 
     - name: Install staging CA into system trust store
       ansible.builtin.copy:
@@ -33,11 +27,11 @@
         dest: /etc/pki/ca-trust/source/anchors/staging-ca.crt
         mode: '0644'
       register: _staging_ca_installed
-      when: _staging_uses_self_signed | bool
+      when: staging_uses_self_signed_cert | bool
 
     - name: Update system CA trust
       ansible.builtin.command: update-ca-trust
       changed_when: true
       when:
-        - _staging_uses_self_signed | bool
+        - staging_uses_self_signed_cert | bool
         - _staging_ca_installed is changed

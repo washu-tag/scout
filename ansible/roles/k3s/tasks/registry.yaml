@@ -5,7 +5,7 @@
 
 - name: Check if staging node is enabled
   ansible.builtin.set_fact:
-    use_staging_node: "{{ 'staging' in groups and air_gapped | default(false) | bool }}"
+    use_staging_node: "{{ (groups['staging'] | default([]) | length > 0) and air_gapped | default(false) | bool }}"
 
 - name: Debug log if staging node not enabled
   ansible.builtin.debug:
@@ -37,7 +37,6 @@
       ansible.builtin.set_fact:
         staging_hostname: "{{ hostvars[groups['staging'][0]].external_url | default(groups['staging'][0]) }}"
         staging_harbor_subdomain: "{{ hostvars[groups['staging'][0]].harbor_subdomain | default(harbor_subdomain) }}"
-        staging_uses_self_signed_cert: "{{ (hostvars[groups['staging'][0]].tls_cert_path | default(staging_self_signed_tls_cert_path)) == staging_self_signed_tls_cert_path }}"
       run_once: true
 
     - name: Compute Harbor URL components
@@ -67,7 +66,7 @@
 
     - name: Slurp staging self-signed certificate
       ansible.builtin.slurp:
-        src: '{{ staging_self_signed_tls_cert_path }}'
+        src: '{{ staging_tls_cert_path }}'
       delegate_to: "{{ groups['staging'][0] | default('localhost') }}"
       register: slurped_staging_cert
       run_once: true
@@ -101,8 +100,34 @@
         mode: '0644'
       register: registry_config_task_result
 
+- name: Disable public fallback for staging registry mirrors
+  when: use_staging_node
+  block:
+    - name: Create native K3s configuration directory
+      ansible.builtin.file:
+        path: /etc/rancher/k3s/config.yaml.d
+        state: directory
+        mode: '0755'
+
+    - name: Configure mirror-only registry resolution
+      ansible.builtin.copy:
+        dest: /etc/rancher/k3s/config.yaml.d/zz-scout-registry.yaml
+        content: |
+          disable-default-registry-endpoint: true
+        mode: '0644'
+      register: registry_endpoint_config
+
+- name: Remove mirror-only configuration when staging is disabled
+  ansible.builtin.file:
+    path: /etc/rancher/k3s/config.yaml.d/zz-scout-registry.yaml
+    state: absent
+  when: not use_staging_node
+  register: registry_endpoint_removal
+
 - name: Determine if registry config changed
   ansible.builtin.set_fact:
     registry_config_changed: >-
       {{ (registry_config_task_result is defined and registry_config_task_result.changed | default(false)) or
-         (registry_removal_task_result is defined and registry_removal_task_result.changed | default(false)) }}
+         (registry_removal_task_result is defined and registry_removal_task_result.changed | default(false)) or
+         (registry_endpoint_config.changed | default(false)) or
+         (registry_endpoint_removal.changed | default(false)) }}

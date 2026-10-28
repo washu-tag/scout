@@ -1,7 +1,7 @@
 # Stage 1: build the Vite SPA. Output lands at
 # /work/src/scout_report_viewer/static (vite.config.ts writes to
 # `../src/scout_report_viewer/static` relative to the frontend dir).
-FROM node:25-alpine AS frontend
+FROM node:24-alpine AS frontend
 WORKDIR /work
 COPY frontend/package.json frontend/package-lock.json frontend/
 RUN cd frontend && npm ci
@@ -15,7 +15,7 @@ FROM python:3.12-slim AS base
 # until upstream rebuilds. No-op once the base image catches up.
 RUN apt-get update && apt-get install -y --no-install-recommends --only-upgrade \
         bsdutils libblkid1 liblastlog2-2 libmount1 libsmartcols1 libuuid1 login mount util-linux \
-        libssl3t64 openssl openssl-provider-legacy \
+        ca-certificates libssl3t64 openssl openssl-provider-legacy \
         perl-base libsqlite3-0 gzip libpcre2-8-0 \
     && rm -rf /var/lib/apt/lists/*
 
@@ -29,7 +29,11 @@ WORKDIR /app
 COPY pyproject.toml /app/
 COPY src /app/src
 COPY --from=frontend /work/src/scout_report_viewer/static /app/src/scout_report_viewer/static
-RUN pip install .
+# pip's default context adds its vendored certifi (CVE-2026-91403) to the system store, so only
+# legacy-certs plus --cert installs over the system bundle alone. Then drop pip, which nothing
+# uses at runtime.
+RUN pip install --use-deprecated=legacy-certs --cert /etc/ssl/certs/ca-certificates.crt . \
+    && pip uninstall -y pip
 
 EXPOSE 8000
 

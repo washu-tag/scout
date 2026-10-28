@@ -59,6 +59,9 @@ grafana_plugins:
 grafana_plugins_harbor_project: grafana-plugins
 grafana_plugins_harbor_robot_name: robot$grafana-plugin-puller
 
+grafana_plugins_registry_ca_path: >-
+  {{ _staging_tls_hostvars.staging_api_ca_path | default(staging_api_ca_path) }}
+grafana_plugins_registry_ca_configmap: grafana-plugin-registry-ca
 # ORAS image for plugin push/pull operations
 # This image is pulled through Harbor's ghcr proxy in air-gapped mode
 oras_version: 1.3.4

@@ -93,6 +93,9 @@ extraInitContainers:
         mountPath: /var/lib/grafana/plugins
       - name: plugin-config
         mountPath: /config
+      - name: registry-ca
+        mountPath: /etc/registry-ca
+        readOnly: true
     command:
       - /bin/sh
       - -c
@@ -106,10 +109,11 @@ extraInitContainers:
 
         # Login to Harbor registry
         echo "Logging into Harbor registry..."
-        oras login "${REGISTRY}" \
+        printf '%s' "${REGISTRY_PASSWORD}" | oras login "${REGISTRY}" \
           --username "${REGISTRY_USERNAME}" \
-          --password "${REGISTRY_PASSWORD}" \
-          --insecure
+          --password-stdin \
+          --plain-http=false \
+          --ca-file /etc/registry-ca/ca.crt
 
         # Parse and install each plugin
         echo "Installing plugins..."
@@ -128,7 +132,8 @@ extraInitContainers:
             cd /tmp
 
             oras pull "${REGISTRY}/${PROJECT}/${PLUGIN_ID}:${PLUGIN_VERSION}" \
-              --insecure \
+              --plain-http=false \
+              --ca-file /etc/registry-ca/ca.crt \
               --output /tmp
 
             # Extract plugin
@@ -152,6 +157,9 @@ extraContainerVolumes:
   - name: plugin-config
     configMap:
       name: grafana-plugin-config
+  - name: registry-ca
+    configMap:
+      name: '{{ grafana_plugins_registry_ca_configmap }}'
 
 extraVolumeMounts:
   - name: plugins

@@ -18,6 +18,20 @@
       Example: openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
     quiet: true
 
+# Mirrors XNAT 1.10.1's hash-detection heuristic, including its [A-z] range.
+- name: Validate the first-boot administrator password
+  ansible.builtin.assert:
+    that:
+      - xnat_admin_password is not match('^([0-9A-Fa-f]{64}([{][A-Za-z0-9]{64}[}])?|[{][A-z0-9-]{3,7}[}].*)$')
+    fail_msg: >-
+      XNAT 1.10.1 interprets this administrator password as an encoded value.
+      Choose a different plaintext xnat_admin_password that does not resemble a
+      legacy hash or start with an encoding prefix such as {bcrypt}.
+      For an initialized site, rotate the administrator password through XNAT
+      and update inventory to match; editing the first-boot seed does not
+      change the existing account.
+    quiet: true
+
 # Plugin names/entries become Kubernetes object names (Secrets, volumes, init
 # containers), which must be lowercase RFC 1123 — fail fast with a clear
 # message instead of a mid-deploy API-server rejection.
@@ -105,6 +119,8 @@
   ansible.builtin.include_role:
     name: scout_common
     tasks_from: deploy_helm_chart
+    apply:
+      no_log: true
   vars:
     helm_chart_name: '{{ xnat_helm_release_name }}'
     # Pull the published OCI chart from GHCR (helm runs on the jump node via the

@@ -241,7 +241,7 @@ jobs:
         with:
           python-version: '3.12'
           cache: 'pip'
-      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
@@ -326,7 +326,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
@@ -349,7 +349,7 @@ jobs:
       # Spark 4.1.x runs on Java 17 or 21; use the repo default JAVA_VERSION (21) like
       # every other Java job. Spark/Delta versions are read from the package's
       # pyproject.toml, so this job pins no versions.
-      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
@@ -403,6 +403,12 @@ jobs:
       - name: 'Unit tests: filter plugins'
         shell: bash
         run: cd ansible && pytest tests/unit/filter_plugins/ -v
+      - name: 'Ansible tests: Grafana staging CA selection'
+        shell: bash
+        run: |
+          cd ansible
+          ansible-playbook -i localhost, tests/unit/roles/grafana-ca.yaml
+          ansible-playbook -i tests/unit/roles/grafana-ca-inventory.yaml tests/unit/roles/grafana-ca.yaml
       - name: 'Unit tests: Open WebUI link sanitizer filter'
         shell: bash
         run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_link_sanitizer_filter.py -v
@@ -644,7 +650,7 @@ jobs:
           cosign-release: v3.0.6
       - name: Set up Java for Gradle cache warming
         if: matrix.leg == 'ingest'
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad
         with:
           distribution: ${{ env.JAVA_DIST }}
           java-version: ${{ env.JAVA_VERSION }}
@@ -978,7 +984,7 @@ jobs:
         run: |
           /opt/pipx/venvs/ansible-core/bin/python -m pip install kubernetes
       - name: 'Set up Java for Gradle cache warming'
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}

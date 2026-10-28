@@ -1,0 +1,121 @@
+---
+- name: Verify Grafana staging CA selection
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ../../../roles/scout_common/defaults/main.yaml
+    - ../../../roles/grafana/defaults/main.yaml
+  tasks:
+    - name: Verify independent production and staging certificate settings
+      ansible.builtin.assert:
+        that:
+          - grafana_plugins_registry_ca_path == item.expected
+          - staging_uses_self_signed_cert == item.self_signed
+      vars:
+        tls_cert_path: '{{ item.production_certificate }}'
+        _staging_tls_hostvars: '{{ item.staging }}'
+      loop:
+        - name: Production public CA and staging generated certificate
+          production_certificate: /etc/enterprise/production.crt
+          staging: {}
+          expected: /etc/rancher/k3s/tls/staging-tls.crt
+          self_signed: true
+        - name: Production generated certificate and staging public CA
+          production_certificate: /etc/rancher/k3s/tls/staging-tls.crt
+          staging:
+            tls_cert_path: /etc/enterprise/staging.crt
+          expected: ''
+          self_signed: false
+        - name: Explicit staging CA bundle
+          production_certificate: /etc/enterprise/production.crt
+          staging:
+            staging_api_ca_path: /etc/enterprise/staging-ca-bundle.crt
+          expected: /etc/enterprise/staging-ca-bundle.crt
+          self_signed: true
+        - name: Explicit staging system trust
+          production_certificate: /etc/rancher/k3s/tls/staging-tls.crt
+          staging:
+            staging_api_ca_path: ''
+          expected: ''
+          self_signed: true
+        - name: Custom staging generated certificate path
+          production_certificate: /etc/enterprise/production.crt
+          staging:
+            staging_self_signed_tls_cert_path: /etc/scout/staging-tls.crt
+          expected: /etc/scout/staging-tls.crt
+          self_signed: true
+        - name: Initialized staging generated certificate
+          production_certificate: /etc/enterprise/production.crt
+          staging:
+            staging_self_signed_tls_cert_path: /etc/scout/staging-tls.crt
+            tls_cert_path: /etc/scout/staging-tls.crt
+          expected: /etc/scout/staging-tls.crt
+          self_signed: true
+        - name: Both generated certificate defaults
+          production_certificate: /etc/rancher/k3s/tls/staging-tls.crt
+          staging: {}
+          expected: /etc/rancher/k3s/tls/staging-tls.crt
+          self_signed: true
+      loop_control:
+        label: '{{ item.name }}'
+
+    - name: Verify non-air-gapped defaults do not require staging host variables
+      ansible.builtin.assert:
+        that:
+          - _staging_vars is undefined
+          - grafana_plugins_registry_ca_path == staging_self_signed_tls_cert_path
+          - staging_uses_self_signed_cert
+      vars:
+        air_gapped: false
+
+    - name: Verify missing or empty staging inventory falls back safely
+      ansible.builtin.assert:
+        that:
+          - groups['staging'] | default([]) | length == 0
+          - staging_tls_cert_path == staging_self_signed_tls_cert_path
+          - grafana_plugins_registry_ca_path == staging_self_signed_tls_cert_path
+
+    - name: Add the synthetic staging host without running its roles
+      ansible.builtin.add_host:
+        name: grafana-ca-staging
+        groups: staging
+        ansible_connection: local
+
+    - name: Add a synthetic application host with separate TLS settings
+      ansible.builtin.add_host:
+        name: grafana-ca-application
+        groups: grafana_ca_application
+        ansible_connection: local
+        tls_cert_path: /etc/enterprise/production.crt
+        staging_self_signed_tls_cert_path: /etc/scout/production-generated.crt
+
+- name: Verify standalone application roles resolve staging inventory
+  hosts: grafana_ca_application
+  gather_facts: false
+  vars_files:
+    - ../../../roles/grafana/defaults/main.yaml
+  roles:
+    - role: scout_common
+  tasks:
+    - name: Verify application overrides do not change staging defaults
+      ansible.builtin.assert:
+        that:
+          - _staging_vars is undefined
+          - staging_uses_self_signed_cert
+          - staging_tls_cert_path == '/etc/rancher/k3s/tls/staging-tls.crt'
+          - staging_api_ca_path == '/etc/rancher/k3s/tls/staging-tls.crt'
+          - grafana_plugins_registry_ca_path == '/etc/rancher/k3s/tls/staging-tls.crt'
+
+    - name: Override the generated certificate path only on staging
+      ansible.builtin.add_host:
+        name: grafana-ca-staging
+        staging_self_signed_tls_cert_path: /etc/scout/staging-tls.crt
+
+    - name: Verify the shared defaults use the staging path override
+      ansible.builtin.assert:
+        that:
+          - staging_uses_self_signed_cert
+          - staging_tls_cert_path == '/etc/scout/staging-tls.crt'
+          - staging_api_ca_path == '/etc/scout/staging-tls.crt'
+          - grafana_plugins_registry_ca_path == '/etc/scout/staging-tls.crt'

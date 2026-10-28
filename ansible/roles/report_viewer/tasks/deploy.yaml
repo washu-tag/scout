@@ -43,6 +43,8 @@
   ansible.builtin.include_role:
     name: scout_common
     tasks_from: deploy_helm_chart
+    apply:
+      no_log: true
   vars:
     helm_chart_name: '{{ report_viewer_helm_release_name }}'
     helm_chart_ref: '{{ report_viewer_helm_chart_ref }}'

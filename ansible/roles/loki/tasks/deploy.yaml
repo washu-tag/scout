@@ -17,6 +17,7 @@
     sa_role_arn: '{{ loki_writer_role_arn }}'
 
 - name: Create S3 secret for Loki
+  no_log: true
   when: not aws_deployment
   kubernetes.core.k8s:
     state: present
