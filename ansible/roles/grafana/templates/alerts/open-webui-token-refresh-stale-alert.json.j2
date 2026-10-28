@@ -1,0 +1,89 @@
+{
+  "apiVersion": 1,
+  "groups": [
+    {
+      "orgId": 1,
+      "name": "1m-evaluations",
+      "folder": "Scout",
+      "interval": "1m",
+      "rules": [
+        {
+          "uid": "open_webui_token_refresh_stale_alert_01",
+          "title": "Open WebUI Model API Token Refresh Stale",
+          "condition": "B",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "prometheus_datasource_01",
+              "model": {
+                "editorMode": "code",
+                "expr": "(time() - max(kube_cronjob_status_last_successful_time{namespace=\"[% chatbot_namespace %]\", cronjob=~\".+-token-refresh\"})) or (time() - max(kube_cronjob_created{namespace=\"[% chatbot_namespace %]\", cronjob=~\".+-token-refresh\"}))",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "__auto",
+                "maxDataPoints": 43200,
+                "range": false,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [[% open_webui_token_refresh_alert_seconds %]],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "query": {
+                      "params": []
+                    },
+                    "reducer": {
+                      "params": [],
+                      "type": "last"
+                    },
+                    "type": "query"
+                  }
+                ],
+                "datasource": {
+                  "type": "__expr__",
+                  "uid": "__expr__"
+                },
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "B",
+                "type": "threshold"
+              }
+            }
+          ],
+          "noDataState": "OK",
+          "execErrState": "Alerting",
+          "for": "0s",
+          "annotations": {
+            "summary": "Open WebUI has not refreshed its external model API token in over [% (open_webui_token_refresh_alert_seconds | int / 60) | int %] minutes; chat with those models will fail when the current token expires.",
+            "description": "The Open WebUI token-refresh CronJob has had no successful run in [% (open_webui_token_refresh_alert_seconds | int / 60) | int %] minutes (or since it was created). Check its Job logs in the chat namespace: a failed client-credentials token request (expired client secret, proxy or allowlist), or a failed Open WebUI sign-in. No data means the CronJob is not deployed, which is expected when no connection uses OAuth2.",
+            "URL": "[% server_hostname %]"
+          },
+          "labels": {},
+          "isPaused": [% alert_is_disabled | default(false) | bool | tojson %],
+          "notification_settings": {
+            "receiver": "[% grafana_alert_contact_point %]"
+          }
+        }
+      ]
+    }
+  ]
+}

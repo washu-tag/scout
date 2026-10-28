@@ -245,6 +245,12 @@ open_webui_bootstrap_name: 'Scout Deploy Bot'
 # attempting /signin, so no manual cleanup is needed.
 # (no default — required in inventory; deploy.yaml asserts presence)
 
+# External OpenAI-compatible model APIs; shape documented at `openaiConnections`
+# in helm/open-webui-bootstrap/values.yaml. Secret values go in
+# open_webui_openai_connection_secrets (vault).
+open_webui_openai_connections: []
+open_webui_openai_connection_secrets: {}
+
 # Set to false to skip post-deploy admin configuration entirely.
 open_webui_admin_setup_enabled: true
 

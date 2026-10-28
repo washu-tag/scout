@@ -1,0 +1,60 @@
+{{- $oauth2 := false -}}
+{{- range $c := .Values.openaiConnections -}}
+{{- if $c.oauth2 }}{{ $oauth2 = true }}{{ end -}}
+{{- end -}}
+{{- if $oauth2 }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "open-webui-bootstrap.fullname" . }}-token-refresh
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "open-webui-bootstrap.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.tokenRefresh.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: {{ .Values.tokenRefresh.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.tokenRefresh.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      backoffLimit: {{ .Values.tokenRefresh.backoffLimit }}
+      template:
+        metadata:
+          labels:
+            {{- include "open-webui-bootstrap.selectorLabels" . | nindent 12 }}
+            component: token-refresh
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: token-refresh
+              image: {{ required "image.ref must be set to the image the running Open WebUI Pod uses (see values.yaml)" .Values.image.ref | quote }}
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              command: ["python", "/app/config/bootstrap.py", "--refresh-connections"]
+              workingDir: /app/backend
+              env:
+                - name: PYTHONPATH
+                  value: /app/backend
+                - name: OWUI_BASE_URL
+                  value: {{ .Values.owuiBaseUrl | quote }}
+                - name: BOOTSTRAP_EMAIL
+                  value: {{ .Values.bootstrap.email | quote }}
+                - name: BOOTSTRAP_NAME
+                  value: {{ .Values.bootstrap.name | quote }}
+                {{- include "open-webui-bootstrap.proxyEnv" . | nindent 16 }}
+              envFrom:
+                - secretRef:
+                    name: {{ .Values.secretName }}
+                - secretRef:
+                    name: {{ .Values.connectionSecretName }}
+                    optional: true
+              volumeMounts:
+                - name: config
+                  mountPath: /app/config
+                  readOnly: true
+              resources:
+                {{- toYaml .Values.resources | nindent 16 }}
+          volumes:
+            - name: config
+              configMap:
+                name: {{ include "open-webui-bootstrap.fullname" . }}-config
+{{- end }}

@@ -164,6 +164,10 @@ superset_namespace: '{{ scout_analytics_namespace }}'
 jupyter_namespace: '{{ scout_analytics_namespace }}'
 chatbot_namespace: '{{ scout_analytics_namespace }}'
 
+# Open WebUI OAuth2 token refresh; the alert fires after alert_seconds without a success.
+open_webui_token_refresh_schedule: '*/20 * * * *'
+open_webui_token_refresh_alert_seconds: 3000
+
 # Default Ollama model used by Scout services
 ollama_default_model: 'gemma4-31b-long:latest'
 
