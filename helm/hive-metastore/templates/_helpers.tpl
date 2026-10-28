@@ -67,3 +67,10 @@ Name of the aws-mode core-site ConfigMap.
 {{- define "hive-metastore.coreSiteName" -}}
 {{- include "hive-metastore.fullname" . }}-core-site
 {{- end }}
+
+{{/*
+Image reference; deploy bases name it from tpl-rendered initContainers too.
+*/}}
+{{- define "hive-metastore.image" -}}
+{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+{{- end }}

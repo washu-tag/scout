@@ -1,0 +1,69 @@
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+# Image cacerts minus the CVE-2026-91403 anchors, mounted over the JDK's; fails closed if a chart
+# bump moves the JDK. Delete this component once the Trino image's JDK is Temurin 25.0.5 or later.
+patches:
+  - target:
+      kind: HelmRelease
+    patch: |-
+      - op: add
+        path: /spec/values/initContainers
+        value:
+          coordinator:
+            - name: jvm-trust
+              image: '{{ include "trino.image" . }}'
+              env:
+                - name: CACERTS
+                  value: /usr/lib/jvm/jdk-25.0.2+10/lib/security/cacerts
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 1000
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: [ALL]
+              command:
+                - sh
+                - -c
+                - |
+                  set -eu
+                  jks="$(java -XshowSettings:properties -version 2>&1 | sed -n 's/^ *java.home = //p')/lib/security/cacerts"
+                  [ "$jks" = "$CACERTS" ] || { printf 'JDK cacerts is %s, not %s: drop this init if that JDK is fixed (Temurin 25.0.5+, 21.0.13+), else update CACERTS and the mount\n' "$jks" "$CACERTS" >&2; exit 1; }
+                  ks=/opt/jvm-trust/cacerts
+                  cp "$CACERTS" "$ks"
+                  bad() {
+                    out="$(keytool -list -v -keystore "$ks" -storepass changeit 2>&1)" || { printf '%s\n' "$out" >&2; return 1; }
+                    case "$out" in *"Alias name: "*"Owner: CN="*) ;; *) printf 'unexpected keytool output for %s\n%s\n' "$ks" "$out" >&2; return 1 ;; esac
+                    printf '%s\n' "$out" | while IFS= read -r l; do
+                      case "$l" in "Alias name: "*) a=$${l#Alias name: } ;;
+                        "Owner: "*"emSign ECC Root CA - G3"*|"Owner: "*"AAA Certificate Services"*) printf '%s\n' "$a" ;; esac
+                    done
+                  }
+                  aliases="$(bad)"
+                  printf '%s\n' "$aliases" | while IFS= read -r a; do [ -z "$a" ] || keytool -delete -alias "$a" -keystore "$ks" -storepass changeit; done
+                  left="$(bad)"
+                  [ -z "$left" ] || { printf 'anchors still in %s: %s\n' "$ks" "$left" >&2; exit 1; }
+              volumeMounts:
+                - name: jvm-trust
+                  mountPath: /opt/jvm-trust
+      - op: copy
+        from: /spec/values/initContainers/coordinator
+        path: /spec/values/initContainers/worker
+      - op: add
+        path: /spec/values/coordinator/additionalVolumes
+        value:
+          - name: jvm-trust
+            emptyDir: {}
+      - op: add
+        path: /spec/values/coordinator/additionalVolumeMounts
+        value:
+          - name: jvm-trust
+            mountPath: /usr/lib/jvm/jdk-25.0.2+10/lib/security/cacerts
+            subPath: cacerts
+            readOnly: true
+      - op: copy
+        from: /spec/values/coordinator/additionalVolumes
+        path: /spec/values/worker/additionalVolumes
+      - op: copy
+        from: /spec/values/coordinator/additionalVolumeMounts
+        path: /spec/values/worker/additionalVolumeMounts
