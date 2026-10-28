@@ -4,7 +4,7 @@ resources:
   - resources.yaml
   # Per-mode edge ConfigMaps (both modes; the HR selects one via service_mode).
   - edge.yaml
-# Config shared by trino-ro and trino-rw (metrics, JVM truststore) so it can't drift.
+# Shared JMX-exporter + Prometheus-scrape config (kept in one place so it can't
+# drift between trino-ro and trino-rw).
 components:
   - ../_shared-metrics
-  - ../_shared-jvm-trust

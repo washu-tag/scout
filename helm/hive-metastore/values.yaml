@@ -102,9 +102,6 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
-# Rendered with tpl, so entries can use "hive-metastore.image".
-initContainers: []
-
 # Additional volumes on the output Deployment definition.
 volumes: []
 # - name: foo

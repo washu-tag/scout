@@ -32,53 +32,6 @@ spec:
       # renovate: datasource=docker depName=starburstdata/hive versioning=regex:^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(?<compatibility>-e\.)(?<build>\d+)$
       tag: '3.1.3-e.15'
     fullnameOverride: hive-metastore
-    # The image's cacerts minus the anchors the compromised intermediates chain to (CVE-2026-91403),
-    # mounted over the JDK's own; fails closed, including when an image bump moves the JDK path.
-    initContainers:
-      - name: jvm-trust
-        image: '{{ include "hive-metastore.image" . }}'
-        env:
-          - name: CACERTS
-            value: /opt/java/openjdk/lib/security/cacerts
-        securityContext:
-          runAsNonRoot: true
-          runAsUser: 1000
-          allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
-          capabilities:
-            drop: [ALL]
-        command:
-          - sh
-          - -c
-          - |
-            set -eu
-            jks="$(java -XshowSettings:properties -version 2>&1 | sed -n 's/^ *java.home = //p')/lib/security/cacerts"
-            [ "$jks" = "$CACERTS" ] || { printf 'JDK cacerts is %s, not %s: drop this init if that JDK is fixed (Temurin 25.0.5+, 21.0.13+), else update CACERTS and the mount\n' "$jks" "$CACERTS" >&2; exit 1; }
-            ks=/opt/jvm-trust/cacerts
-            cp "$CACERTS" "$ks"
-            bad() {
-              out="$(keytool -list -v -keystore "$ks" -storepass changeit 2>&1)" || { printf '%s\n' "$out" >&2; return 1; }
-              case "$out" in *"Alias name: "*"Owner: CN="*) ;; *) printf 'unexpected keytool output for %s\n%s\n' "$ks" "$out" >&2; return 1 ;; esac
-              printf '%s\n' "$out" | while IFS= read -r l; do
-                case "$l" in "Alias name: "*) a=$${l#Alias name: } ;;
-                  "Owner: "*"emSign ECC Root CA - G3"*|"Owner: "*"AAA Certificate Services"*) printf '%s\n' "$a" ;; esac
-              done
-            }
-            aliases="$(bad)"
-            printf '%s\n' "$aliases" | while IFS= read -r a; do [ -z "$a" ] || keytool -delete -alias "$a" -keystore "$ks" -storepass changeit; done
-            left="$(bad)"
-            [ -z "$left" ] || { printf 'anchors still in %s: %s\n' "$ks" "$left" >&2; exit 1; }
-        volumeMounts:
-          - name: jvm-trust
-            mountPath: /opt/jvm-trust
-    volumes:
-      - name: jvm-trust
-        emptyDir: {}
-    volumeMounts:
-      - name: jvm-trust
-        mountPath: /opt/java/openjdk/lib/security/cacerts
-        subPath: cacerts
-        readOnly: true
     # aws: IRSA SA via ${irsa_role_prefix}-hive-metastore. on-prem has no IRSA webhook, so the empty
     # role-arn annotation is inert and the SA just runs the pod.
     serviceAccount:
