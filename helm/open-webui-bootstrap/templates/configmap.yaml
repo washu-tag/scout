@@ -143,10 +143,15 @@ data:
     ) -}}
     {{- end -}}
     {{- if $m.ui -}}
+    {{- /* OWUI stores custom param values as JSON strings */ -}}
+    {{- $custom := dict -}}
+    {{- range $k, $v := (default (dict) $m.params) -}}
+    {{- $_ := set $custom $k (ternary $v (toJson $v) (kindIs "string" $v)) -}}
+    {{- end -}}
     {{- $params := dict
         "system_file" $defaults.systemPromptFile
         "function_calling" (default $defaults.functionCalling $m.ui.function_calling)
-        "custom_params" (default (dict) $m.params) -}}
+        "custom_params" $custom -}}
     {{- if $m.ui.reasoning_effort -}}
     {{- $_ := set $params "reasoning_effort" $m.ui.reasoning_effort -}}
     {{- end -}}
