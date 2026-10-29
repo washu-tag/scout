@@ -477,6 +477,8 @@ def push_openai_connections(token):
         },
         token,
     )
+    # Refresh OWUI's cached model list.
+    http_or_raise("GET", "/api/models", token=token)
     if failures:
         raise RuntimeError("Token request failed:\n  " + "\n  ".join(failures))
 
