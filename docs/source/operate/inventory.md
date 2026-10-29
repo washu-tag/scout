@@ -834,7 +834,7 @@ ollama_models:
   - llama2
   - codellama
 
-# Scout custom model (gpt-oss-120b-long:latest) is created by default
+# Scout custom model (gemma4-31b-long:latest) is created by default
 # Set to false to skip Scout model creation
 scout_model_create: true
 

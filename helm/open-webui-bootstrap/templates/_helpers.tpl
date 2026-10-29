@@ -38,3 +38,12 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/name: {{ include "open-webui-bootstrap.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{- define "open-webui-bootstrap.proxyEnv" -}}
+{{- if .Values.proxy.https }}
+- name: HTTPS_PROXY
+  value: {{ .Values.proxy.https | quote }}
+- name: NO_PROXY
+  value: {{ .Values.proxy.noProxy | quote }}
+{{- end }}
+{{- end }}

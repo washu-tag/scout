@@ -22,8 +22,13 @@ Phases:
 7. Python tools. Idempotent GET-create-or-update against /api/v1/tools;
    `content_file` inlined as source, public-read grant so users can attach.
 8. Prune tools not in the seeded set.
-9. Custom models. Idempotent GET-create-or-update one per scout_models[].ui
-   entry, plus hide-base overrides on the raw Ollama tags.
+9. OpenAI-compatible connections. Replaces OWUI's connection list when any
+   are configured, minting OAuth2 client-credentials keys where set.
+10. Custom models. Idempotent GET-create-or-update one per scout_models[].ui
+   and openai_connections[].models[].ui entry, plus hide overrides on the raw
+   models.
+
+With --refresh-connections, runs only step 9 (the token-refresh CronJob).
 
 Inputs (from env, set by the Job spec):
   OWUI_BASE_URL          — e.g., http://open-webui:80
@@ -43,6 +48,8 @@ Inputs (from /app/config/, mounted from a ConfigMap the chart renders):
   models.json            — list of ModelForm payloads; each entry's
                            `params.system_file` names a sibling file whose
                            contents are inlined as `params.system`.
+  openai_connections.json — list of connections; secrets are named by env var
+                           (headersFromEnv, apiKeyEnv, oauth2.client*Env).
 """
 
 import json
@@ -148,7 +155,7 @@ def migrate_password():
             print(f"  no-op (no {BOOTSTRAP_EMAIL} row yet — fresh DB)")
 
 
-def mint_admin_jwt():
+def mint_admin_jwt(allow_signup=True):
     """Try signin first; fall back to signup on 400 (no such user / fresh DB).
 
     Retries the initial signin call to absorb pod-not-quite-ready races: OWUI's
@@ -169,6 +176,11 @@ def mint_admin_jwt():
             file=sys.stderr,
         )
         time.sleep(SIGNIN_RETRY_DELAY_SEC)
+
+    if not allow_signup:
+        raise RuntimeError(
+            f"Signin as {BOOTSTRAP_EMAIL} failed: HTTP {last_code} {last_body}"
+        )
 
     signup_payload = {
         "name": BOOTSTRAP_NAME,
@@ -372,6 +384,103 @@ def push_tools(token):
         )
 
 
+def fetch_client_credentials_token(oauth2):
+    form = {
+        "grant_type": "client_credentials",
+        "client_id": os.environ[oauth2["clientIdEnv"]],
+        "client_secret": os.environ[oauth2["clientSecretEnv"]],
+    }
+    if oauth2.get("scope"):
+        form["scope"] = oauth2["scope"]
+    url = oauth2["tokenUrl"]
+    if not url.startswith("https://"):
+        raise ValueError(f"Refusing non-HTTPS token URL: {url}")
+    req = urllib.request.Request(
+        url, data=urllib.parse.urlencode(form).encode("utf-8"), method="POST"
+    )
+    try:
+        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
+        with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT) as resp:  # noqa: S310
+            return json.loads(resp.read().decode("utf-8"))["access_token"]
+    except urllib.error.HTTPError as e:
+        raise RuntimeError(f"HTTP {e.code} {e.read().decode('utf-8')}") from e
+
+
+def push_openai_connections(token):
+    """Replace OWUI's OpenAI connections with the configured set. No-op when
+    none are configured, so hand-managed connections are left alone. A failed
+    token request keeps that connection's current key, saves the rest, then
+    raises."""
+    connections = load_config("openai_connections.json") or []
+    if not connections:
+        print("  skip: no connections configured")
+        return
+
+    current = json.loads(http_or_raise("GET", "/openai/config", token=token))
+    current_urls = current.get("OPENAI_API_BASE_URLS") or []
+    current_keys = current.get("OPENAI_API_KEYS") or []
+
+    tokens, failures = {}, []
+    urls, keys, configs = [], [], {}
+    for i, c in enumerate(connections):
+        key = ""
+        if c.get("oauth2"):
+            o = c["oauth2"]
+            cache_key = (
+                o["tokenUrl"],
+                o.get("scope"),
+                o["clientIdEnv"],
+                o["clientSecretEnv"],
+            )
+            if cache_key not in tokens:
+                try:
+                    tokens[cache_key] = fetch_client_credentials_token(o)
+                except (RuntimeError, OSError, KeyError, ValueError) as e:
+                    tokens[cache_key] = None
+                    failures.append(f'{o["tokenUrl"]}: {type(e).__name__}: {e}')
+            key = tokens[cache_key]
+            if key is None:
+                same = i < len(current_urls) and current_urls[i] == c["url"]
+                key = current_keys[i] if same and i < len(current_keys) else ""
+        elif c.get("apiKeyEnv"):
+            key = os.environ[c["apiKeyEnv"]]
+
+        cfg = {
+            "enable": True,
+            "tags": [],
+            "prefix_id": c.get("prefixId", ""),
+            "model_ids": c.get("modelIds", []),
+            "connection_type": "external",
+            "auth_type": "bearer" if key else "none",
+            "headers": {
+                h: os.environ[env] for h, env in c.get("headersFromEnv", {}).items()
+            },
+        }
+        if c.get("apiType") == "responses":
+            cfg["api_type"] = "responses"
+
+        urls.append(c["url"])
+        keys.append(key)
+        configs[str(i)] = cfg
+        print(
+            f'  {c["url"]} ({c.get("apiType", "chat_completions")}): {len(cfg["model_ids"])} models'
+        )
+
+    http_or_raise(
+        "POST",
+        "/openai/config/update",
+        {
+            "ENABLE_OPENAI_API": True,
+            "OPENAI_API_BASE_URLS": urls,
+            "OPENAI_API_KEYS": keys,
+            "OPENAI_API_CONFIGS": configs,
+        },
+        token,
+    )
+    if failures:
+        raise RuntimeError("Token request failed:\n  " + "\n  ".join(failures))
+
+
 def push_models(token):
     for m in load_config("models.json") or []:
         if not m.get("id"):
@@ -398,6 +507,15 @@ def push_models(token):
             print(f'  {m["id"]}: created')
 
 
+def refresh_connections():
+    print(
+        f"Refreshing OpenAI-compatible connections on {OWUI_BASE} as {BOOTSTRAP_EMAIL}"
+    )
+    token, _ = mint_admin_jwt(allow_signup=False)
+    push_openai_connections(token)
+    print("Refresh complete.")
+
+
 def main():
     print(f"Bootstrap against {OWUI_BASE} as {BOOTSTRAP_EMAIL}")
 
@@ -408,16 +526,16 @@ def main():
     token, via = mint_admin_jwt()
     print(f"  JWT acquired via {via}")
 
-    print("[3/9] Pushing PersistentConfig...")
+    print("[3/10] Pushing PersistentConfig...")
     push_persistent_config(token)
 
-    print("[4/9] Configuring filter functions...")
+    print("[4/10] Configuring filter functions...")
     push_functions(token, "filters.json")
 
-    print("[5/9] Configuring event functions...")
+    print("[5/10] Configuring event functions...")
     push_functions(token, "events.json")
 
-    print("[6/9] Pruning unmanaged functions...")
+    print("[6/10] Pruning unmanaged functions...")
     reconcile(
         token,
         "/api/v1/functions/",
@@ -426,10 +544,10 @@ def main():
         "function",
     )
 
-    print("[7/9] Configuring Python tools...")
+    print("[7/10] Configuring Python tools...")
     push_tools(token)
 
-    print("[8/9] Pruning unmanaged tools...")
+    print("[8/10] Pruning unmanaged tools...")
     reconcile(
         token,
         "/api/v1/tools/",
@@ -438,11 +556,17 @@ def main():
         "tool",
     )
 
-    print("[9/9] Configuring custom models...")
+    print("[9/10] Configuring OpenAI-compatible connections...")
+    push_openai_connections(token)
+
+    print("[10/10] Configuring custom models...")
     push_models(token)
 
     print("Bootstrap complete.")
 
 
 if __name__ == "__main__":
-    main()
+    if sys.argv[1:] == ["--refresh-connections"]:
+        refresh_connections()
+    else:
+        main()
