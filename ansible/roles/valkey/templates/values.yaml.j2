@@ -22,6 +22,12 @@ dataStorage:
 {% if valkey_storage_class %}
   className: {{ valkey_storage_class }}
 {% endif %}
+{% if valkey_persistence_enabled | bool %}
+
+# One replica on a ReadWriteOnce volume: a RollingUpdate surge pod waits on the volume
+# the old pod holds, so the Helm upgrade times out. Recreate frees it first.
+deploymentStrategy: Recreate
+{% endif %}
 
 resources: {{ valkey_resources_default | combine(valkey_resources | default({}), recursive=true) | to_json }}
 

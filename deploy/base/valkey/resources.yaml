@@ -21,6 +21,10 @@ metadata:
   namespace: '${valkey_namespace}'
 spec:
   interval: 30m
+  # Server-side apply keeps the API server's defaulted strategy.rollingUpdate, which
+  # Recreate (below) rejects; the client-side three-way merge drops it.
+  upgrade:
+    serverSideApply: disabled
   # Version pinned in versions.yaml (valkey_chart_version), Renovate-tracked there.
   # Literal mirror (not stamped); keep in lockstep with versions.yaml.
   chart:
@@ -48,6 +52,9 @@ spec:
     dataStorage:
       enabled: true
       requestedSize: '${valkey_storage_size}'
+    # One replica on a ReadWriteOnce volume: a RollingUpdate surge pod waits on the volume
+    # the old pod holds, so the Helm upgrade times out. Recreate frees it first.
+    deploymentStrategy: Recreate
     resources:
       requests:
         cpu: 100m
