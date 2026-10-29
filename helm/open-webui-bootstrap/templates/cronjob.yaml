@@ -30,20 +30,22 @@ spec:
               image: {{ required "image.ref must be set to the image the running Open WebUI Pod uses (see values.yaml)" .Values.image.ref | quote }}
               imagePullPolicy: {{ .Values.image.pullPolicy }}
               command: ["python", "/app/config/bootstrap.py", "--refresh-connections"]
-              workingDir: /app/backend
+              securityContext:
+                {{- toYaml .Values.tokenRefresh.securityContext | nindent 16 }}
               env:
-                - name: PYTHONPATH
-                  value: /app/backend
                 - name: OWUI_BASE_URL
                   value: {{ .Values.owuiBaseUrl | quote }}
                 - name: BOOTSTRAP_EMAIL
                   value: {{ .Values.bootstrap.email | quote }}
                 - name: BOOTSTRAP_NAME
                   value: {{ .Values.bootstrap.name | quote }}
+                - name: BOOTSTRAP_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.secretName }}
+                      key: BOOTSTRAP_PASSWORD
                 {{- include "open-webui-bootstrap.proxyEnv" . | nindent 16 }}
               envFrom:
-                - secretRef:
-                    name: {{ .Values.secretName }}
                 - secretRef:
                     name: {{ .Values.connectionSecretName }}
                     optional: true

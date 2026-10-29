@@ -135,6 +135,16 @@ tokenRefresh:
   backoffLimit: 3
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 3
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: [ALL]
+    seccompProfile:
+      type: RuntimeDefault
 
 # HTTPS proxy for the Job and CronJob's token requests.
 proxy:
