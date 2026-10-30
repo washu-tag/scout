@@ -622,9 +622,33 @@ def test_parse_discovered_skips_a_bad_document_but_keeps_its_siblings(doc):
             "id": "x",
             "title": "X",
             "actionType": "backend-call",
-            "endpointUrl": "http://t.svc:8000/invoke",
+            "endpointUrl": "http://t.ns.svc:8000/invoke",
             "invokeTokenSecret": {"name": "s", "namespace": "other"},
         },
+        # A backend-call needs its token Secret, and a Service in its own
+        # namespace: not another namespace's, not outside the cluster.
+        {
+            "id": "x",
+            "title": "X",
+            "actionType": "backend-call",
+            "endpointUrl": "http://t.ns.svc:8000/invoke",
+        },
+        *(
+            {
+                "id": "x",
+                "title": "X",
+                "actionType": "backend-call",
+                "endpointUrl": url,
+                "invokeTokenSecret": {"name": "s"},
+            }
+            for url in (
+                "http://t.other.svc.cluster.local:8000/invoke",
+                "https://example.org/invoke",
+                "http://t.ns:8000/invoke",
+                "http://t.ns.svc.example.org/invoke",
+                "http://10.0.0.1:8000/invoke",
+            )
+        ),
     ],
 )
 def test_parse_discovered_skips_an_invalid_entry_but_keeps_the_rest(entry):
@@ -641,8 +665,35 @@ def test_parse_discovered_skips_an_invalid_entry_but_keeps_the_rest(entry):
     assert [a.id for a in found.actions] == ["ok"]
 
 
+@pytest.mark.parametrize(
+    "url", ["http://t.ns.svc:8000/invoke", "https://t.ns.svc.cluster.local/invoke"]
+)
+def test_parse_discovered_accepts_a_service_in_its_own_namespace(url):
+    doc = yaml.safe_dump(
+        {
+            "apiVersion": actions.CATALOG_API_VERSION,
+            "kind": actions.CATALOG_KIND,
+            "actions": [
+                {
+                    "id": "x",
+                    "title": "X",
+                    "actionType": "backend-call",
+                    "endpointUrl": url,
+                    "invokeTokenSecret": {"name": "s"},
+                }
+            ],
+        }
+    )
+    found = actions.parse_discovered(
+        [_configmap("ns", "cm", **{"a.yaml": doc})], reserved_ids=set()
+    )
+    assert [a.endpoint_url for a in found.actions] == [url]
+
+
 def test_parse_discovered_rejects_taken_ids_in_a_stable_order():
-    doc = _SEND_TO_XNAT.replace("datasets-invoke-token", "{ns}-token")
+    doc = _SEND_TO_XNAT.replace("datasets-invoke-token", "{ns}-token").replace(
+        "datasets-invoke.datasets.", "datasets-invoke.{ns}."
+    )
     found = actions.parse_discovered(
         [
             _configmap("zeta", "cm", **{"a.yaml": doc.replace("{ns}", "zeta")}),
@@ -763,14 +814,11 @@ async def test_discovered_token_is_read_from_its_own_namespace(discovery):
 async def test_discovered_action_never_uses_a_chart_token_file(
     discovery, tmp_path, monkeypatch
 ):
-    doc = _SEND_TO_XNAT.replace(
-        "    invokeTokenSecret: {name: datasets-invoke-token}\n", ""
-    )
-    discovery["configmaps"] = {None: [_configmap("datasets", "cm", **{"a.yaml": doc})]}
+    discovery["secrets"][("datasets", "datasets-invoke-token", "token")] = "s3cret"
     monkeypatch.setattr(settings, "action_tokens_path", str(tmp_path))
     (tmp_path / "send-to-xnat").write_text("chart-token")
     catalog = await actions.current_catalog()
-    assert await catalog.invoke_token("send-to-xnat") is None
+    assert await catalog.invoke_token("send-to-xnat") == "s3cret"
 
 
 async def test_unreadable_discovered_token_raises(discovery):

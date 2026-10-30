@@ -187,7 +187,8 @@ other differences:
 | `id`                | Lowercase letters, digits and hyphens, up to 63 characters. An id the chart's own catalog uses, or one an earlier published entry took, is skipped and logged. Entries are read in namespace, ConfigMap name and data key order. |
 | `title`             | Up to 60 characters.                                                                                                                          |
 | `actionType`        | `open-url` (the default) or `backend-call`. A `client` action needs a handler in report-viewer's frontend, so it can't be published.          |
-| `invokeTokenSecret` | Replaces `invokeToken`, and only on a `backend-call` action: the `name` of a Secret in the ConfigMap's own namespace and its `key` (default `token`). |
+| `endpointUrl`       | On a `backend-call`, a Service in the ConfigMap's own namespace: `http(s)://<service>.<namespace>.svc[.cluster.local][:port]/<path>`. Any other host is skipped and logged. A site admin can still point an `actions.custom` button anywhere. |
+| `invokeTokenSecret` | Replaces `invokeToken`. Required on a `backend-call` action, and only allowed there: the `name` of a Secret in the ConfigMap's own namespace and its `key` (default `token`). |
 
 The token never goes in the ConfigMap. Grant report-viewer's ServiceAccount `get` on
 that one Secret, in the same chart:
@@ -240,8 +241,11 @@ actions:
 ```
 
 Discovery lets any workload that can create a labeled ConfigMap in a listed namespace
-add a button for users who hold its `requiredRole` (or for everyone, without one). Narrow
-`namespace` if that is broader than your site wants.
+add a button for users who hold its `requiredRole` (or for everyone, without one). A
+published `backend-call` can only send the cohort to a Service in its own namespace, and
+only with a token Secret that namespace grants report-viewer, so it also takes the rights
+to create a Role and RoleBinding there. Narrow `namespace` if that is broader than your
+site wants.
 
 ## Securing a backend-call target
 

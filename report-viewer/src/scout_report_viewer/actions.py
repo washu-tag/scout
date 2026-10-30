@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import time
 from collections.abc import Mapping
 from dataclasses import dataclass, field
@@ -31,7 +32,14 @@ from typing import Literal
 from urllib.parse import urlparse
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationError,
+    ValidationInfo,
+    model_validator,
+)
 
 from . import kube
 from .config import settings
@@ -221,11 +229,29 @@ class SecretKeyRef(BaseModel):
     key: str = Field(default="token", pattern=r"^[-._a-zA-Z0-9]{1,253}$")
 
 
+_SERVICE_NAME = re.compile(r"^[a-z]([-a-z0-9]{0,61}[a-z0-9])?$")
+
+
+def _service_in(url: str | None, namespace: str) -> bool:
+    """Whether `url` names a Service in `namespace` by its cluster DNS name.
+    `.svc` is required and only the default cluster domain may follow it, so
+    no host outside the cluster matches."""
+    labels = (urlparse(url or "").hostname or "").split(".")
+    return (
+        bool(namespace)
+        and bool(_SERVICE_NAME.match(labels[0]))
+        and labels[1:2] == [namespace]
+        and labels[2:] in (["svc"], ["svc", "cluster", "local"])
+    )
+
+
 class DiscoveredAction(BaseModel):
     """One entry of a published `ActionCatalog` document. `client` actions
     are absent by construction: they need a handler in the frontend. An
     unknown field rejects the entry, so a misspelled `requiredRole` can't
-    publish an ungated button."""
+    publish an ungated button. A `backend-call` must name its token Secret
+    and call a Service in the namespace that published it (validation
+    context `namespace`), so a ConfigMap alone can't send a cohort anywhere."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -239,9 +265,21 @@ class DiscoveredAction(BaseModel):
     invokeTokenSecret: SecretKeyRef | None = None
 
     @model_validator(mode="after")
-    def _token_only_for_backend_call(self) -> DiscoveredAction:
-        if self.invokeTokenSecret and self.actionType != "backend-call":
-            raise ValueError("invokeTokenSecret is only valid on a backend-call action")
+    def _backend_call_rules(self, info: ValidationInfo) -> DiscoveredAction:
+        if self.actionType != "backend-call":
+            if self.invokeTokenSecret:
+                raise ValueError(
+                    "invokeTokenSecret is only valid on a backend-call action"
+                )
+            return self
+        if not self.invokeTokenSecret:
+            raise ValueError("a backend-call action needs invokeTokenSecret")
+        namespace = (info.context or {}).get("namespace", "")
+        if not _service_in(self.endpointUrl, namespace):
+            raise ValueError(
+                f"endpointUrl must be a Service in namespace {namespace!r}: "
+                f"http(s)://<service>.{namespace}.svc[.cluster.local][:port]/<path>"
+            )
         return self
 
     def descriptor(self) -> ActionDescriptor:
@@ -278,7 +316,8 @@ def parse_discovered(configmaps: list[dict], reserved_ids: set[str]) -> Discover
 
     A token Secret is always looked up in the ConfigMap's own namespace, taken
     from its metadata, so a document can't point report-viewer at another
-    namespace's Secret.
+    namespace's Secret, and a `backend-call` endpoint must be a Service in
+    that namespace too.
     """
     actions: list[ActionDescriptor] = []
     tokens: dict[str, TokenRef | None] = {}
@@ -315,7 +354,9 @@ def parse_discovered(configmaps: list[dict], reserved_ids: set[str]) -> Discover
                 continue
             for i, entry in enumerate(entries):
                 try:
-                    action = DiscoveredAction.model_validate(entry)
+                    action = DiscoveredAction.model_validate(
+                        entry, context={"namespace": namespace}
+                    )
                     descriptor = action.descriptor()
                 except ValidationError as exc:
                     log.warning(

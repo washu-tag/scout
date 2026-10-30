@@ -132,6 +132,14 @@ document can't point report-viewer at a token another namespace granted for its 
 button. That would let a ConfigMap writer in one namespace send another app's token to
 an endpoint of its choosing.
 
+A published `backend-call` must also stay inside its namespace. It needs an
+`invokeTokenSecret`, and its `endpointUrl` must be a Service in the ConfigMap's namespace,
+`<service>.<namespace>.svc` with only the default `.cluster.local` allowed after it; any
+other entry is skipped and logged. A ConfigMap writer can't send a cohort outside the
+cluster or to another namespace, and publishing such a button takes the rights to create
+a Role and RoleBinding as well. An endpoint elsewhere stays possible through
+`actions.custom`, which only a site admin writes.
+
 Discovery is an in-process LIST of labeled ConfigMaps
 (`scout_report_viewer/kube.py`), cluster-wide or over a configured namespace list,
 cached for `actions.discovery.ttlSeconds` (30 seconds by default) and re-parsed only
@@ -277,7 +285,8 @@ three were removed outright rather than left in place once that was confirmed.
   granted it. Any workload that can create a labeled ConfigMap in a listed namespace can
   add a button for users holding its `requiredRole`, or for everyone without one. The
   same namespace-trust trade-off ADR 0034 accepts for launchpad chips; a site can narrow
-  `actions.discovery.namespace`.
+  `actions.discovery.namespace`. A published `backend-call` reaches only a Service in its
+  own namespace, with a token Secret granted there.
 - The invoke boundary relies entirely on the shared invoke token plus network isolation
   (see above) — it does not cryptographically bind the request body: nothing ties the
   `reports` payload to a specific invocation beyond trusting report-viewer's own
