@@ -8,6 +8,7 @@ Run with:
 """
 
 import asyncio
+import base64
 import importlib.util
 import json
 import re
@@ -133,6 +134,40 @@ async def test_get_forwards_the_callers_token(oauth, expected, monkeypatch):
     result = await tool._request("GET", "/api/plots/abc123", auth)
     assert result == {"ok": True}
     assert seen["authorization"] == expected
+
+
+def _jwt(claims):
+    def part(obj):
+        return base64.urlsafe_b64encode(json.dumps(obj).encode()).rstrip(b"=").decode()
+
+    return f"{part({'alg': 'RS256'})}.{part(claims)}.sig"
+
+
+@pytest.mark.parametrize(
+    "token,expected",
+    [
+        (_jwt({"preferred_username": "alice"}), "alice"),
+        (_jwt({"sub": "123"}), None),
+        ("not-a-jwt", None),
+        ("a.!!!.c", None),
+    ],
+)
+@pytest.mark.asyncio
+async def test_requests_carry_the_callers_username_for_dev_routing(
+    token, expected, monkeypatch
+):
+    seen = {}
+
+    def handler(request):
+        seen["authorization"] = request.headers.get("authorization")
+        seen["username"] = request.headers.get("x-auth-request-preferred-username")
+        return httpx.Response(200, json={"ok": True})
+
+    tool = _tool_with_transport(handler, monkeypatch)
+    auth = _auth(monkeypatch, oauth=token)
+    assert await tool._request("GET", "/api/plots/abc123", auth) == {"ok": True}
+    assert seen["authorization"] == f"Bearer {token}"
+    assert seen["username"] == expected
 
 
 @pytest.mark.asyncio
