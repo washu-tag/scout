@@ -18,6 +18,25 @@
       Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
     quiet: true
 
+- name: Validate external model connection secrets
+  ansible.builtin.assert:
+    that: _owui_missing_connection_secrets | length == 0
+    fail_msg: >
+      open_webui_openai_connections references secrets that are missing or
+      empty in open_webui_openai_connection_secrets:
+      {{ _owui_missing_connection_secrets | join(', ') }}
+    quiet: true
+  vars:
+    _owui_connection_secret_names: >-
+      {{ (open_webui_openai_connections | map(attribute='headersFromEnv', default={}) | map('dict2items') | flatten | map(attribute='value') | list)
+         + (open_webui_openai_connections | selectattr('apiKeyEnv', 'defined') | selectattr('apiKeyEnv') | map(attribute='apiKeyEnv') | list)
+         + (open_webui_openai_connections | selectattr('oauth2', 'defined') | map(attribute='oauth2') | map(attribute='clientIdEnv') | list)
+         + (open_webui_openai_connections | selectattr('oauth2', 'defined') | map(attribute='oauth2') | map(attribute='clientSecretEnv') | list) }}
+    _owui_missing_connection_secrets: >-
+      {{ _owui_connection_secret_names | unique
+         | reject('in', open_webui_openai_connection_secrets | dict2items | selectattr('value') | map(attribute='key') | list)
+         | list }}
+
 - name: Create namespace
   ansible.builtin.include_role:
     name: scout_common

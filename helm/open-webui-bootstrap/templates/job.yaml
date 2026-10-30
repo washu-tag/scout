@@ -50,6 +50,7 @@ spec:
               value: {{ .Values.bootstrap.email | quote }}
             - name: BOOTSTRAP_NAME
               value: {{ .Values.bootstrap.name | quote }}
+            {{- include "open-webui-bootstrap.proxyEnv" . | nindent 12 }}
           # All sensitive values come from a Secret (matches the upstream OWUI
           # chart's `extraEnvFrom` pattern). The bootstrap script reads
           # BOOTSTRAP_PASSWORD and DATABASE_URL directly; WEBUI_SECRET_KEY and
@@ -60,6 +61,9 @@ spec:
           envFrom:
             - secretRef:
                 name: {{ .Values.secretName }}
+            - secretRef:
+                name: {{ .Values.connectionSecretName }}
+                optional: true
           volumeMounts:
             - name: config
               mountPath: /app/config

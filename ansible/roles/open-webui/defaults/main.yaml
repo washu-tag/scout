@@ -59,26 +59,7 @@ scout_models:
     preload: true # Resident — small enough to keep warm; serves as default and task model
     ui:
       name: 'Scout Explorer (Gemma 4 31B)'
-      description: 'Recommended. Fast and reliable for cohort queries, filters, and free-text searches. Best general-purpose option for Scout.'
-  - base: qwen3.6:35b
-    name: qwen3.6-35b-long:latest
-    num_ctx: 262144
-    num_keep: 65536
-    num_predict: -1
-    preload: false # Cold-load — thinking-mode model used selectively for analytical / multi-step queries
-    ui:
-      name: 'Scout Explorer (Qwen 3.6 35B)'
-      description: 'Reasoning-focused alternative. Thinks step-by-step on every question — pick when you want to see explicit reasoning. Slower first response.'
-  - base: gpt-oss:120b
-    name: gpt-oss-120b-long:latest
-    num_ctx: 131072
-    num_keep: 32768
-    num_predict: -1
-    preload: false # Cold-load — large weights, used only when explicitly selected
-    ui:
-      name: 'Scout Explorer (GPT-OSS 120B)'
-      description: 'Largest alternative. Broadest medical knowledge — pick for nuanced free-text searches or edge cases the recommended model misses. Slower first response.'
-      compact_token_threshold: 100000 # 128K window: compact below the global 200K
+      description: "For simple questions. Runs on Scout's own GPUs."
 scout_model_create: true # Set to false to skip Scout model creation entirely
 
 # List of additional Ollama models to pull (see https://ollama.com/library)
@@ -91,6 +72,18 @@ open_webui_storage_class: ''
 # On envs where Traefik serves a self-signed cert (CI), OWUI needs to trust
 # it to reach Keycloak over HTTPS. Off on envs with public certs.
 open_webui_trust_traefik_ca: false
+
+# Air-gapped clusters route OWUI's outbound HTTPS (external model APIs) through
+# the staging Squid proxy; NO_PROXY keeps in-cluster and Scout-hostname traffic direct.
+open_webui_https_proxy: >-
+  {{ ('http://' ~ groups['staging'][0] ~ ':' ~ squid_port)
+     if (air_gapped | default(false) | bool
+         and (groups['staging'] | default([]) | length > 0))
+     else '' }}
+open_webui_no_proxy: >-
+  {{ ['localhost', '127.0.0.1', '.svc', '.cluster.local', '10.42.0.0/16', '10.43.0.0/16',
+      '.' ~ server_hostname]
+     | unique | join(',') }}
 
 # PostgreSQL configuration
 open_webui_postgres_user: openwebui
@@ -125,7 +118,7 @@ ollama_gpu_enabled: true
 
 # Minimum GPU VRAM required for Ollama (in GB)
 # Used in node affinity to ensure Ollama is scheduled on nodes with sufficient GPU memory
-# Default: 80GB (required for default Scout base model gpt-oss:120b at full precision)
+# Default: 80GB
 # For smaller models or quantized versions, override in inventory.yaml:
 #   ollama_min_gpu_memory_gb: 24  # For smaller models (e.g., llama3:70b)
 #   ollama_min_gpu_memory_gb: 60  # For gpt-oss:120b quantized (MXFP4)
@@ -193,15 +186,13 @@ open_webui_enable_version_update_check: false
 # Default selected model in the picker for new chats. MUST match an Ollama tag
 # exactly — point this at whichever Scout Explorer variant should be the default
 # first impression. The default `gemma4-31b-long` is resident, dense, no thinking-
-# step latency, and fast enough for most asks; users can pick gpt-oss-120b-long
-# (cohort building) or qwen3.6-35b-long (thinking-mode analysis) per chat.
+# step latency, and fast enough for most asks.
 open_webui_default_model_id: '{{ ollama_default_model }}'
 
 # Model used for OWUI's auxiliary tasks (chat title generation, follow-up
 # question suggestions, tag generation, web-search/RAG query refinement).
 # Without this, OWUI uses whichever Scout Explorer the user selected — which
-# means a 5-word title generation can trigger a slow cold-load of gpt-oss-120b
-# or an unnecessary thinking-mode roundtrip through qwen3.6.
+# means a 5-word title generation can trigger a slow cold-load of a large model.
 #
 # Pick a model that's already preloaded (preload: true) so task gen reuses
 # VRAM. MUST match the `name` of a resident scout_models entry exactly — the
@@ -232,6 +223,12 @@ open_webui_bootstrap_name: 'Scout Deploy Bot'
 # Job's migration step rewrites the stored bcrypt hash to match before
 # attempting /signin, so no manual cleanup is needed.
 # (no default — required in inventory; deploy.yaml asserts presence)
+
+# External OpenAI-compatible model APIs; shape documented at `openaiConnections`
+# in helm/open-webui-bootstrap/values.yaml. Secret values go in
+# open_webui_openai_connection_secrets (vault).
+open_webui_openai_connections: []
+open_webui_openai_connection_secrets: {}
 
 # Set to false to skip post-deploy admin configuration entirely.
 open_webui_admin_setup_enabled: true
