@@ -6,12 +6,12 @@ Adding a new link or backend-call button, or restricting an existing one to a Ke
 client role, is a `values.yaml` change plus `helm upgrade` — no report-viewer code
 change or image rebuild.
 
-Unlike the [launchpad's chip catalog](launchpad-chips.md), this isn't live runtime
-discovery: the catalog is a chart-rendered ConfigMap read once when the report-viewer
-pod starts. A `helm upgrade` rolls the pod automatically (the chart hashes the rendered
-config into a Deployment annotation), so changes take effect within the normal pod
-restart window — seconds, not the launchpad's ~10-second sidecar propagation, but not
-instant either.
+The chart's own buttons come from a chart-rendered ConfigMap read once when the
+report-viewer pod starts. A `helm upgrade` rolls the pod automatically (the chart hashes
+the rendered config into a Deployment annotation), so changes take effect within the
+normal pod restart window. A separately installed app can also ship its own button,
+which report-viewer discovers at runtime without a restart; see
+[Publishing a button from your own chart](#publishing-a-button-from-your-own-chart).
 
 If report-viewer is deployed through this repo's Ansible role (the normal path — see
 `ansible/roles/report_viewer`), configure this from `inventory.yaml` rather than editing
@@ -147,6 +147,106 @@ There is no values field for a `client`-type action (page-specific frontend logi
 Download CSV) — that needs a handler already registered in report-viewer's own
 frontend, so it structurally can't be added through chart values.
 
+## Publishing a button from your own chart
+
+A separately installed app can ship its button in its own chart instead of asking a site
+admin to add it to `actions.custom`. Publish a ConfigMap labeled
+`report-viewer.scout.xnat.org/actions: "true"` in the app's own namespace. Each data key
+holds one `ActionCatalog` document:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-app-report-viewer-actions
+  namespace: my-app
+  labels:
+    report-viewer.scout.xnat.org/actions: 'true'
+data:
+  actions.yaml: |
+    apiVersion: report-viewer.scout.xnat.org/v1alpha1
+    kind: ActionCatalog
+    actions:
+      - id: send-to-my-app
+        title: Send to My App
+        actionType: backend-call
+        endpointUrl: http://my-app-invoke.my-app.svc.cluster.local:8002/invoke
+        requiredRole: report-viewer-admin
+        invokeTokenSecret:
+          name: my-app-invoke-token
+          key: token
+```
+
+The fields are the ones `actions.custom` takes, in the same camelCase spelling. An
+entry with a field report-viewer doesn't know is skipped and logged, so a misspelled
+`requiredRole` (or the snake_case `required_role`) can't publish an ungated button. The
+other differences:
+
+| Field               | Notes                                                                                                                                         |
+|---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
+| `id`                | Lowercase letters, digits and hyphens, up to 63 characters. An id the chart's own catalog uses, or one an earlier published entry took, is skipped and logged. Entries are read in namespace, ConfigMap name and data key order. |
+| `title`             | Up to 60 characters.                                                                                                                          |
+| `actionType`        | `open-url` (the default) or `backend-call`. A `client` action needs a handler in report-viewer's frontend, so it can't be published.          |
+| `endpointUrl`       | On a `backend-call`, a Service in the ConfigMap's own namespace: `http(s)://<service>.<namespace>.svc[.cluster.local][:port]/<path>`. Any other host is skipped and logged. A site admin can still point an `actions.custom` button anywhere. |
+| `invokeTokenSecret` | Replaces `invokeToken`. Required on a `backend-call` action, and only allowed there: the `name` of a Secret in the ConfigMap's own namespace and its `key` (default `token`). |
+
+The token never goes in the ConfigMap. Grant report-viewer's ServiceAccount `get` on
+that one Secret, in the same chart:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: my-app-invoke-token-reader
+  namespace: my-app
+rules:
+  - apiGroups: ['']
+    resources: [secrets]
+    verbs: [get]
+    resourceNames: [my-app-invoke-token]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: my-app-invoke-token-reader
+  namespace: my-app
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: my-app-invoke-token-reader
+subjects:
+  - kind: ServiceAccount
+    name: report-viewer
+    namespace: scout-analytics
+```
+
+report-viewer always looks the Secret up in the namespace the ConfigMap is in, so a
+document can't point it at another namespace's Secret. It reads the Secret on every
+invoke, so a rotated token takes effect at once. If it can't read the Secret, the invoke
+fails with a 502 and your endpoint isn't called.
+[Securing a backend-call target](#securing-a-backend-call-target) applies unchanged:
+your NetworkPolicy must still admit only report-viewer's pods.
+
+report-viewer lists the labeled ConfigMaps through the Kubernetes API at most once every
+30 seconds, so a published, changed or removed button shows up within that time. If the
+API can't be reached, the last list stays in use. The chart's `actions.discovery` values
+control this (`report_viewer_action_discovery` from inventory):
+
+```yaml
+actions:
+  discovery:
+    enabled: true
+    namespace: ALL # or a comma-separated list, e.g. my-app,other-app
+    ttlSeconds: 30
+```
+
+Discovery lets any workload that can create a labeled ConfigMap in a listed namespace
+add a button for users who hold its `requiredRole` (or for everyone, without one). A
+published `backend-call` can only send the cohort to a Service in its own namespace, and
+only with a token Secret that namespace grants report-viewer, so it also takes the rights
+to create a Role and RoleBinding there. Narrow `namespace` if that is broader than your
+site wants.
+
 ## Securing a backend-call target
 
 `invokeToken` is the only credential report-viewer sends, and the only one your service
@@ -245,6 +345,17 @@ rendered ConfigMap matches what you expect:
 ```bash
 kubectl get configmap -n scout-analytics report-viewer-actions -o jsonpath='{.data.catalog\.yaml}'
 ```
+
+For a published button, list what report-viewer can discover. Its log names each skipped
+document or entry by `namespace/configmap/key`:
+
+```bash
+kubectl get configmap -A -l report-viewer.scout.xnat.org/actions=true
+```
+
+An invoke that fails with "its token is unavailable" means report-viewer couldn't read
+the `invokeTokenSecret`: check the Secret's name and key, and the Role and RoleBinding
+that grant report-viewer `get` on it.
 
 ## Reference
 

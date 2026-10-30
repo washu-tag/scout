@@ -781,6 +781,9 @@ k3s_cluster:
     #     invokeToken: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     #     assertionKey: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     #     requiredRole: report-viewer-admin
+    # Buttons other charts publish (on by default); e.g. to narrow it:
+    # report_viewer_action_discovery:
+    #   namespace: my-app,other-app
 
     #---------------------------------------------------------------------------
     # data-generator

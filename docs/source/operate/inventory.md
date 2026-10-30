@@ -818,6 +818,15 @@ report_viewer_custom_actions:
     requiredRole: report-viewer-admin
 ```
 
+A separately installed app can also publish its own button, which report-viewer
+discovers at runtime. `report_viewer_action_discovery` controls that, for example to
+limit it to certain namespaces:
+
+```yaml
+report_viewer_action_discovery:
+  namespace: my-app,other-app
+```
+
 See [Add or Gate a Report-Viewer Search Action](../customize/report-viewer-actions.md)
 for the full field reference, including the `backend-call` action type and its
 two-secret auth scheme. This feature — and report-viewer's browser-facing UI in

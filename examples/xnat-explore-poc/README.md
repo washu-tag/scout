@@ -97,8 +97,10 @@ Required `values.yaml` overrides:
 - `invokeToken` — generate a random secret, matching report-viewer's
   `actions.custom[].invokeToken` for this action.
 
-Then add a matching entry to report-viewer's own `actions.custom` (see the customize
-guide linked above) pointing `endpointUrl` at this chart's in-cluster invoke service.
+Then either set `reportViewerAction.enabled: true`, which publishes the button from this
+chart for report-viewer to discover, or add a matching entry to report-viewer's own
+`actions.custom` (see the customize guide linked above) pointing `endpointUrl` at this
+chart's in-cluster invoke service.
 
 ## Layout
 
@@ -108,5 +110,6 @@ src/xnat_explore_poc/
   config.py    # env-var settings
   __main__.py  # runs both apps concurrently
 tests/         # pytest — invoke auth/validation, landing page rendering
-helm/          # deployment.yaml, service + landing-service, ingress, networkpolicy, secret
+helm/          # deployment.yaml, service + landing-service, ingress, networkpolicy, secret,
+               # report-viewer-action (the discovered button)
 ```

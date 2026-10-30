@@ -12,21 +12,43 @@ new `open-url` or `backend-call` button via `values.yaml`'s
 `actions.custom`, no report-viewer code change or image rebuild needed; a
 `client` action needs a handler already registered in the frontend, so it
 can't be added through values data alone.
+
+Another chart can contribute `open-url` and `backend-call` buttons too, by
+publishing a ConfigMap labeled `DISCOVERY_LABEL` in its own namespace. Those
+are listed from the Kubernetes API and cached for
+`settings.action_discovery_ttl_seconds`; see `current_catalog()`.
 """
 
 from __future__ import annotations
 
+import asyncio
 import logging
+import re
+import time
+from collections.abc import Mapping
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 from urllib.parse import urlparse
 
 import yaml
-from pydantic import BaseModel, ValidationError, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationError,
+    ValidationInfo,
+    model_validator,
+)
 
+from . import kube
 from .config import settings
 
 log = logging.getLogger(__name__)
+
+DISCOVERY_LABEL = "report-viewer.scout.xnat.org/actions"
+CATALOG_API_VERSION = "report-viewer.scout.xnat.org/v1alpha1"
+CATALOG_KIND = "ActionCatalog"
 
 
 class ActionDescriptor(BaseModel):
@@ -188,7 +210,8 @@ def _read_action_secret(filename: str) -> str | None:
 
 
 def load_invoke_token(action_id: str) -> str | None:
-    """The invoke token for `action_id`, or None if it has none.
+    """The invoke token for one of the chart's own `actions.custom`
+    entries, or None if it has none.
 
     Read from a Secret-backed volume (`actions-secret.yaml`), not the
     action catalog itself, which lives in a ConfigMap with no
@@ -199,20 +222,281 @@ def load_invoke_token(action_id: str) -> str | None:
     return _read_action_secret(action_id)
 
 
-def list_actions(user_roles: frozenset[str]) -> list[ActionDescriptor]:
-    """Role-filtered, weight-sorted actions visible to this caller.
+class SecretKeyRef(BaseModel):
+    model_config = ConfigDict(extra="forbid")
 
-    This is the authorization boundary for backend-call actions, not just
-    visibility - invoke_search_action re-runs this same filter before
-    invoking, so a hidden action's URL being guessable doesn't matter.
-    Downstream targets aren't expected to independently re-verify the
-    caller's role: the invoke token already scopes who can reach a given
-    target's endpoint at all (see `load_invoke_token`), and the real
-    barrier against a forged call is that the endpoint is structurally
-    unreachable except from report-viewer's own pod (NetworkPolicy, no
-    public Ingress) - see the target's own deployment docs.
+    name: str = Field(pattern=r"^[a-z0-9]([-a-z0-9.]{0,251}[a-z0-9])?$")
+    key: str = Field(default="token", pattern=r"^[-._a-zA-Z0-9]{1,253}$")
+
+
+_SERVICE_NAME = re.compile(r"^[a-z]([-a-z0-9]{0,61}[a-z0-9])?$")
+
+
+def _service_in(url: str | None, namespace: str) -> bool:
+    """Whether `url` names a Service in `namespace` by its cluster DNS name.
+    `.svc` is required and only the default cluster domain may follow it, so
+    no host outside the cluster matches."""
+    labels = (urlparse(url or "").hostname or "").split(".")
+    return (
+        bool(namespace)
+        and bool(_SERVICE_NAME.match(labels[0]))
+        and labels[1:2] == [namespace]
+        and labels[2:] in (["svc"], ["svc", "cluster", "local"])
+    )
+
+
+class DiscoveredAction(BaseModel):
+    """One entry of a published `ActionCatalog` document. `client` actions
+    are absent by construction: they need a handler in the frontend. An
+    unknown field rejects the entry, so a misspelled `requiredRole` can't
+    publish an ungated button. A `backend-call` must name its token Secret
+    and call a Service in the namespace that published it (validation
+    context `namespace`), so a ConfigMap alone can't send a cohort anywhere."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(pattern=r"^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$")
+    title: str = Field(min_length=1, max_length=60)
+    weight: int = 100
+    actionType: Literal["open-url", "backend-call"] = "open-url"
+    url: str | None = None
+    endpointUrl: str | None = None
+    requiredRole: str | None = None
+    invokeTokenSecret: SecretKeyRef | None = None
+
+    @model_validator(mode="after")
+    def _backend_call_rules(self, info: ValidationInfo) -> DiscoveredAction:
+        if self.actionType != "backend-call":
+            if self.invokeTokenSecret:
+                raise ValueError(
+                    "invokeTokenSecret is only valid on a backend-call action"
+                )
+            return self
+        if not self.invokeTokenSecret:
+            raise ValueError("a backend-call action needs invokeTokenSecret")
+        namespace = (info.context or {}).get("namespace", "")
+        if not _service_in(self.endpointUrl, namespace):
+            raise ValueError(
+                f"endpointUrl must be a Service in namespace {namespace!r}: "
+                f"http(s)://<service>.{namespace}.svc[.cluster.local][:port]/<path>"
+            )
+        return self
+
+    def descriptor(self) -> ActionDescriptor:
+        return ActionDescriptor(
+            id=self.id,
+            title=self.title,
+            weight=self.weight,
+            action_type=self.actionType,
+            url=self.url,
+            endpoint_url=self.endpointUrl,
+            required_role=self.requiredRole or None,
+        )
+
+
+@dataclass(frozen=True)
+class TokenRef:
+    namespace: str
+    name: str
+    key: str
+
+
+@dataclass(frozen=True)
+class Discovered:
+    actions: tuple[ActionDescriptor, ...] = ()
+    # Every discovered action id, mapped to its token's Secret or None. A
+    # discovered id never falls through to the chart's token files.
+    tokens: Mapping[str, TokenRef | None] = field(default_factory=dict)
+
+
+def parse_discovered(configmaps: list[dict], reserved_ids: set[str]) -> Discovered:
+    """The actions in labeled ConfigMaps, in a stable order. A bad document
+    costs its actions, a bad entry costs itself, and an id already taken (by
+    `reserved_ids` or an earlier entry) rejects the later one.
+
+    A token Secret is always looked up in the ConfigMap's own namespace, taken
+    from its metadata, so a document can't point report-viewer at another
+    namespace's Secret, and a `backend-call` endpoint must be a Service in
+    that namespace too.
     """
-    visible = [
-        d for d in _CATALOG if d.required_role is None or d.required_role in user_roles
-    ]
-    return sorted(visible, key=lambda d: (d.weight, d.title, d.id))
+    actions: list[ActionDescriptor] = []
+    tokens: dict[str, TokenRef | None] = {}
+    taken = set(reserved_ids)
+
+    def meta(cm: dict) -> tuple[str, str]:
+        m = cm.get("metadata") or {}
+        return str(m.get("namespace") or ""), str(m.get("name") or "")
+
+    for cm in sorted(configmaps, key=meta):
+        namespace, name = meta(cm)
+        for key, text in sorted((cm.get("data") or {}).items()):
+            source = f"{namespace}/{name}/{key}"
+            try:
+                doc = yaml.safe_load(text)
+            except (yaml.YAMLError, RecursionError):
+                log.warning("action catalog %s: invalid YAML, skipped", source)
+                continue
+            if (
+                not isinstance(doc, dict)
+                or doc.get("apiVersion") != CATALOG_API_VERSION
+                or doc.get("kind") != CATALOG_KIND
+            ):
+                log.warning(
+                    "action catalog %s: not a %s %s document, skipped",
+                    source,
+                    CATALOG_API_VERSION,
+                    CATALOG_KIND,
+                )
+                continue
+            entries = doc.get("actions") or []
+            if not isinstance(entries, list):
+                log.warning("action catalog %s: actions is not a list, skipped", source)
+                continue
+            for i, entry in enumerate(entries):
+                try:
+                    action = DiscoveredAction.model_validate(
+                        entry, context={"namespace": namespace}
+                    )
+                    descriptor = action.descriptor()
+                except ValidationError as exc:
+                    log.warning(
+                        "action catalog %s: skipping entry %d (%s)", source, i, exc
+                    )
+                    continue
+                if action.id in taken:
+                    log.warning(
+                        "action catalog %s: skipping entry %d, duplicate id %r",
+                        source,
+                        i,
+                        action.id,
+                    )
+                    continue
+                taken.add(action.id)
+                actions.append(descriptor)
+                ref = action.invokeTokenSecret
+                tokens[action.id] = (
+                    TokenRef(namespace, ref.name, ref.key) if ref else None
+                )
+    return Discovered(tuple(actions), tokens)
+
+
+@dataclass
+class _Snapshot:
+    discovered: Discovered = field(default_factory=Discovered)
+    signature: tuple = ()
+    checked_at: float = float("-inf")
+
+
+_snapshot = _Snapshot()
+_refresh_lock = asyncio.Lock()
+
+
+def _discovery_namespaces() -> list[str | None]:
+    raw = settings.action_discovery_namespace.strip()
+    if raw in ("", "ALL"):
+        return [None]
+    return [ns.strip() for ns in raw.split(",") if ns.strip()]
+
+
+async def _discovered() -> Discovered:
+    """The discovered actions, re-listed at most once per TTL. A failed list
+    keeps the previous snapshot, so discovered buttons go stale rather than
+    missing while the API is unreachable."""
+    global _snapshot
+    if not settings.action_discovery_enabled:
+        return Discovered()
+    ttl = settings.action_discovery_ttl_seconds
+    if time.monotonic() - _snapshot.checked_at < ttl:
+        return _snapshot.discovered
+    async with _refresh_lock:
+        if time.monotonic() - _snapshot.checked_at < ttl:
+            return _snapshot.discovered
+        try:
+            listed = await asyncio.gather(
+                *(
+                    kube.list_configmaps(f"{DISCOVERY_LABEL}=true", ns)
+                    for ns in _discovery_namespaces()
+                )
+            )
+            configmaps = [cm for items in listed for cm in items]
+            reserved = {a.id for a in _CATALOG}
+            signature = (
+                tuple(sorted(reserved)),
+                tuple(
+                    sorted(
+                        (
+                            (cm.get("metadata") or {}).get("uid", ""),
+                            (cm.get("metadata") or {}).get("resourceVersion", ""),
+                        )
+                        for cm in configmaps
+                    )
+                ),
+            )
+            discovered = (
+                _snapshot.discovered
+                if signature == _snapshot.signature
+                else parse_discovered(configmaps, reserved)
+            )
+        except kube.KubeError as exc:
+            log.warning("action discovery failed, keeping the last catalog: %s", exc)
+            _snapshot.checked_at = time.monotonic()
+            return _snapshot.discovered
+        except Exception:
+            # Published documents are untrusted; nothing in them may cost the
+            # chart's own buttons.
+            log.exception("action discovery failed, keeping the last catalog")
+            _snapshot.checked_at = time.monotonic()
+            return _snapshot.discovered
+        _snapshot = _Snapshot(discovered, signature, time.monotonic())
+        return discovered
+
+
+@dataclass(frozen=True)
+class Catalog:
+    actions: tuple[ActionDescriptor, ...]
+    discovered_tokens: Mapping[str, TokenRef | None]
+
+    def visible(self, user_roles: frozenset[str]) -> list[ActionDescriptor]:
+        """Role-filtered, weight-sorted actions visible to this caller.
+
+        This is the authorization boundary for backend-call actions, not
+        just visibility - invoke_search_action re-runs this same filter
+        before invoking, so a hidden action's URL being guessable doesn't
+        matter. Downstream targets aren't expected to independently
+        re-verify the caller's role: the invoke token already scopes who
+        can reach a given target's endpoint at all, and the real barrier
+        against a forged call is that the endpoint is structurally
+        unreachable except from report-viewer's own pod (NetworkPolicy, no
+        public Ingress) - see the target's own deployment docs.
+        """
+        visible = [
+            d
+            for d in self.actions
+            if d.required_role is None or d.required_role in user_roles
+        ]
+        return sorted(visible, key=lambda d: (d.weight, d.title, d.id))
+
+    async def invoke_token(self, action_id: str) -> str | None:
+        """The token to send with `action_id`'s invoke, or None if it has
+        none. A discovered action's Secret is read on every invoke, so a
+        rotation needs no restart; failing to read it raises
+        `kube.KubeError` rather than calling the target without it."""
+        if action_id not in self.discovered_tokens:
+            return load_invoke_token(action_id)
+        ref = self.discovered_tokens[action_id]
+        if ref is None:
+            return None
+        return await kube.secret_value(ref.namespace, ref.name, ref.key)
+
+
+async def current_catalog() -> Catalog:
+    """The chart's own actions plus any discovered ones."""
+    discovered = await _discovered()
+    own_ids = {a.id for a in _CATALOG}
+    extra = tuple(a for a in discovered.actions if a.id not in own_ids)
+    tokens = {k: v for k, v in discovered.tokens.items() if k not in own_ids}
+    return Catalog((*_CATALOG, *extra), tokens)
+
+
+async def list_actions(user_roles: frozenset[str]) -> list[ActionDescriptor]:
+    return (await current_catalog()).visible(user_roles)

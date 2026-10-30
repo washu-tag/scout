@@ -1,0 +1,35 @@
+{{- if .Values.actions.discovery.enabled }}
+{{- if not (or .Values.serviceAccount.create .Values.serviceAccount.name) }}
+{{- fail "actions.discovery binds a ClusterRole to report-viewer's ServiceAccount: set serviceAccount.create or serviceAccount.name, or turn discovery off, rather than granting it to the namespace's default ServiceAccount" }}
+{{- end }}
+# Action discovery lists labeled ConfigMaps across namespaces. Cluster-wide
+# because RBAC can't express a label selector. A published action's token
+# Secret is granted separately, by name, in the publishing chart's own
+# namespace. Names carry the release namespace so two releases don't share one
+# ClusterRole.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "report-viewer.fullname" . }}-action-reader-{{ .Release.Namespace }}
+  labels:
+    {{- include "report-viewer.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ['']
+    resources: ['configmaps']
+    verbs: ['list']
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "report-viewer.fullname" . }}-action-reader-{{ .Release.Namespace }}
+  labels:
+    {{- include "report-viewer.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "report-viewer.fullname" . }}-action-reader-{{ .Release.Namespace }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "report-viewer.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

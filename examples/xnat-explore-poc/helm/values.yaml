@@ -78,6 +78,18 @@ landingBaseUrl: ''
 # network isolation (networkPolicy above).
 invokeToken: ''
 
+# Publishes this service's button to report-viewer's action discovery
+# (templates/report-viewer-action.yaml), instead of a site admin adding it to
+# report-viewer's actions.custom. Leave it off when actions.custom already
+# carries the same id: report-viewer keeps its own entry and skips this one.
+reportViewerAction:
+  enabled: false
+  id: explore-xnat
+  title: Explore in XNAT
+  requiredRole: ''
+  # report-viewer's ServiceAccount, in networkPolicy.reportViewerNamespace.
+  reportViewerServiceAccount: report-viewer
+
 resources:
   requests:
     cpu: 50m
