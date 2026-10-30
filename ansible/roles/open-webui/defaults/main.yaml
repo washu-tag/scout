@@ -59,7 +59,7 @@ scout_models:
     preload: true # Resident — small enough to keep warm; serves as default and task model
     ui:
       name: 'Scout Explorer (Gemma 4 31B)'
-      description: 'Recommended. Fast and reliable for cohort queries, filters, and free-text searches. Best general-purpose option for Scout.'
+      description: "For simple questions. Runs on Scout's own GPUs."
 scout_model_create: true # Set to false to skip Scout model creation entirely
 
 # List of additional Ollama models to pull (see https://ollama.com/library)
