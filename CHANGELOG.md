@@ -1,5 +1,13 @@
 # Changelog
 
+## [5.1.2](https://github.com/washu-tag/scout/compare/v5.1.1...v5.1.2) (2026-10-30)
+
+
+### Bug Fixes
+
+* **opa:** bump to 1.21.4 to stop trusting the compromised CA chain (CVE-2026-91403) ([#938](https://github.com/washu-tag/scout/issues/938)) ([996bcb7](https://github.com/washu-tag/scout/commit/996bcb76a68a19a991070548d29188fd253bc99a))
+* **valkey:** Recreate strategy on its persistent volume, upgraded client-side ([#937](https://github.com/washu-tag/scout/issues/937)) ([8d374bc](https://github.com/washu-tag/scout/commit/8d374bc15691e1dce11ef648f2c4ea943af136d6))
+
 ## [5.1.1](https://github.com/washu-tag/scout/compare/v5.1.0...v5.1.1) (2026-10-26)
 
 
