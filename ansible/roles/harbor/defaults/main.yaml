@@ -16,6 +16,9 @@ harbor_registry_url: 'https://{{ harbor_hostname }}'
 # Registry proxy configuration
 # List of public registries to proxy through Harbor
 # Each proxy prject name can be overridden in inventory with harbor_<registry_name>_proxy_project variable
+# Harbor pulls from the upstream anonymously unless harbor_<registry_name>_proxy_username and
+# harbor_<registry_name>_proxy_password are set. Proxy projects are public, so anyone who can reach
+# Harbor can pull whatever those credentials can read.
 harbor_registry_proxies:
   - public_registry: docker.io
     registry_name: dockerhub

@@ -64,6 +64,17 @@ helm install example-app examples/on-prem-pluggable-app \
   --set domain=your-scout-domain.org
 ```
 
+Or, on an Ansible-managed site, list it in `inventory.yaml` and run `make install-pluggable-apps` ([Install a Pluggable App](https://washu-scout.readthedocs.io/en/latest/customize/install.html)):
+
+```yaml
+pluggable_apps:
+  - name: example-app
+    namespace: scout-example
+    chart: '{{ scout_repo_dir }}/examples/on-prem-pluggable-app'
+    values:
+      domain: '{{ server_hostname }}'
+```
+
 The app is then at `https://example-app.<domain>`, and a chip for it appears on the Launchpad.
 
 To verify the installation worked:

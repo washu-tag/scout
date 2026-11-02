@@ -93,6 +93,10 @@ staging:
     # Accept the Sonatype Nexus CE EULA (https://links.sonatype.com/products/nxrm/ce-eula).
     # If false, you must manually log in to Nexus and accept the EULA during setup.
     accept_nexus_eula: true
+    # Upstream credentials for a Harbor proxy, needed for private images. Read-only,
+    # and limited to the packages this site needs: proxy projects are public.
+    # harbor_ghcr_proxy_username: <account>
+    # harbor_ghcr_proxy_password: $(echo $GHCR_TOKEN | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     # Traefik
     tls_cert_path: ''
@@ -791,6 +795,19 @@ k3s_cluster:
     # data_generator_secrets:
     #   AZURE_OPENAI_KEY: my_azure_key
     # data_generator_pull_policy: Always
+
+    #---------------------------------------------------------------------------
+    # Pluggable apps
+    #---------------------------------------------------------------------------
+    # Site-installed Helm charts, deployed after the rest of Scout - see
+    # docs/source/customize/install.md and roles/pluggable_apps/README.md.
+    # pluggable_apps:
+    #   - name: example-app
+    #     namespace: scout-example
+    #     chart: oci://ghcr.io/example-org/charts/example-app
+    #     version: 1.2.0
+    #     values:
+    #       domain: '{{ server_hostname }}'
 
     #---------------------------------------------------------------------------
     # Playbooks (Voilà)

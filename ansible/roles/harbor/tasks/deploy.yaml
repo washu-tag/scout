@@ -104,6 +104,28 @@
     force_basic_auth: true
   register: registries_response
 
+- name: Set upstream credentials on registry endpoints
+  ansible.builtin.uri:
+    url: '{{ harbor_registry_url }}/api/v2.0/registries/{{ harbor_registry_id }}'
+    follow_redirects: none
+    method: PUT
+    user: admin
+    password: '{{ harbor_admin_password }}'
+    force_basic_auth: true
+    body_format: json
+    body:
+      credential_type: basic
+      access_key: "{{ lookup('vars', 'harbor_' + item.registry_name + '_proxy_username') }}"
+      access_secret: "{{ lookup('vars', 'harbor_' + item.registry_name + '_proxy_password') }}"
+  vars:
+    harbor_registry_id: "{{ registries_response.json | selectattr('name', 'equalto', item.registry_name) | map(attribute='id') | first }}"
+  loop: '{{ harbor_registry_proxies_final }}'
+  loop_control:
+    label: '{{ item.registry_name }}'
+  when: lookup('vars', 'harbor_' + item.registry_name + '_proxy_username', default='') | length > 0
+  no_log: true
+  changed_when: true
+
 - name: Create proxy cache projects
   ansible.builtin.uri:
     url: '{{ harbor_registry_url }}/api/v2.0/projects'
