@@ -67,7 +67,7 @@ All settings are env vars prefixed `XNAT_EXPLORE_POC_` (see `src/xnat_explore_po
 | `XNAT_EXPLORE_POC_PORT`              | `8000`                  | Internal invoke listener.                                                      |
 | `XNAT_EXPLORE_POC_LANDING_PAGE_PORT` | `8080`                  | Public landing-page listener.                                                  |
 | `XNAT_EXPLORE_POC_LANDING_BASE_URL`  | `http://localhost:8080` | This app's own public base URL — what `/invoke`'s response points at.          |
-| `XNAT_EXPLORE_POC_INVOKE_TOKEN`      | `""`                    | Must match report-viewer's `actions.custom[].invokeToken` for this action.     |
+| `XNAT_EXPLORE_POC_INVOKE_TOKEN`      | `""`                    | The token report-viewer must send. The chart sets it from its own Secret.      |
 
 ## Local development
 
@@ -94,13 +94,12 @@ Required `values.yaml` overrides:
 - `landingBaseUrl` — this app's own public base URL (bare, no trailing slash).
 - `landingPage.ingress.host` — the bare hostname (no scheme) to serve the landing page on.
 - `networkPolicy.reportViewerNamespace` — the namespace report-viewer is deployed into.
-- `invokeToken` — generate a random secret, matching report-viewer's
-  `actions.custom[].invokeToken` for this action.
+- `invokeToken` — generate a random secret.
 
-Then either set `reportViewerAction.enabled: true`, which publishes the button from this
-chart for report-viewer to discover, or add a matching entry to report-viewer's own
-`actions.custom` (see the customize guide linked above) pointing `endpointUrl` at this
-chart's in-cluster invoke service.
+The chart publishes its own button for report-viewer to discover
+(`reportViewerAction`), along with a Role that lets report-viewer read the token from
+this chart's Secret. report-viewer's action discovery is on by default, so nothing
+changes on report-viewer's side.
 
 ## Layout
 

@@ -97,11 +97,11 @@ actions:
   #       weight: 50
   #       requiredRole: report-viewer-admin
   #
-  #     - id: explore-xnat
-  #       title: Explore in XNAT
+  #     - id: my-app
+  #       title: Open in My App
   #       actionType: backend-call
-  #       endpointUrl: http://xnat-explore-poc.<namespace>.svc.cluster.local:8000/invoke
-  #       invokeToken: <matches xnat-explore-poc's invokeToken value>
+  #       endpointUrl: http://my-app.<namespace>.svc.cluster.local:8000/invoke
+  #       invokeToken: <the token my-app checks>
   custom: []
   # Buttons other charts publish as ConfigMaps labeled
   # report-viewer.scout.xnat.org/actions: "true", read through the Kubernetes

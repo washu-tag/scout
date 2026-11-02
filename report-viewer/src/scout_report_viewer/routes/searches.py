@@ -514,6 +514,15 @@ async def invoke_search_action(
     ):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
+    try:
+        invoke_token = await catalog.invoke_token(action.id)
+    except kube.KubeError:
+        log.exception("action %s invoke token unavailable", scrub_for_log(action_id))
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="action invoke failed: its token is unavailable",
+        )
+
     # Resolve the cohort to concrete per-report identifiers rather than
     # handing the target the raw sql - a real App shouldn't need Trino
     # access (or report-viewer's own OPA-authorized query path, ADR 0020)
@@ -565,14 +574,6 @@ async def invoke_search_action(
         reports = [r for r in reports if r["primary_report_identifier"] in visible]
 
     headers = {}
-    try:
-        invoke_token = await catalog.invoke_token(action.id)
-    except kube.KubeError:
-        log.exception("action %s invoke token unavailable", scrub_for_log(action_id))
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="action invoke failed: its token is unavailable",
-        )
     if invoke_token:
         headers["X-Report-Viewer-Action-Token"] = invoke_token
     try:

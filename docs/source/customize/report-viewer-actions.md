@@ -109,10 +109,10 @@ to open as a popup from OWUI's embedded chat.
 ```yaml
 actions:
   custom:
-    - id: explore-xnat
-      title: Explore in XNAT
+    - id: my-app
+      title: Open in My App
       actionType: backend-call
-      endpointUrl: http://your-app.<namespace>.svc.cluster.local:8000/invoke
+      endpointUrl: http://my-app.<namespace>.svc.cluster.local:8000/invoke
       invokeToken: <a generated secret>
       requiredRole: report-viewer-admin
 ```
@@ -228,8 +228,9 @@ fails with a 502 and your endpoint isn't called.
 your NetworkPolicy must still admit only report-viewer's pods.
 
 report-viewer lists the labeled ConfigMaps through the Kubernetes API at most once every
-30 seconds, so a published, changed or removed button shows up within that time. If the
-API can't be reached, the last list stays in use. The chart's `actions.discovery` values
+30 seconds, in the background, so a published, changed or removed button shows up within
+about that time. Requests keep using the last list while a new one is fetched, and when
+the API can't be reached. The chart's `actions.discovery` values
 control this (`report_viewer_action_discovery` from inventory):
 
 ```yaml

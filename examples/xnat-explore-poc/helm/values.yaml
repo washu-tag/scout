@@ -71,19 +71,17 @@ networkPolicy:
 landingBaseUrl: ''
 
 # Shared secret report-viewer sends as X-Report-Viewer-Action-Token
-# (rendered into a real Secret - see templates/secret.yaml). Must match
-# this action's actions.custom[].invokeToken on report-viewer's side. The
-# only credential this app checks - see src/xnat_explore_poc/config.py's
-# invoke_token comment for why that's sufficient given the invoke port's
-# network isolation (networkPolicy above).
+# (rendered into a real Secret - see templates/secret.yaml). report-viewer
+# reads it from that Secret through the button this chart publishes
+# (reportViewerAction below). The only credential this app checks - see
+# src/xnat_explore_poc/config.py's invoke_token comment for why that's
+# sufficient given the invoke port's network isolation (networkPolicy above).
 invokeToken: ''
 
-# Publishes this service's button to report-viewer's action discovery
-# (templates/report-viewer-action.yaml), instead of a site admin adding it to
-# report-viewer's actions.custom. Leave it off when actions.custom already
-# carries the same id: report-viewer keeps its own entry and skips this one.
+# Publishes this service's button for report-viewer's action discovery
+# (templates/report-viewer-action.yaml).
 reportViewerAction:
-  enabled: false
+  enabled: true
   id: explore-xnat
   title: Explore in XNAT
   requiredRole: ''

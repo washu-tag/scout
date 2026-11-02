@@ -20,6 +20,8 @@ import httpx
 SA_DIR = Path("/var/run/secrets/kubernetes.io/serviceaccount")
 REQUEST_TIMEOUT_SECONDS = 10.0
 
+_client: httpx.AsyncClient | None = None
+
 
 class KubeError(RuntimeError):
     pass
@@ -33,22 +35,33 @@ def _base_url() -> str:
     return f"https://{host}:{port}"
 
 
+def _http() -> httpx.AsyncClient:
+    global _client
+    if _client is None:
+        ca = SA_DIR / "ca.crt"
+        _client = httpx.AsyncClient(
+            base_url=_base_url(),
+            verify=str(ca) if ca.is_file() else True,
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
+    return _client
+
+
+async def aclose() -> None:
+    global _client
+    if _client is not None:
+        await _client.aclose()
+        _client = None
+
+
 async def _get(path: str) -> dict:
     # Projected tokens rotate, so the file is read on every call.
     try:
         token = (SA_DIR / "token").read_text().strip()
     except OSError as exc:
         raise KubeError(f"service-account token unreadable: {exc}") from None
-    ca = SA_DIR / "ca.crt"
     try:
-        async with httpx.AsyncClient(
-            base_url=_base_url(),
-            verify=str(ca) if ca.is_file() else True,
-            timeout=REQUEST_TIMEOUT_SECONDS,
-        ) as client:
-            response = await client.get(
-                path, headers={"Authorization": f"Bearer {token}"}
-            )
+        response = await _http().get(path, headers={"Authorization": f"Bearer {token}"})
     except (httpx.HTTPError, httpx.InvalidURL) as exc:
         raise KubeError(f"GET {path}: {exc}") from None
     if response.status_code != 200:

@@ -143,7 +143,9 @@ a Role and RoleBinding as well. An endpoint elsewhere stays possible through
 Discovery is an in-process LIST of labeled ConfigMaps
 (`scout_report_viewer/kube.py`), cluster-wide or over a configured namespace list,
 cached for `actions.discovery.ttlSeconds` (30 seconds by default) and re-parsed only
-when a ConfigMap's `resourceVersion` changes. A failed LIST keeps the last snapshot, so
+when a ConfigMap's `resourceVersion` changes. Only the first LIST is waited for; later
+ones run in the background while requests keep the last snapshot, so a slow API server
+never holds up the toolbar or an invoke. A failed LIST keeps the last snapshot, so
 published buttons go stale rather than missing while the API is unreachable. The
 chart's own catalog wins every id collision, published entries are read in namespace,
 ConfigMap name and data key order, and the later duplicate is skipped and logged.

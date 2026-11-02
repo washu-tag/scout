@@ -10,7 +10,9 @@ shared JWKS-mocking/`mint_token` fixtures these tests use.
 
 from __future__ import annotations
 
+import asyncio
 import base64
+import time
 
 import httpx
 import pytest
@@ -721,6 +723,7 @@ def discovery(monkeypatch):
     monkeypatch.setattr(settings, "action_discovery_enabled", True)
     monkeypatch.setattr(settings, "action_discovery_namespace", "ALL")
     monkeypatch.setattr(actions, "_snapshot", actions._Snapshot())
+    monkeypatch.setattr(actions, "_refresh_task", None)
     state = {
         "configmaps": {
             None: [_configmap("datasets", "cm", **{"a.yaml": _SEND_TO_XNAT})]
@@ -771,6 +774,31 @@ async def test_discovery_relists_only_after_the_ttl(discovery, monkeypatch):
         "explain-search",
         "download-csv",
     }
+
+
+async def test_expired_discovery_serves_the_last_list_while_it_refreshes(
+    discovery, monkeypatch
+):
+    await list_actions(frozenset())
+    expired = time.monotonic() - settings.action_discovery_ttl_seconds - 1
+    monkeypatch.setattr(actions._snapshot, "checked_at", expired)
+    release = asyncio.Event()
+    listing = kube.list_configmaps
+
+    async def slow(label_selector, namespace):
+        await release.wait()
+        return await listing(label_selector, namespace)
+
+    monkeypatch.setattr(kube, "list_configmaps", slow)
+    discovery["configmaps"] = {None: []}
+    for _ in range(2):
+        visible = await asyncio.wait_for(list_actions(frozenset({"datasets-user"})), 1)
+        assert "send-to-xnat" in {a.id for a in visible}
+    release.set()
+    await actions._refresh_task
+    assert discovery["lists"] == [None, None]
+    visible = await list_actions(frozenset({"datasets-user"}))
+    assert "send-to-xnat" not in {a.id for a in visible}
 
 
 async def test_discovery_failure_keeps_the_last_catalog(discovery, monkeypatch):
@@ -859,14 +887,12 @@ def test_invoke_discovered_action_without_its_token_is_502(
     priv, _ = keypair
     headers = _bearer_headers(priv, roles=["datasets-user"])
     search_id = _create_search(client, headers, fake_trino)
-    fake_trino(
-        ["primary_report_identifier", "accession_number"],
-        [{"primary_report_identifier": "s3://x/1", "accession_number": "ACC1"}],
-    )
+    queries = len(fake_trino.calls)
     r = client.post(
         f"/api/searches/{search_id}/actions/send-to-xnat/invoke", headers=headers
     )
     assert r.status_code == 502
+    assert len(fake_trino.calls) == queries
     assert _FakeAsyncClient.last_call is None
 
 
@@ -910,3 +936,29 @@ async def test_secret_value(monkeypatch, data, expected):
             await kube.secret_value("datasets", "datasets-invoke-token", "token")
             == expected
         )
+
+
+async def test_kube_calls_share_one_client(monkeypatch, tmp_path):
+    (tmp_path / "token").write_text("sa-token\n")
+    monkeypatch.setattr(kube, "SA_DIR", tmp_path)
+    monkeypatch.setattr(kube, "_client", None)
+    seen = []
+
+    def handler(request):
+        seen.append(request.headers["Authorization"])
+        return httpx.Response(200, json={"items": []})
+
+    real = httpx.AsyncClient
+    made = []
+
+    def client(**kwargs):
+        made.append(kwargs)
+        return real(transport=httpx.MockTransport(handler), **kwargs)
+
+    monkeypatch.setattr(httpx, "AsyncClient", client)
+    await kube.list_configmaps("a=b", None)
+    await kube.list_configmaps("a=b", "datasets")
+    assert len(made) == 1
+    assert seen == ["Bearer sa-token"] * 2
+    await kube.aclose()
+    assert kube._client is None

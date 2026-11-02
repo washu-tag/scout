@@ -388,7 +388,7 @@ class _Snapshot:
 
 
 _snapshot = _Snapshot()
-_refresh_lock = asyncio.Lock()
+_refresh_task: asyncio.Task | None = None
 
 
 def _discovery_namespaces() -> list[str | None]:
@@ -398,57 +398,66 @@ def _discovery_namespaces() -> list[str | None]:
     return [ns.strip() for ns in raw.split(",") if ns.strip()]
 
 
-async def _discovered() -> Discovered:
-    """The discovered actions, re-listed at most once per TTL. A failed list
-    keeps the previous snapshot, so discovered buttons go stale rather than
-    missing while the API is unreachable."""
+async def _refresh() -> None:
+    """Re-list the labeled ConfigMaps into `_snapshot`. A failed list keeps
+    the previous snapshot, so discovered buttons go stale rather than missing
+    while the API is unreachable."""
     global _snapshot
+    try:
+        listed = await asyncio.gather(
+            *(
+                kube.list_configmaps(f"{DISCOVERY_LABEL}=true", ns)
+                for ns in _discovery_namespaces()
+            )
+        )
+        configmaps = [cm for items in listed for cm in items]
+        reserved = {a.id for a in _CATALOG}
+        signature = (
+            tuple(sorted(reserved)),
+            tuple(
+                sorted(
+                    (
+                        (cm.get("metadata") or {}).get("uid", ""),
+                        (cm.get("metadata") or {}).get("resourceVersion", ""),
+                    )
+                    for cm in configmaps
+                )
+            ),
+        )
+        discovered = (
+            _snapshot.discovered
+            if signature == _snapshot.signature
+            else parse_discovered(configmaps, reserved)
+        )
+    except kube.KubeError as exc:
+        log.warning("action discovery failed, keeping the last catalog: %s", exc)
+        _snapshot.checked_at = time.monotonic()
+        return
+    except Exception:
+        # Published documents are untrusted; nothing in them may cost the
+        # chart's own buttons.
+        log.exception("action discovery failed, keeping the last catalog")
+        _snapshot.checked_at = time.monotonic()
+        return
+    _snapshot = _Snapshot(discovered, signature, time.monotonic())
+
+
+async def _discovered() -> Discovered:
+    """The discovered actions, re-listed at most once per TTL. Only the first
+    list is waited for; after that a refresh runs in the background and
+    callers get the last snapshot, so a slow API server never holds up the
+    toolbar or an invoke."""
+    global _refresh_task
     if not settings.action_discovery_enabled:
         return Discovered()
-    ttl = settings.action_discovery_ttl_seconds
-    if time.monotonic() - _snapshot.checked_at < ttl:
+    if time.monotonic() - _snapshot.checked_at < settings.action_discovery_ttl_seconds:
         return _snapshot.discovered
-    async with _refresh_lock:
-        if time.monotonic() - _snapshot.checked_at < ttl:
-            return _snapshot.discovered
-        try:
-            listed = await asyncio.gather(
-                *(
-                    kube.list_configmaps(f"{DISCOVERY_LABEL}=true", ns)
-                    for ns in _discovery_namespaces()
-                )
-            )
-            configmaps = [cm for items in listed for cm in items]
-            reserved = {a.id for a in _CATALOG}
-            signature = (
-                tuple(sorted(reserved)),
-                tuple(
-                    sorted(
-                        (
-                            (cm.get("metadata") or {}).get("uid", ""),
-                            (cm.get("metadata") or {}).get("resourceVersion", ""),
-                        )
-                        for cm in configmaps
-                    )
-                ),
-            )
-            discovered = (
-                _snapshot.discovered
-                if signature == _snapshot.signature
-                else parse_discovered(configmaps, reserved)
-            )
-        except kube.KubeError as exc:
-            log.warning("action discovery failed, keeping the last catalog: %s", exc)
-            _snapshot.checked_at = time.monotonic()
-            return _snapshot.discovered
-        except Exception:
-            # Published documents are untrusted; nothing in them may cost the
-            # chart's own buttons.
-            log.exception("action discovery failed, keeping the last catalog")
-            _snapshot.checked_at = time.monotonic()
-            return _snapshot.discovered
-        _snapshot = _Snapshot(discovered, signature, time.monotonic())
-        return discovered
+    if _refresh_task is None or _refresh_task.done():
+        _refresh_task = asyncio.create_task(_refresh())
+    if _snapshot.checked_at == float("-inf"):
+        # shield: a caller that disconnects mustn't cancel the shared list.
+        await asyncio.shield(_refresh_task)
+    return _snapshot.discovered
 
 
 @dataclass(frozen=True)
