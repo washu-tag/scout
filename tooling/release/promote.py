@@ -424,7 +424,7 @@ class OCI:
             )
             if missing_ok and absent:
                 return None
-            raise PromotionError("OCI descriptor lookup failed")
+            raise PromotionError(f"OCI descriptor lookup failed: {reference}")
         value = object_bytes(result.stdout).get("digest")
         require(
             isinstance(value, str) and DIGEST.fullmatch(value),
