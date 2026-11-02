@@ -278,7 +278,7 @@ class DiscoveredAction(BaseModel):
         if not _service_in(self.endpointUrl, namespace):
             raise ValueError(
                 f"endpointUrl must be a Service in namespace {namespace!r}: "
-                f"http(s)://<service>.{namespace}.svc[.cluster.local][:port]/<path>"
+                f"http(s)://<service>.{namespace}.svc[:<port>]/<path>"
             )
         return self
 

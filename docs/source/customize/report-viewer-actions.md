@@ -170,7 +170,7 @@ data:
       - id: send-to-my-app
         title: Send to My App
         actionType: backend-call
-        endpointUrl: http://my-app-invoke.my-app.svc.cluster.local:8002/invoke
+        endpointUrl: http://my-app-invoke.my-app.svc:8002/invoke
         requiredRole: report-viewer-admin
         invokeTokenSecret:
           name: my-app-invoke-token
@@ -188,7 +188,7 @@ other differences:
 | `title`             | Up to 60 characters.                                                                                                                          |
 | `weight`            | Orders the button among published ones. Published buttons always come after report-viewer's own, so they move into "More" first.             |
 | `actionType`        | `open-url` (the default) or `backend-call`. A `client` action needs a handler in report-viewer's frontend, so it can't be published.          |
-| `endpointUrl`       | On a `backend-call`, a Service in the ConfigMap's own namespace: `http(s)://<service>.<namespace>.svc[.cluster.local][:port]/<path>`. Any other host is skipped and logged. A site admin can still point an `actions.custom` button anywhere. |
+| `endpointUrl`       | On a `backend-call`, a Service in the ConfigMap's own namespace: `http(s)://<service>.<namespace>.svc[:<port>]/<path>`. Any other host is skipped and logged. A site admin can still point an `actions.custom` button anywhere. |
 | `invokeTokenSecret` | Replaces `invokeToken`. Required on a `backend-call` action, and only allowed there: the `name` of a Secret in the ConfigMap's own namespace and its `key` (default `token`). |
 
 The token never goes in the ConfigMap. Grant report-viewer's ServiceAccount `get` on

@@ -20,7 +20,7 @@ data:
       - id: {{ .id | quote }}
         title: {{ .title | quote }}
         actionType: backend-call
-        endpointUrl: {{ printf "http://%s.%s.svc.cluster.local:%v/invoke" $fullname $.Release.Namespace $.Values.service.port | quote }}
+        endpointUrl: {{ printf "http://%s.%s.svc:%v/invoke" $fullname $.Release.Namespace $.Values.service.port | quote }}
         {{- with .requiredRole }}
         requiredRole: {{ . | quote }}
         {{- end }}

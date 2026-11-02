@@ -135,10 +135,14 @@ an endpoint of its choosing.
 A published `backend-call` must also stay inside its namespace. It needs an
 `invokeTokenSecret`, and its `endpointUrl` must be a Service in the ConfigMap's namespace,
 `<service>.<namespace>.svc` with only the default `.cluster.local` allowed after it; any
-other entry is skipped and logged. A ConfigMap writer can't send a cohort outside the
-cluster or to another namespace, and publishing such a button takes the rights to create
-a Role and RoleBinding as well. An endpoint elsewhere stays possible through
-`actions.custom`, which only a site admin writes.
+other entry is skipped and logged. The shorter `<service>.<namespace>` isn't accepted: a
+pod's resolver tries a name against the cluster's search domains and then on public DNS,
+so with no matching Service it would resolve on the internet whenever the namespace is
+also a top-level domain (`io`, `dev`). `.svc` is never a public name, and the search
+domains supply the cluster domain, whatever it is. A ConfigMap writer can't send a cohort
+outside the cluster or to another namespace, and publishing such a button takes the
+rights to create a Role and RoleBinding as well. An endpoint elsewhere stays possible
+through `actions.custom`, which only a site admin writes.
 
 Discovery is an in-process LIST of labeled ConfigMaps
 (`scout_report_viewer/kube.py`), cluster-wide or over a configured namespace list,
