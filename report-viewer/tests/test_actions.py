@@ -566,11 +566,13 @@ def test_parse_discovered_reads_actions_and_token_refs():
         reserved_ids=set(),
     )
     (action,) = found.actions
-    assert action.id == "send-to-xnat"
+    assert action.id == "datasets.send-to-xnat"
     assert action.action_type == "backend-call"
     assert action.required_role == "datasets-user"
     assert found.tokens == {
-        "send-to-xnat": actions.TokenRef("datasets", "datasets-invoke-token", "token")
+        "datasets.send-to-xnat": actions.TokenRef(
+            "datasets", "datasets-invoke-token", "token"
+        )
     }
 
 
@@ -594,7 +596,7 @@ def test_parse_discovered_skips_a_bad_document_but_keeps_its_siblings(doc):
         ],
         reserved_ids=set(),
     )
-    assert [a.id for a in found.actions] == ["send-to-xnat"]
+    assert [a.id for a in found.actions] == ["datasets.send-to-xnat"]
 
 
 @pytest.mark.parametrize(
@@ -664,7 +666,7 @@ def test_parse_discovered_skips_an_invalid_entry_but_keeps_the_rest(entry):
     found = actions.parse_discovered(
         [_configmap("ns", "cm", **{"a.yaml": doc})], reserved_ids=set()
     )
-    assert [a.id for a in found.actions] == ["ok"]
+    assert [a.id for a in found.actions] == ["ns.ok"]
 
 
 @pytest.mark.parametrize(
@@ -692,28 +694,34 @@ def test_parse_discovered_accepts_a_service_in_its_own_namespace(url):
     assert [a.endpoint_url for a in found.actions] == [url]
 
 
-def test_parse_discovered_rejects_taken_ids_in_a_stable_order():
+def test_parse_discovered_scopes_ids_to_their_namespace():
     doc = _SEND_TO_XNAT.replace("datasets-invoke-token", "{ns}-token").replace(
         "datasets-invoke.datasets.", "datasets-invoke.{ns}."
     )
+
+    def published(namespace, name, old="", new=""):
+        text = doc.replace("{ns}", namespace)
+        if old:
+            text = text.replace(old, new)
+        return _configmap(namespace, name, **{"a.yaml": text})
+
     found = actions.parse_discovered(
         [
-            _configmap("zeta", "cm", **{"a.yaml": doc.replace("{ns}", "zeta")}),
-            _configmap("alpha", "cm", **{"a.yaml": doc.replace("{ns}", "alpha")}),
-            _configmap(
-                "alpha",
-                "cm2",
-                **{
-                    "a.yaml": doc.replace("send-to-xnat", "download-csv").replace(
-                        "{ns}", "alpha"
-                    )
-                },
-            ),
+            published("zeta", "cm"),
+            published("alpha", "cm"),
+            published("alpha", "cm2", "Send to XNAT", "Duplicate"),
+            published("beta", "cm", "send-to-xnat", "download-csv"),
+            published("gamma", "cm"),
         ],
-        reserved_ids={"download-csv"},
+        reserved_ids={"download-csv", "gamma.send-to-xnat"},
     )
-    assert [a.id for a in found.actions] == ["send-to-xnat"]
-    assert found.tokens["send-to-xnat"].namespace == "alpha"
+    assert [(a.id, a.title) for a in found.actions] == [
+        ("alpha.send-to-xnat", "Send to XNAT"),
+        ("beta.download-csv", "Send to XNAT"),
+        ("zeta.send-to-xnat", "Send to XNAT"),
+    ]
+    assert found.tokens["alpha.send-to-xnat"].namespace == "alpha"
+    assert found.tokens["zeta.send-to-xnat"].namespace == "zeta"
 
 
 @pytest.fixture
@@ -759,9 +767,15 @@ async def test_discovery_off_lists_nothing(discovery, monkeypatch):
 
 
 async def test_discovered_action_is_role_gated_and_merged(discovery):
-    assert "send-to-xnat" not in {a.id for a in await list_actions(frozenset())}
+    assert "datasets.send-to-xnat" not in {
+        a.id for a in await list_actions(frozenset())
+    }
     visible = await list_actions(frozenset({"datasets-user"}))
-    assert [a.id for a in visible] == ["explain-search", "download-csv", "send-to-xnat"]
+    assert [a.id for a in visible] == [
+        "explain-search",
+        "download-csv",
+        "datasets.send-to-xnat",
+    ]
 
 
 async def test_discovery_relists_only_after_the_ttl(discovery, monkeypatch):
@@ -793,12 +807,12 @@ async def test_expired_discovery_serves_the_last_list_while_it_refreshes(
     discovery["configmaps"] = {None: []}
     for _ in range(2):
         visible = await asyncio.wait_for(list_actions(frozenset({"datasets-user"})), 1)
-        assert "send-to-xnat" in {a.id for a in visible}
+        assert "datasets.send-to-xnat" in {a.id for a in visible}
     release.set()
     await actions._refresh_task
     assert discovery["lists"] == [None, None]
     visible = await list_actions(frozenset({"datasets-user"}))
-    assert "send-to-xnat" not in {a.id for a in visible}
+    assert "datasets.send-to-xnat" not in {a.id for a in visible}
 
 
 async def test_discovery_failure_keeps_the_last_catalog(discovery, monkeypatch):
@@ -806,7 +820,7 @@ async def test_discovery_failure_keeps_the_last_catalog(discovery, monkeypatch):
     monkeypatch.setattr(actions._snapshot, "checked_at", float("-inf"))
     discovery["fail"] = True
     ids = {a.id for a in await list_actions(frozenset({"datasets-user"}))}
-    assert "send-to-xnat" in ids
+    assert "datasets.send-to-xnat" in ids
 
 
 async def test_discovery_error_of_any_kind_keeps_the_chart_catalog(
@@ -821,7 +835,7 @@ async def test_discovery_error_of_any_kind_keeps_the_chart_catalog(
     monkeypatch.setattr(actions, "parse_discovered", broken)
     discovery["configmaps"][None][0]["metadata"]["resourceVersion"] = "2"
     ids = [a.id for a in await list_actions(frozenset({"datasets-user"}))]
-    assert ids == ["explain-search", "download-csv", "send-to-xnat"]
+    assert ids == ["explain-search", "download-csv", "datasets.send-to-xnat"]
     assert discovery["lists"] == [None, None]
     await list_actions(frozenset())
     assert discovery["lists"] == [None, None]
@@ -836,7 +850,7 @@ async def test_discovery_lists_each_configured_namespace(discovery, monkeypatch)
 async def test_discovered_token_is_read_from_its_own_namespace(discovery):
     discovery["secrets"][("datasets", "datasets-invoke-token", "token")] = "s3cret"
     catalog = await actions.current_catalog()
-    assert await catalog.invoke_token("send-to-xnat") == "s3cret"
+    assert await catalog.invoke_token("datasets.send-to-xnat") == "s3cret"
 
 
 async def test_discovered_action_never_uses_a_chart_token_file(
@@ -844,15 +858,15 @@ async def test_discovered_action_never_uses_a_chart_token_file(
 ):
     discovery["secrets"][("datasets", "datasets-invoke-token", "token")] = "s3cret"
     monkeypatch.setattr(settings, "action_tokens_path", str(tmp_path))
-    (tmp_path / "send-to-xnat").write_text("chart-token")
+    (tmp_path / "datasets.send-to-xnat").write_text("chart-token")
     catalog = await actions.current_catalog()
-    assert await catalog.invoke_token("send-to-xnat") == "s3cret"
+    assert await catalog.invoke_token("datasets.send-to-xnat") == "s3cret"
 
 
 async def test_unreadable_discovered_token_raises(discovery):
     catalog = await actions.current_catalog()
     with pytest.raises(kube.KubeError):
-        await catalog.invoke_token("send-to-xnat")
+        await catalog.invoke_token("datasets.send-to-xnat")
 
 
 def test_invoke_discovered_action_sends_its_secret_token(
@@ -869,7 +883,8 @@ def test_invoke_discovered_action_sends_its_secret_token(
         [{"primary_report_identifier": "s3://x/1", "accession_number": "ACC1"}],
     )
     r = client.post(
-        f"/api/searches/{search_id}/actions/send-to-xnat/invoke", headers=headers
+        f"/api/searches/{search_id}/actions/datasets.send-to-xnat/invoke",
+        headers=headers,
     )
     assert r.status_code == 200, r.text
     call = _FakeAsyncClient.last_call
@@ -889,7 +904,8 @@ def test_invoke_discovered_action_without_its_token_is_502(
     search_id = _create_search(client, headers, fake_trino)
     queries = len(fake_trino.calls)
     r = client.post(
-        f"/api/searches/{search_id}/actions/send-to-xnat/invoke", headers=headers
+        f"/api/searches/{search_id}/actions/datasets.send-to-xnat/invoke",
+        headers=headers,
     )
     assert r.status_code == 502
     assert len(fake_trino.calls) == queries

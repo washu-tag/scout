@@ -282,9 +282,9 @@ class DiscoveredAction(BaseModel):
             )
         return self
 
-    def descriptor(self) -> ActionDescriptor:
+    def descriptor(self, namespace: str) -> ActionDescriptor:
         return ActionDescriptor(
-            id=self.id,
+            id=f"{namespace}.{self.id}",
             title=self.title,
             weight=self.weight,
             action_type=self.actionType,
@@ -310,7 +310,9 @@ class Discovered:
 
 
 def parse_discovered(configmaps: list[dict], reserved_ids: set[str]) -> Discovered:
-    """The actions in labeled ConfigMaps, in a stable order. A bad document
+    """The actions in labeled ConfigMaps, in a stable order, each with the id
+    `<namespace>.<id>`. Neither part can contain a dot, so apps in different
+    namespaces never collide and none can take a built-in's id. A bad document
     costs its actions, a bad entry costs itself, and an id already taken (by
     `reserved_ids` or an earlier entry) rejects the later one.
 
@@ -357,24 +359,24 @@ def parse_discovered(configmaps: list[dict], reserved_ids: set[str]) -> Discover
                     action = DiscoveredAction.model_validate(
                         entry, context={"namespace": namespace}
                     )
-                    descriptor = action.descriptor()
+                    descriptor = action.descriptor(namespace)
                 except ValidationError as exc:
                     log.warning(
                         "action catalog %s: skipping entry %d (%s)", source, i, exc
                     )
                     continue
-                if action.id in taken:
+                if descriptor.id in taken:
                     log.warning(
                         "action catalog %s: skipping entry %d, duplicate id %r",
                         source,
                         i,
-                        action.id,
+                        descriptor.id,
                     )
                     continue
-                taken.add(action.id)
+                taken.add(descriptor.id)
                 actions.append(descriptor)
                 ref = action.invokeTokenSecret
-                tokens[action.id] = (
+                tokens[descriptor.id] = (
                     TokenRef(namespace, ref.name, ref.key) if ref else None
                 )
     return Discovered(tuple(actions), tokens)
@@ -411,23 +413,19 @@ async def _refresh() -> None:
             )
         )
         configmaps = [cm for items in listed for cm in items]
-        reserved = {a.id for a in _CATALOG}
-        signature = (
-            tuple(sorted(reserved)),
-            tuple(
-                sorted(
-                    (
-                        (cm.get("metadata") or {}).get("uid", ""),
-                        (cm.get("metadata") or {}).get("resourceVersion", ""),
-                    )
-                    for cm in configmaps
+        signature = tuple(
+            sorted(
+                (
+                    (cm.get("metadata") or {}).get("uid", ""),
+                    (cm.get("metadata") or {}).get("resourceVersion", ""),
                 )
-            ),
+                for cm in configmaps
+            )
         )
         discovered = (
             _snapshot.discovered
             if signature == _snapshot.signature
-            else parse_discovered(configmaps, reserved)
+            else parse_discovered(configmaps, {a.id for a in _CATALOG})
         )
     except kube.KubeError as exc:
         log.warning("action discovery failed, keeping the last catalog: %s", exc)
@@ -501,10 +499,7 @@ class Catalog:
 async def current_catalog() -> Catalog:
     """The chart's own actions plus any discovered ones."""
     discovered = await _discovered()
-    own_ids = {a.id for a in _CATALOG}
-    extra = tuple(a for a in discovered.actions if a.id not in own_ids)
-    tokens = {k: v for k, v in discovered.tokens.items() if k not in own_ids}
-    return Catalog((*_CATALOG, *extra), tokens)
+    return Catalog((*_CATALOG, *discovered.actions), discovered.tokens)
 
 
 async def list_actions(user_roles: frozenset[str]) -> list[ActionDescriptor]:

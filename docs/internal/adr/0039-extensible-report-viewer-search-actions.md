@@ -146,9 +146,11 @@ cached for `actions.discovery.ttlSeconds` (30 seconds by default) and re-parsed 
 when a ConfigMap's `resourceVersion` changes. Only the first LIST is waited for; later
 ones run in the background while requests keep the last snapshot, so a slow API server
 never holds up the toolbar or an invoke. A failed LIST keeps the last snapshot, so
-published buttons go stale rather than missing while the API is unreachable. The
-chart's own catalog wins every id collision, published entries are read in namespace,
-ConfigMap name and data key order, and the later duplicate is skipped and logged.
+published buttons go stale rather than missing while the API is unreachable. A
+published entry's id becomes `<namespace>.<id>`. Neither part can contain a dot, so apps
+in different namespaces never collide, and a published entry can't take a built-in's id
+even when that built-in is turned off. Within one namespace, entries are read in
+ConfigMap name and data key order, and a later duplicate is skipped and logged.
 Degradation is graded as for the mounted catalog: a bad document costs its entries, and
 a bad entry costs itself. Unlike a launchpad chip, an entry with an unknown field is
 rejected rather than read without it, because `requiredRole` is an authorization

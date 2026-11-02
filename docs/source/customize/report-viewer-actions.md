@@ -184,7 +184,7 @@ other differences:
 
 | Field               | Notes                                                                                                                                         |
 |---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
-| `id`                | Lowercase letters, digits and hyphens, up to 63 characters. An id the chart's own catalog uses, or one an earlier published entry took, is skipped and logged. Entries are read in namespace, ConfigMap name and data key order. |
+| `id`                | Lowercase letters, digits and hyphens, up to 63 characters. report-viewer prefixes it with the ConfigMap's namespace (`my-app.send-to-my-app`), so apps in different namespaces can use the same id. Within one namespace, entries are read in ConfigMap name and data key order, and a later duplicate is skipped and logged. |
 | `title`             | Up to 60 characters.                                                                                                                          |
 | `actionType`        | `open-url` (the default) or `backend-call`. A `client` action needs a handler in report-viewer's frontend, so it can't be published.          |
 | `endpointUrl`       | On a `backend-call`, a Service in the ConfigMap's own namespace: `http(s)://<service>.<namespace>.svc[.cluster.local][:port]/<path>`. Any other host is skipped and logged. A site admin can still point an `actions.custom` button anywhere. |
