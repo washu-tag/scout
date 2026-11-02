@@ -16,8 +16,18 @@ export const IDENTIFIER_FIELDS = new Set([
 
 const SAMPLE_SIZE = 200;
 const ISO_DATEISH = /^\d{4}-\d{2}-\d{2}([T ]|$)/;
+// Trino DECIMALs arrive as strings; the decimal point keeps a numeric-looking
+// identifier categorical.
+const DECIMAL_STRING = /^-?\d+\.\d+$/;
 
 type Row = Record<string, unknown>;
+
+/** A JSON number or a Trino DECIMAL string as a number; undefined otherwise. */
+export function toNumber(v: unknown): number | undefined {
+  if (typeof v === 'number') return Number.isFinite(v) ? v : undefined;
+  if (typeof v === 'string' && DECIMAL_STRING.test(v)) return Number(v);
+  return undefined;
+}
 
 function sampleValues(field: string, rows: Row[]): unknown[] {
   const out: unknown[] = [];
@@ -42,9 +52,7 @@ export function columnKind(field: string, rows: Row[], isDate = false): ColumnKi
   if (isDate) return 'temporal';
   if (sample.length === 0) return 'none';
 
-  // Trino numerics arrive as JSON numbers, so a numeric-looking identifier
-  // stays a string and lands as categorical.
-  if (sample.every((v) => typeof v === 'number')) return 'numeric';
+  if (sample.every((v) => toNumber(v) !== undefined)) return 'numeric';
   if (sample.every((v) => typeof v === 'string' && ISO_DATEISH.test(v))) return 'temporal';
   return 'categorical';
 }

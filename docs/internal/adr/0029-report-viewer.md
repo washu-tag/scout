@@ -21,10 +21,12 @@ keeps the model's scouting queries out of the user's view. A query has no
 required projections and no evidence rewrite. The viewer gates its report-only
 parts (opening a report from a row, the reader, non-`client` actions) on the
 rows carrying `primary_report_identifier`, and the service rejects backend
-actions on a query. Report-body columns are dropped from every
-`scout_query_sql` result, so the model no longer receives report text through
-it; `scout_get_reports` remains the way to read reports. At most two query
-viewers render per turn.
+actions on a query. Report-body columns are dropped by name from every
+`scout_query_sql` result, so selecting them does not put report text in the
+grid or the model's context; an alias or expression over them is not caught, so
+this guards payload size rather than enforcing a boundary.
+`scout_get_reports` remains the way to read reports. At most two query viewers
+render per turn.
 
 ## Context
 

@@ -35,6 +35,7 @@ import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
 import { ActionsToolbar } from './searchDetail/ActionsToolbar';
 import { ContractIcon, ExpandIcon } from './searchDetail/icons';
 import { fmtCell, fmtDate } from './searchDetail/format';
+import { columnKind, toNumber } from './searchDetail/columnKind';
 import { ColumnProfileRow } from './searchDetail/ColumnProfileRow';
 import { EvidenceCell } from './searchDetail/EvidenceCell';
 import { hasEvidence } from './searchDetail/evidenceStats';
@@ -321,10 +322,6 @@ export default function SearchDetailPage() {
 
   const columns = useMemo(() => {
     const rows = rowsQ.data?.rows ?? [];
-    const isNumeric = (field: string) => {
-      const v = rows.find((r) => r[field] != null)?.[field];
-      return typeof v === 'number';
-    };
     return [
       ...COLUMNS_CONFIG.filter((c) => available.includes(c.field)).map((c) =>
         columnHelper.accessor((row: Row) => row[c.field], {
@@ -347,15 +344,20 @@ export default function SearchDetailPage() {
       ),
       ...available
         .filter((f) => !CONFIGURED_FIELDS.has(f) && !INTERNAL_FIELDS.has(f))
-        .map((field) =>
-          columnHelper.accessor((row: Row) => row[field], {
+        .map((field) => {
+          const numeric = columnKind(field, rows) === 'numeric';
+          return columnHelper.accessor((row: Row) => row[field], {
             id: field,
             header: field,
             size: EXTRA_COLUMN_WIDTH,
             cell: (info) => fmtCell(info.getValue()),
-            meta: { align: isNumeric(field) ? 'right' : undefined },
-          }),
-        ),
+            sortingFn: numeric
+              ? (a, b, id) =>
+                  (toNumber(a.getValue(id)) ?? -Infinity) - (toNumber(b.getValue(id)) ?? -Infinity)
+              : 'auto',
+            meta: { align: numeric ? 'right' : undefined },
+          });
+        }),
     ];
   }, [available, rowsQ.data]);
 
