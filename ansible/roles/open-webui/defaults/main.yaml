@@ -220,7 +220,8 @@ open_webui_bootstrap_name: 'Scout Deploy Bot'
 
 # External OpenAI-compatible model APIs; shape documented at `openaiConnections`
 # in helm/open-webui-bootstrap/values.yaml. Secret values go in
-# open_webui_openai_connection_secrets (vault).
+# open_webui_openai_connection_secrets (vault). Air-gapped clusters also need
+# each url and tokenUrl host in squid_extra_allowed_domains.
 open_webui_openai_connections: []
 open_webui_openai_connection_secrets: {}
 
