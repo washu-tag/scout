@@ -186,6 +186,7 @@ other differences:
 |---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
 | `id`                | Lowercase letters, digits and hyphens, up to 63 characters. report-viewer prefixes it with the ConfigMap's namespace (`my-app.send-to-my-app`), so apps in different namespaces can use the same id. Within one namespace, entries are read in ConfigMap name and data key order, and a later duplicate is skipped and logged. |
 | `title`             | Up to 60 characters.                                                                                                                          |
+| `weight`            | Orders the button among published ones. Published buttons always come after report-viewer's own, so they move into "More" first.             |
 | `actionType`        | `open-url` (the default) or `backend-call`. A `client` action needs a handler in report-viewer's frontend, so it can't be published.          |
 | `endpointUrl`       | On a `backend-call`, a Service in the ConfigMap's own namespace: `http(s)://<service>.<namespace>.svc[.cluster.local][:port]/<path>`. Any other host is skipped and logged. A site admin can still point an `actions.custom` button anywhere. |
 | `invokeTokenSecret` | Replaces `invokeToken`. Required on a `backend-call` action, and only allowed there: the `name` of a Secret in the ConfigMap's own namespace and its `key` (default `token`). |

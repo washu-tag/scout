@@ -464,7 +464,8 @@ class Catalog:
     discovered_tokens: Mapping[str, TokenRef | None]
 
     def visible(self, user_roles: frozenset[str]) -> list[ActionDescriptor]:
-        """Role-filtered, weight-sorted actions visible to this caller.
+        """Role-filtered actions visible to this caller: the chart's own, then
+        discovered ones, each sorted by weight.
 
         This is the authorization boundary for backend-call actions, not
         just visibility - invoke_search_action re-runs this same filter
@@ -481,7 +482,10 @@ class Catalog:
             for d in self.actions
             if d.required_role is None or d.required_role in user_roles
         ]
-        return sorted(visible, key=lambda d: (d.weight, d.title, d.id))
+        return sorted(
+            visible,
+            key=lambda d: (d.id in self.discovered_tokens, d.weight, d.title, d.id),
+        )
 
     async def invoke_token(self, action_id: str) -> str | None:
         """The token to send with `action_id`'s invoke, or None if it has

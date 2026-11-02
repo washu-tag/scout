@@ -151,6 +151,8 @@ published entry's id becomes `<namespace>.<id>`. Neither part can contain a dot,
 in different namespaces never collide, and a published entry can't take a built-in's id
 even when that built-in is turned off. Within one namespace, entries are read in
 ConfigMap name and data key order, and a later duplicate is skipped and logged.
+Published buttons sort after the chart's own, by weight among themselves, so a published
+weight can't push a site admin's button into "More".
 Degradation is graded as for the mounted catalog: a bad document costs its entries, and
 a bad entry costs itself. Unlike a launchpad chip, an entry with an unknown field is
 rejected rather than read without it, because `requiredRole` is an authorization

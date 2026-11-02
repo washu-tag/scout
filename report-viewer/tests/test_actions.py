@@ -778,6 +778,33 @@ async def test_discovered_action_is_role_gated_and_merged(discovery):
     ]
 
 
+async def test_published_actions_sort_after_the_charts_own(discovery, monkeypatch):
+    pacs = ActionDescriptor(
+        id="pacs-viewer",
+        title="Open in PACS",
+        weight=500,
+        action_type="open-url",
+        url="https://pacs.example.org/",
+    )
+    monkeypatch.setattr(actions, "_CATALOG", [*actions._DEFAULT_CATALOG, pacs])
+    discovery["configmaps"] = {
+        None: [
+            _configmap(
+                "datasets",
+                "cm",
+                **{"a.yaml": _SEND_TO_XNAT.replace("weight: 50", "weight: -1000000")},
+            )
+        ]
+    }
+    visible = await list_actions(frozenset({"datasets-user"}))
+    assert [a.id for a in visible] == [
+        "explain-search",
+        "download-csv",
+        "pacs-viewer",
+        "datasets.send-to-xnat",
+    ]
+
+
 async def test_discovery_relists_only_after_the_ttl(discovery, monkeypatch):
     await list_actions(frozenset())
     await list_actions(frozenset())
