@@ -517,7 +517,7 @@ async def invoke_search_action(
     try:
         invoke_token = await catalog.invoke_token(action.id)
     except kube.KubeError:
-        log.exception("action %s invoke token unavailable", scrub_for_log(action_id))
+        log.exception("action %s invoke token unavailable", scrub_for_log(action.id))
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="action invoke failed: its token is unavailable",
