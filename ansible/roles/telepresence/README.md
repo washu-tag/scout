@@ -24,6 +24,17 @@ playbook is a no-op.
 | `telepresence_helm_release_name` | `traffic-manager` | Helm release name |
 | `telepresence_helm_timeout` | `5m` | Helm wait timeout |
 | `telepresence_helm_values` | `{}` | Extra chart values, passed through unchanged |
+| `telepresence_allow_protected_workloads` | `false` | Apply the NetworkPolicy allowances below; `false` removes them |
+
+## Network policies
+
+Trino and report-viewer have ingress NetworkPolicies that block traffic from the traffic
+manager's namespace, so intercepts and connections to them fail. With
+`telepresence_allow_protected_workloads: true`, the role applies
+`templates/allow-telepresence.yaml.j2`, which adds an allowance from that namespace on
+each workload's serving port. NetworkPolicies are additive, so these open no other path.
+To cover another protected workload, add a policy to the template whose `podSelector`
+matches that workload's existing policy.
 
 ## Connecting
 
@@ -43,7 +54,17 @@ namespace in the cluster. To limit it to specific namespaces, set chart values i
 `telepresence_helm_values`. Only enable it where developers already have cluster
 access.
 
+`telepresence_allow_protected_workloads` adds the traffic manager's namespace to the pods
+allowed to connect to Trino and report-viewer. Both still require a valid token, but this
+removes the network restriction that otherwise limits Trino to its own namespace, so a
+stolen token used from that namespace is no longer blocked at the network layer. Enable it
+only on clusters without production data.
+
 ## Uninstalling
 
-Setting the flag back to false does not remove the traffic manager. Remove it with
-`helm uninstall traffic-manager -n ambassador` or `telepresence helm uninstall`.
+Setting the flag back to false does not remove the traffic manager or the network
+policies. Remove the policies first, with `telepresence_allow_protected_workloads: false`
+and `make install-telepresence` or with
+`kubectl delete networkpolicy -A -l app.kubernetes.io/part-of=telepresence-dev-access`,
+then remove the traffic manager with `helm uninstall traffic-manager -n ambassador` or
+`telepresence helm uninstall`.

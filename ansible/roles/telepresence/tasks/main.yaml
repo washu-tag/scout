@@ -18,3 +18,8 @@
     helm_chart_create_namespace: false
     helm_chart_timeout: '{{ telepresence_helm_timeout }}'
     helm_chart_values: '{{ telepresence_helm_values }}'
+
+- name: Allow Telepresence traffic to protected workloads
+  kubernetes.core.k8s:
+    state: "{{ 'present' if telepresence_allow_protected_workloads | bool else 'absent' }}"
+    definition: "{{ lookup('template', 'allow-telepresence.yaml.j2') | from_yaml_all | list }}"

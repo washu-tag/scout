@@ -12,3 +12,8 @@ telepresence_helm_timeout: 5m
 # Passed through to the chart as-is (e.g. to restrict the namespaces the traffic
 # manager may intercept in).
 telepresence_helm_values: {}
+
+# Ingress allowances from the traffic manager's namespace to workloads whose own
+# NetworkPolicies would otherwise block intercepts (templates/allow-telepresence.yaml.j2).
+# False removes them.
+telepresence_allow_protected_workloads: false
