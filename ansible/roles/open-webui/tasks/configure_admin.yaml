@@ -7,7 +7,8 @@
 #      DEFAULT_MODELS, TASK_MODEL, JWT expiry) — OWUI is seed-only for these
 #      otherwise.
 #   4. Creates/updates filter functions + sets valves + toggles global/active.
-#   5. Creates/updates custom Scout Explorer models + hide-base overrides.
+#   5. Replaces OpenAI-compatible connections; a CronJob refreshes OAuth2 keys.
+#   6. Creates/updates custom Scout Explorer models + hide-base overrides.
 #
 # All payload rendering happens inside the chart (configmap.yaml template
 # transforms `filterFunctions`/`scoutModels` raw inventory shapes into the
@@ -81,3 +82,9 @@
         keepAliveResident: '{{ open_webui_scout_keep_alive_resident }}'
         keepAliveCold: '{{ open_webui_scout_keep_alive_cold_load }}'
         hideBaseModels: '{{ open_webui_hide_base_models | default(true) | bool }}'
+      openaiConnections: '{{ open_webui_openai_connections }}'
+      tokenRefresh:
+        schedule: '{{ open_webui_token_refresh_schedule }}'
+      proxy:
+        https: '{{ open_webui_https_proxy }}'
+        noProxy: '{{ open_webui_no_proxy }}'

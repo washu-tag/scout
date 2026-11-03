@@ -342,6 +342,12 @@ extraEnvVars:
     value: 'http://prometheus-server.{{ prometheus_namespace }}:9090/api/v1/otlp/v1/metrics'
   - name: OTEL_SERVICE_NAME
     value: 'open-webui'
+{% if open_webui_https_proxy %}
+  - name: HTTPS_PROXY
+    value: '{{ open_webui_https_proxy }}'
+  - name: NO_PROXY
+    value: '{{ open_webui_no_proxy }}'
+{% endif %}
 
 {% if open_webui_trust_traefik_ca | bool %}
   - name: REQUESTS_CA_BUNDLE
