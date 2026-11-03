@@ -75,6 +75,13 @@ pluggable_apps:
       domain: '{{ server_hostname }}'
 ```
 
+Or, on a GitOps site, add `flux/pluggable-apps.yaml` where the site defines its two site roots, and copy `flux/pluggable-apps/` to `pluggable-apps/` at the root of the site repo. This chart isn't published, so push it to a registry the site's Flux can reach, and put that URL and the digest `helm push` prints in `example-app.yaml`:
+
+```bash
+helm package examples/on-prem-pluggable-app
+helm push example-pluggable-app-0.0.0-dev.tgz oci://<registry>/charts
+```
+
 The app is then at `https://example-app.<domain>`, and a chip for it appears on the Launchpad.
 
 To verify the installation worked:
@@ -94,6 +101,8 @@ kubectl logs -n scout-core deploy/keycloak-fragment-reconciler
 ```bash
 helm uninstall example-app --namespace scout-example
 ```
+
+On a GitOps site, remove `example-app.yaml` from `pluggable-apps/kustomization.yaml`. Flux uninstalls the release and deletes the `scout-example` namespace.
 
 ## Adapting it
 

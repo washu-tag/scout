@@ -65,9 +65,52 @@ reconcile Scout:
 - `dependsOn` only for Scout services the app needs when it starts, such as
   `postgres-ready` for an app that connects to Postgres.
 
+[`examples/on-prem-pluggable-app/flux`](https://github.com/washu-tag/scout/tree/main/examples/on-prem-pluggable-app/flux)
+lays out one app this way. To remove an app, delete it from the site repo: Flux uninstalls
+the release and, with `prune`, deletes its Namespace and everything in it, Secrets
+included. That differs from `state: absent` under Ansible.
+
 On an air-gapped site, Flux fetches charts itself rather than through the nodes' registry
 mirror, so the `OCIRepository` URL names the Harbor proxy project. Images keep their
 `ghcr.io` references, and private ones need the same Harbor credentials as above.
 
-Databases are not covered yet: Scout's Postgres cluster owns its roles, so a site can't add
-one for an app without patching it. See [#936](https://github.com/washu-tag/scout/issues/936).
+### Databases
+
+An app's database goes in Scout's Postgres cluster. The site adds three resources for it to
+the cluster's namespace, beside the app's own:
+
+- A `kubernetes.io/basic-auth` Secret with the app's `username` and `password`, labelled
+  `cnpg.io/reload: 'true'` so a password change applies at once. The app reads the same
+  password from a Secret in its own namespace, so seed both from one source.
+- A `DatabaseRole` for the app's login, and a `Database` that it owns:
+
+```yaml
+apiVersion: postgresql.cnpg.io/v1
+kind: DatabaseRole
+metadata:
+  name: example-app
+  namespace: '${postgres_cluster_namespace}'
+spec:
+  cluster:
+    name: '${postgres_cluster_name}'
+  name: example_app
+  login: true
+  passwordSecret:
+    name: cnpg-role-example-app
+  databaseRoleReclaimPolicy: retain
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: example-app
+  namespace: '${postgres_cluster_namespace}'
+spec:
+  cluster:
+    name: '${postgres_cluster_name}'
+  name: example_app
+  owner: example_app
+  databaseReclaimPolicy: retain
+```
+
+Add `postgres-ready` to the Kustomization's `dependsOn`, so the cluster exists first. With
+`retain`, removing the app from the site repo leaves its role and database in place.
