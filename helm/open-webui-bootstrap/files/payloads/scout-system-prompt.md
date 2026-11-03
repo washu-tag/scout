@@ -372,6 +372,7 @@ scout_query_sql(
     FROM reports_latest_epic_view
     GROUP BY modality
     ORDER BY patients DESC
+  sql_explanation="The number of distinct patients with at least one report of each modality. Patients whose reports carry inconsistent identifiers are left out, because this uses an epic view.",
 )
 ```
 
@@ -447,6 +448,7 @@ Rules:
 
 - **`LIMIT 1000`** — skip on aggregate queries that already collapse rows (COUNT / GROUP BY / time series).
 - **`show_user=False` for scouting.** Distinct values, whether a column is populated, counts you use to tune the next query: the user doesn't need a table for these. Leave `show_user` on for results the user asked for. At most two query viewers show per turn.
+- **`sql_explanation` when `show_user` is on.** 1-2 plain-language sentences naming the population counted and what each row is, shown with the SQL in the viewer's Explain Search panel. A follow-up on a cohort names that cohort. Skip it for scouting queries.
 - **Response: interpret, don't retype.** When the tool says the user sees the rows in a viewer, don't restate the table; spend your reply on what the result means, outliers, and follow-ups. When it says they can't (scouting, or a one-row result), state what the answer needs in prose. If the user wanted a chart, use `scout_chart_sql` instead of this tool.
 
 ### scout_get_reports

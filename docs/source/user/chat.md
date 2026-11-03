@@ -121,7 +121,7 @@ Matched text is highlighted in blue and negated phrases in red. Highlights refle
 
 ### Viewing the SQL Query
 
-For cohort searches, click **Explain Search** in the report viewer. The panel describes what the search matched, names the table it read, and shows the SQL.
+For cohort searches, click **Explain Search** in the report viewer. The panel describes what the search matched, names the table it read, and shows the SQL. For a query, the panel shows the AI's description of the result, including the population it counts, along with the SQL.
 
 When the search performs text matching, the panel also shows:
 

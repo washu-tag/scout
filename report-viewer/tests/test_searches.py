@@ -340,7 +340,12 @@ def test_saved_query_opens_in_the_viewer_without_evidence_or_server_actions(
     sql = "SELECT modality, COUNT(*) AS n FROM reports_latest GROUP BY modality"
     r = client.post(
         "/api/reports/query",
-        json={"sql": sql + ";", "save": True, "owui_chat_id": "c1"},
+        json={
+            "sql": sql + ";",
+            "save": True,
+            "owui_chat_id": "c1",
+            "sql_explanation": "Reports per modality.",
+        },
         headers=auth_headers,
     )
     assert r.status_code == 200, r.text
@@ -350,6 +355,7 @@ def test_saved_query_opens_in_the_viewer_without_evidence_or_server_actions(
     meta = client.get(f"/api/searches/{body['id']}", headers=auth_headers).json()
     assert meta["kind"] == "query"
     assert meta["sql"] == sql
+    assert meta["sql_explanation"] == "Reports per modality."
     assert meta["executed_sql"] == ""
 
     fake_trino(["modality", "n"], rows)

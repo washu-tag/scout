@@ -34,7 +34,7 @@ import { FiltersModal } from './searchDetail/FiltersModal';
 import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
 import { ActionsToolbar } from './searchDetail/ActionsToolbar';
 import { ContractIcon, ExpandIcon } from './searchDetail/icons';
-import { fmtCell, fmtDate } from './searchDetail/format';
+import { fmtCell, fmtDate, fmtHeader } from './searchDetail/format';
 import { columnKind, toNumber } from './searchDetail/columnKind';
 import { ColumnProfileRow } from './searchDetail/ColumnProfileRow';
 import { EvidenceCell } from './searchDetail/EvidenceCell';
@@ -348,12 +348,18 @@ export default function SearchDetailPage() {
           const numeric = columnKind(field, rows) === 'numeric';
           return columnHelper.accessor((row: Row) => row[field], {
             id: field,
-            header: field,
+            header: fmtHeader(field),
             size: EXTRA_COLUMN_WIDTH,
             cell: (info) => fmtCell(info.getValue()),
             sortingFn: numeric
-              ? (a, b, id) =>
-                  (toNumber(a.getValue(id)) ?? -Infinity) - (toNumber(b.getValue(id)) ?? -Infinity)
+              ? (a, b, id) => {
+                  const x = toNumber(a.getValue(id));
+                  const y = toNumber(b.getValue(id));
+                  if (x === undefined || y === undefined) {
+                    return x === y ? 0 : x === undefined ? 1 : -1;
+                  }
+                  return x - y;
+                }
               : 'auto',
             meta: { align: numeric ? 'right' : undefined },
           });
@@ -524,8 +530,10 @@ export default function SearchDetailPage() {
                 borderRadius: 4,
               }}
             >
-              Showing the first {rowsQ.data?.total.toLocaleString()} rows. Refine your search to
-              narrow the cohort.
+              Showing the first {rowsQ.data?.total.toLocaleString()} rows.{' '}
+              {isQuery
+                ? 'Ask for a narrower or grouped query to see the rest.'
+                : 'Refine your search to narrow the cohort.'}
             </div>
           )}
           {/* Containing block for the review panel. The box inside scrolls,
@@ -692,7 +700,7 @@ export default function SearchDetailPage() {
                     fontSize: '0.8rem',
                   }}
                 >
-                  Query cancelled. Retry to load these reports.
+                  Query cancelled. Retry to load these {isQuery ? 'rows' : 'reports'}.
                 </div>
               )}
             </div>

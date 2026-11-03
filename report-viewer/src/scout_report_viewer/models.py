@@ -124,6 +124,10 @@ class QueryRequest(BaseModel):
         default=False,
         description="Save the result as a query and return its view_url.",
     )
+    sql_explanation: str | None = Field(
+        default=None,
+        description="Plain-language summary shown with the saved query's SQL.",
+    )
     owui_chat_id: str | None = None
 
 

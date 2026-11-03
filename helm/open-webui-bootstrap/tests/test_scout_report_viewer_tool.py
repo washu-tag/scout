@@ -707,6 +707,32 @@ async def test_scouting_query_is_not_saved_or_embedded(monkeypatch):
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "show_user, expected", [(True, "Reports per modality."), (False, None)]
+)
+async def test_query_explanation_is_sent_only_when_saved(
+    monkeypatch, show_user, expected
+):
+    seen = {}
+
+    def handler(request):
+        seen["body"] = json.loads(request.content)
+        return httpx.Response(200, json={"columns": ["n"], "rows": [{"n": 1}]})
+
+    tool = _tool_with_transport(handler, monkeypatch)
+    await tool.scout_query_sql(
+        sql="SELECT modality, count(*) n FROM reports_latest GROUP BY modality",
+        show_user=show_user,
+        sql_explanation="Reports per modality.",
+        __event_emitter__=_Emitter(),
+        __oauth_token__="tok",
+        __metadata__={"chat_id": "c1"},
+        __message_id__="m1",
+    )
+    assert seen["body"].get("sql_explanation") == expected
+
+
+@pytest.mark.asyncio
 async def test_query_viewers_capped_per_turn_alongside_cohort_and_chart(monkeypatch):
     tool = _tool_with_transport(_routing_handler(), monkeypatch)
     emitter = _Emitter()

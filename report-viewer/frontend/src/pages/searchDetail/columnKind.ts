@@ -16,9 +16,9 @@ export const IDENTIFIER_FIELDS = new Set([
 
 const SAMPLE_SIZE = 200;
 const ISO_DATEISH = /^\d{4}-\d{2}-\d{2}([T ]|$)/;
-// Trino DECIMALs arrive as strings; the decimal point keeps a numeric-looking
-// identifier categorical.
-const DECIMAL_STRING = /^-?\d+\.\d+$/;
+// Trino DECIMALs arrive as Python Decimal strings ("10.50", "1E-7"); requiring a
+// decimal point or a signed exponent keeps a numeric-looking identifier categorical.
+const DECIMAL_STRING = /^-?\d+(?:\.\d+(?:E[+-]\d+)?|E[+-]\d+)$/;
 
 type Row = Record<string, unknown>;
 

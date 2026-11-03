@@ -440,6 +440,7 @@ class Tools:
         self,
         sql: str,
         show_user: bool = True,
+        sql_explanation: Optional[str] = None,
         file_id: Optional[str] = None,
         id_column: Optional[str] = None,
         __event_emitter__: Optional[Callable[[Any], Awaitable[None]]] = None,
@@ -466,6 +467,10 @@ class Tools:
             own assumptions before answering (distinct values, whether a
             column is populated, counts used to tune SQL). Leave it true
             for results the user asked for.
+        :param sql_explanation: One- to three-sentence plain-language
+            description of what the result shows, naming the population
+            it counts. Shown with the SQL in the viewer's "Explain Search"
+            panel when the user sees the rows.
         :param file_id: Optional. OWUI file id for a cohort CSV.
         :param id_column: Optional (file mode only).
         :return: The rows as a markdown table, for you to read and
@@ -484,6 +489,8 @@ class Tools:
             if show_user:
                 form["save"] = "true"
                 form["owui_chat_id"] = chat_id
+                if sql_explanation:
+                    form["sql_explanation"] = sql_explanation
             label = f"Querying {filename}\u2026"
             path = "/api/reports/query/from-file"
             kwargs: dict[str, Any] = {
@@ -493,7 +500,14 @@ class Tools:
         else:
             label = "Running query\u2026"
             path = "/api/reports/query"
-            kwargs = {"json": {"sql": sql, "save": show_user, "owui_chat_id": chat_id}}
+            payload: dict[str, Any] = {
+                "sql": sql,
+                "save": show_user,
+                "owui_chat_id": chat_id,
+            }
+            if show_user and sql_explanation:
+                payload["sql_explanation"] = sql_explanation
+            kwargs = {"json": payload}
 
         await self._emit(__event_emitter__, label, done=False)
         try:

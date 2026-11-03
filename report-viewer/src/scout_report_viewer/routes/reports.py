@@ -76,6 +76,7 @@ async def query_reports(
             rows,
             save=body.save,
             sql=sql,
+            sql_explanation=body.sql_explanation,
             user=user,
             store=store,
             owui_chat_id=body.owui_chat_id,
@@ -96,6 +97,7 @@ async def _query_result(
     user: User,
     store: SearchStore,
     owui_chat_id: str | None,
+    sql_explanation: str | None = None,
     uploaded_ids: list[str] | None = None,
 ) -> dict[str, Any]:
     """Response fields for a query: rows without report bodies, plus the
@@ -113,6 +115,7 @@ async def _query_result(
         await store.insert_search(
             search_id=search_id,
             sql=sql,
+            sql_explanation=sql_explanation,
             owner_sub=user.sub,
             owui_chat_id=owui_chat_id or "",
             uploaded_ids=uploaded_ids,
@@ -134,6 +137,7 @@ async def query_from_file(
     sql: str = Form(...),
     id_column: str | None = Form(default=None),
     save: bool = Form(default=False),
+    sql_explanation: str | None = Form(default=None),
     owui_chat_id: str | None = Form(default=None),
     user: User = Depends(get_current_user),
     store: SearchStore = Depends(get_store),
@@ -178,6 +182,7 @@ async def query_from_file(
             rows,
             save=save,
             sql=query_sql,
+            sql_explanation=sql_explanation,
             user=user,
             store=store,
             owui_chat_id=owui_chat_id,
