@@ -339,15 +339,10 @@ enable_xnat: false
 xnat_plugins_default:
   - name: openid
     target: openid-auth-plugin.jar
+    # TEST ONLY: snapshot build of NrgXnat/openid-auth-plugin#23 (session.onInvalid).
     source:
-      type: coordinates
-      # Maven -Dartifact format: groupId:artifactId:version:packaging:classifier
-      # (the -xpl.jar is a 'jar' with classifier 'xpl', not packaging 'xpl').
-      # Version pinned in group_vars/all/versions.yaml (Renovate-monitored).
-      coordinates: 'au.edu.qcif.xnat.openid:openid-auth-plugin:{{ xnat_openid_plugin_version }}:jar:xpl'
-      # Published only to the NrgXnat Artifactory (never on Maven Central), so the
-      # repo must be named. Air-gapped deploys resolve via the Nexus group instead.
-      repo_url: https://nrgxnat.jfrog.io/nrgxnat/libs-release/
+      type: url
+      url: https://nrgxnat.jfrog.io/nrgxnat/libs-snapshot-local/au/edu/qcif/xnat/openid/openid-auth-plugin/2.0.0-reauth-SNAPSHOT/openid-auth-plugin-2.0.0-reauth-SNAPSHOT-xpl.jar
     config:
       - mechanism: authplugins
         provider: openid
@@ -399,6 +394,8 @@ xnat_plugins_default:
           openid.keycloak.bearer.forceUserCreate: 'false'
           # Skip the login page when the user already has a Keycloak session (prompt=none).
           openid.keycloak.autoLogin: 'true'
+          # Sign in again on a stale XNAT session instead of logging out of Scout.
+          openid.keycloak.session.onInvalid: reauth
           # Log out through oauth2-proxy, as the other Scout services do: it clears the edge
           # session and ends the Keycloak one. XNAT's idle timeout also lands here, which is
           # why the xnat role pins that timeout to the SSO lifetime (prefs-override.ini).
