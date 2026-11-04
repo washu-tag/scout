@@ -69,14 +69,6 @@ minio_users:
   - access_key: '{{ s3_opa_bundle_reader }}'
     secret_key: '{{ s3_opa_bundle_reader_secret }}'
 
-# User mapping
-minio_credentials:
-  - name: '{{ s3_lake_reader }}-creds'
-  - name: '{{ s3_lake_writer }}-creds'
-  - name: '{{ s3_loki_writer }}-creds'
-  - name: '{{ s3_opa_bundle_writer }}-creds'
-  - name: '{{ s3_opa_bundle_reader }}-creds'
-
 # IAM Policy definitions
 minio_policies:
   - name: lake-r

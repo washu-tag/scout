@@ -113,8 +113,28 @@ vulnerabilities:
   # suppressed by package name in .trivyignore.rego — its advisory IDs churn
   # (the GHSA aliases flipped to CVE-2026-56740/56741), so per-ID entries here
   # kept going stale.
-  # quinn-proto QUIC crate vendored inside the temporalio wheel's compiled Rust
-  # bridge (site-packages/temporalio/bridge) — not a Python dep we can override,
-  # and the QUIC path is unused (the SDK talks gRPC/HTTP2 to the frontend). The
-  # in-range temporalio still bundles 0.11.14; drop when a rebuilt wheel ships 0.11.15.
-  - id: GHSA-4w2j-m93h-cj5j # quinn-proto 0.11.14 (vendored in temporalio wheel)
+  - id: CVE-2026-102554
+    paths:
+      - opt/spark/jars/guava-33.6.0-jre.jar
+      - opt/spark/jars/spark-network-common_2.13-4.2.0.jar
+      - opt/spark/jars/hadoop-client-runtime-3.5.0.jar
+      - opt/spark/jars/connect-repl/spark-connect-client-jvm_2.13-4.2.0.jar
+    expired_at: 2026-12-01
+    statement: >-
+      Guava deserialization DoS in Spark's bundled and shaded copies; no Spark
+      release ships a fixed Guava yet. The worker never Java-deserializes
+      untrusted Guava collections. Remove when Spark bundles Guava >=33.7.2.
+  - id: CVE-2026-93451
+    paths:
+      - opt/spark/jars/snappy-java-1.1.10.8.jar
+    expired_at: 2026-12-01
+    statement: &spark-snappy >-
+      snappy-java bundled by Spark; no Spark release ships a fixed version yet.
+      The worker only decompresses its own shuffle blocks and the Parquet files
+      in Scout's MinIO buckets, so malformed input requires lake write access.
+      Remove when Spark bundles snappy-java >=1.1.10.9.
+  - id: CVE-2026-108106
+    paths:
+      - opt/spark/jars/snappy-java-1.1.10.8.jar
+    expired_at: 2026-12-01
+    statement: *spark-snappy
