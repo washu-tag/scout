@@ -184,6 +184,7 @@ def test_ci_handoff_waits_for_all_jobs_and_preserves_generation():
     )
     handoff = jobs["record-ci-artifacts"]
     assert set(handoff["needs"]) == jobs.keys() - {"record-ci-artifacts"}
+    assert "github.event_name != 'pull_request'" in handoff["if"]
     assert "!contains(needs.*.result, 'failure')" in handoff["if"]
     assert "!contains(needs.*.result, 'cancelled')" in handoff["if"]
     assert handoff["permissions"] == {"contents": "read"}

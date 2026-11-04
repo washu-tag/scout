@@ -8,6 +8,8 @@ on:
     paths:
       - tooling/release/**
       - tooling/deploy/artifact_identity.py
+      - .github/actions/k3s-image-import-or-pull/**
+      - .github/scripts/test_k3s_image_import.py
       - .github/workflows/ci.yaml
       - .github/workflows/release*.yaml
   push:
@@ -15,6 +17,8 @@ on:
     paths:
       - tooling/release/**
       - tooling/deploy/artifact_identity.py
+      - .github/actions/k3s-image-import-or-pull/**
+      - .github/scripts/test_k3s_image_import.py
       - .github/workflows/ci.yaml
       - .github/workflows/release*.yaml
 

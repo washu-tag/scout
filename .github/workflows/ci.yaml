@@ -1823,7 +1823,7 @@ jobs:
           python3 .github/scripts/copy-flux-artifacts.py publish-config --candidate candidate
 
   record-ci-artifacts:
-    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && needs.prepare-flux-artifacts.result == 'success' && (github.ref_name != 'main' || needs.config-artifact-publish.result == 'success') }}
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && needs.prepare-flux-artifacts.result == 'success' && (github.ref_name != 'main' || needs.config-artifact-publish.result == 'success') }}
     runs-on: ubuntu-latest
     needs:
       - changes

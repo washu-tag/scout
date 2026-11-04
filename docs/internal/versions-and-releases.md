@@ -178,7 +178,8 @@ successful `changes` job. Successful producers retain their uploads for retried
 consumers. If a producer reruns, GitHub also reruns its dependent jobs, so rebuilt
 artifacts must pass their tests again. The final receipt is written only after
 all CI jobs finish without failures and records both the successful execution
-attempt and the artifact generation.
+attempt and the artifact generation. Receipts are recorded for branch runs,
+not pull-request checks.
 
 Use **Re-run all jobs** to rebuild already-uploaded artifacts or recover after
 artifact deletion or expiry (candidate artifacts are retained for seven days).
