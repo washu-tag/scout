@@ -17,16 +17,6 @@ vulnerabilities:
   # our layer without patching base contents; bumping nbclassic does not
   # re-vendor it.
   - id: CVE-2026-27601 # underscore 1.13.7 -> 1.13.8 (vendored in nbclassic)
-  # PyO3 out-of-bounds read — compiled into rattler's Rust extension
-  # (rattler.abi3.so), part of the base image's conda tooling. The fix
-  # (pyo3 0.29.0) is a Rust build-time dependency we cannot bump independently;
-  # it needs a newer rattler build, and rattler is not exercised at notebook
-  # runtime (package resolution only).
-  - id: GHSA-36hh-v3qg-5jq4 # pyo3 0.25.1 -> 0.29.0 (compiled into rattler)
-  # quinn-proto QUIC crate compiled into the same rattler Rust extension
-  # (rattler.abi3.so). Fix (0.11.15) needs a rebuilt rattler; rattler runs only
-  # at package-resolution time, not notebook runtime, and the QUIC path is unused.
-  - id: GHSA-4w2j-m93h-cj5j # quinn-proto 0.11.14 -> 0.11.15 (compiled into rattler)
   # setuptools + msgpack flagged from pip's bundled install-time deps
   # (site-packages/pip/_vendor/vendor.txt), surfaced only on a fresh full
   # rebuild. pip is required for the JupyterLab UX (users pip-install in
@@ -53,26 +43,11 @@ vulnerabilities:
       pip 26.2.2 still vendors urllib3 2.7.0. A malicious package server can exhaust
       a pip process through an unbounded chunk-size line. Accept this install-time
       DoS risk temporarily; remove when released pip vendors urllib3 >=2.8.0.
-  - id: CVE-2026-78667
-    paths:
-      - usr/bin/pebble
+  - id: CVE-2026-114613
+    purls:
+      - pkg:pypi/msgpack@1.1.2
     expired_at: 2026-12-01
-    statement: &pebble-statement >-
-      Go 1.26.7 stdlib in Canonical's pebble, shipped by the ubuntu:26.04 base
-      under scipy-notebook. The notebook entrypoint is tini + start.sh, so
-      pebble never runs. Remove when an ubuntu:26.04 rebuild ships Go >=1.26.9.
-  - id: CVE-2026-78669
-    paths:
-      - usr/bin/pebble
-    expired_at: 2026-12-01
-    statement: *pebble-statement
-  - id: CVE-2026-97031
-    paths:
-      - usr/bin/pebble
-    expired_at: 2026-12-01
-    statement: *pebble-statement
-  - id: CVE-2026-111943
-    paths:
-      - usr/bin/pebble
-    expired_at: 2026-12-01
-    statement: *pebble-statement
+    statement: >-
+      msgpack 1.1.2 vendored in pip 26.2.2, used only to read pip's own HTTP
+      cache. pip 26.3 vendors msgpack 1.2.4 but is not on conda-forge yet; raise
+      the pip floor in the Dockerfile and remove this when it is.
