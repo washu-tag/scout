@@ -4,8 +4,8 @@ A Pluggable App is a Helm chart that a site installs into its Scout cluster. The
 in this section cover what goes in the chart. This one covers installing it from the site's
 own configuration, so it deploys with the rest of Scout rather than as a separate step.
 
-Scout discovers launchpad chips, Keycloak fragments and Grafana dashboards while it runs, so
-an app can be installed, upgraded or removed at any time.
+Scout discovers launchpad chips, report-viewer buttons, Keycloak fragments and Grafana
+dashboards while it runs, so an app can be installed, upgraded or removed at any time.
 
 ## With Ansible
 
