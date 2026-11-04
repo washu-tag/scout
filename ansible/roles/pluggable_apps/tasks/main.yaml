@@ -4,4 +4,4 @@
   loop: '{{ pluggable_apps }}'
   loop_control:
     loop_var: pluggable_app
-    label: '{{ pluggable_app.name | default(pluggable_app) }}'
+    label: "{{ pluggable_app.name | default('(no name)') }}"
