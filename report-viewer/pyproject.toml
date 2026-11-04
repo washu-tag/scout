@@ -35,6 +35,8 @@ dependencies = [
     # as required - packaging bug. Listed explicitly so installs work.
     "tzlocal",
     "python-jose[cryptography]>=3.4.0",
+    # python-jose pulls in pyasn1; floor clears CVE-2026-119194..119197.
+    "pyasn1>=0.6.5",
     "python-multipart",
     "prometheus-fastapi-instrumentator>=7",
     "prometheus-client>=0.20",
