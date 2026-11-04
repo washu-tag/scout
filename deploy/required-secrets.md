@@ -45,7 +45,7 @@ air-gapped storage mode). The cloud/air-gapped storage flip is tracked separatel
 | `hive-metastore-secret` / `-readonly-secret` | `S3_SECRET_KEY`, `HIVE_METASTORE_PASSWORD` | hive-metastore Deployments (aws: `S3_SECRET_KEY` present but empty) |
 | `superuser-secret` | `username`, `password` | `hive-db-init` grant Job (both modes; aws = the RDS master) |
 | `minio-scout-env-configuration` | `config.env` (root creds + region/OIDC) | MinIO `Tenant.configSecret` (in-cluster MinIO only) |
-| `${s3_*}-creds` (lake r/w, loki-writer, opa-bundle r/w) | `CONSOLE_ACCESS_KEY`, `CONSOLE_SECRET_KEY` | MinIO `Tenant.users` (in-cluster MinIO only) |
+| `${s3_*}-creds` (lake r/w, loki-writer, opa-bundle r/w) | `CONSOLE_ACCESS_KEY`, `CONSOLE_SECRET_KEY` | `bootstrap-minio-iam` Job (in-cluster MinIO only) |
 
 ## scout-extractor (extractor / temporal / trino-rw)
 | secret | keys | consumed by |

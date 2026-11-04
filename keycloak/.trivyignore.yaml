@@ -1,1 +1,10 @@
-vulnerabilities: []
+vulnerabilities:
+  - id: CVE-2026-102554
+    paths:
+      - opt/keycloak/lib/lib/main/com.google.guava.guava-33.6.0-jre.jar
+    expired_at: 2026-12-01
+    statement: >-
+      Guava deserialization DoS in the upstream Keycloak distribution; no
+      Keycloak release ships a fixed Guava yet. Keycloak does not
+      Java-deserialize untrusted Guava collections. Remove when Keycloak
+      bundles Guava >=33.7.2.

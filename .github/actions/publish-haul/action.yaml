@@ -112,7 +112,7 @@ runs:
           --annotation "org.opencontainers.image.revision=${SOURCE_REVISION}"
           --annotation "org.opencontainers.image.version=${VERSION}"
           --annotation "io.scout.build.run-id=${GITHUB_RUN_ID}"
-          --annotation "io.scout.build.run-attempt=${GITHUB_RUN_ATTEMPT}"
+          --annotation "io.scout.build.run-attempt=${SCOUT_ARTIFACT_ATTEMPT:-${GITHUB_RUN_ATTEMPT}}"
         )
         if [ -n "$PRODUCER_PLAN" ]; then
           predecessor_digest="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["predecessorDigest"])' "$PRODUCER_PLAN/plan.json")"

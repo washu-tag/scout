@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'edu.washu.tag'
-version = 'latest'
+version = '5.2.0'
 
 java {
 	toolchain {
@@ -52,6 +52,10 @@ ext['jackson-bom.version'] = '3.1.7'
 dependencyManagement {
 	imports {
 		mavenBom 'io.opentelemetry:opentelemetry-bom:1.67.0'
+	}
+	dependencies {
+		// TODO: Remove once temporal-sdk brings guava >= 33.7.2 (CVE-2026-102554).
+		dependency 'com.google.guava:guava:33.7.2-jre'
 	}
 }
 

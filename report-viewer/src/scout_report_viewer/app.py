@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.gzip import GZipMiddleware
 
-from . import logging_setup, metrics
+from . import kube, logging_setup, metrics
 from .config import settings
 from .db import check_ready, create_pool, ensure_schema
 from .routes import config_router, plots_router, reports_router, searches_router
@@ -49,6 +49,7 @@ async def lifespan(app: FastAPI):
         # /healthz stays up; /readyz holds traffic until the pool self-heals.
         log.exception("schema bootstrap failed - DB not ready?")
     yield
+    await kube.aclose()
     await app.state.pool.close()
 
 

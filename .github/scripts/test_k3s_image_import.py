@@ -50,7 +50,7 @@ def test_required_download_failure_stops_the_job():
         if step.get("uses", "").startswith("actions/download-artifact@")
     )
     assert not download.get("continue-on-error", False)
-    assert "github.run_attempt" in download["with"]["name"]
+    assert download["with"]["artifact-ids"] == "${{ inputs.artifact-id || '0' }}"
     assert ACTION["inputs"]["artifact-required"]["default"] == "true"
 
 
@@ -67,4 +67,8 @@ def test_every_import_gets_the_image_build_decision():
         name = step["with"]["image-name"]
         assert step["with"]["artifact-required"] == (
             "${{ needs.changes.outputs['" + name + "'] }}"
+        )
+
+        assert step["with"]["artifact-id"] == (
+            "${{ needs.build-and-upload.outputs['" + name + "'] }}"
         )

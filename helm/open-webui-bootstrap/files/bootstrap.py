@@ -22,13 +22,14 @@ Phases:
 7. Python tools. Idempotent GET-create-or-update against /api/v1/tools;
    `content_file` inlined as source, public-read grant so users can attach.
 8. Prune tools not in the seeded set.
-9. OpenAI-compatible connections. Replaces OWUI's connection list when any
-   are configured, minting OAuth2 client-credentials keys where set.
-10. Custom models. Idempotent GET-create-or-update one per scout_models[].ui
+9. Custom models. Idempotent GET-create-or-update one per scout_models[].ui
    and openai_connections[].models[].ui entry, plus hide overrides on the raw
    models.
+10. OpenAI-compatible connections. Replaces OWUI's connection list when any
+   are configured, minting OAuth2 client-credentials keys where set. Last, so
+   a failed token request does not skip the steps above.
 
-With --refresh-connections, runs only step 9 (the token-refresh CronJob).
+With --refresh-connections, runs only step 10 (the token-refresh CronJob).
 
 Inputs (from env, set by the Job spec):
   OWUI_BASE_URL          — e.g., http://open-webui:80
@@ -477,6 +478,8 @@ def push_openai_connections(token):
         },
         token,
     )
+    # Refresh OWUI's cached model list.
+    http_or_raise("GET", "/api/models", token=token)
     if failures:
         raise RuntimeError("Token request failed:\n  " + "\n  ".join(failures))
 
@@ -519,23 +522,23 @@ def refresh_connections():
 def main():
     print(f"Bootstrap against {OWUI_BASE} as {BOOTSTRAP_EMAIL}")
 
-    print("[1/6] Migrating bootstrap user password (idempotent)...")
+    print("Migrating bootstrap user password (idempotent)...")
     migrate_password()
 
-    print("[2/6] Minting admin JWT...")
+    print("Minting admin JWT...")
     token, via = mint_admin_jwt()
     print(f"  JWT acquired via {via}")
 
-    print("[3/10] Pushing PersistentConfig...")
+    print("Pushing PersistentConfig...")
     push_persistent_config(token)
 
-    print("[4/10] Configuring filter functions...")
+    print("Configuring filter functions...")
     push_functions(token, "filters.json")
 
-    print("[5/10] Configuring event functions...")
+    print("Configuring event functions...")
     push_functions(token, "events.json")
 
-    print("[6/10] Pruning unmanaged functions...")
+    print("Pruning unmanaged functions...")
     reconcile(
         token,
         "/api/v1/functions/",
@@ -544,10 +547,10 @@ def main():
         "function",
     )
 
-    print("[7/10] Configuring Python tools...")
+    print("Configuring Python tools...")
     push_tools(token)
 
-    print("[8/10] Pruning unmanaged tools...")
+    print("Pruning unmanaged tools...")
     reconcile(
         token,
         "/api/v1/tools/",
@@ -556,11 +559,11 @@ def main():
         "tool",
     )
 
-    print("[9/10] Configuring OpenAI-compatible connections...")
-    push_openai_connections(token)
-
-    print("[10/10] Configuring custom models...")
+    print("Configuring custom models...")
     push_models(token)
+
+    print("Configuring OpenAI-compatible connections...")
+    push_openai_connections(token)
 
     print("Bootstrap complete.")
 

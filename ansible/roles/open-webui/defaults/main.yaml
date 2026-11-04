@@ -59,7 +59,7 @@ scout_models:
     preload: true # Resident — small enough to keep warm; serves as default and task model
     ui:
       name: 'Scout Explorer (Gemma 4 31B)'
-      description: 'Recommended. Fast and reliable for cohort queries, filters, and free-text searches. Best general-purpose option for Scout.'
+      description: "For simple questions. Runs on Scout's own GPUs."
 scout_model_create: true # Set to false to skip Scout model creation entirely
 
 # List of additional Ollama models to pull (see https://ollama.com/library)
@@ -74,16 +74,10 @@ open_webui_storage_class: ''
 open_webui_trust_traefik_ca: false
 
 # Air-gapped clusters route OWUI's outbound HTTPS (external model APIs) through
-# the staging Squid proxy; NO_PROXY keeps in-cluster and Scout-hostname traffic direct.
-open_webui_https_proxy: >-
-  {{ ('http://' ~ groups['staging'][0] ~ ':' ~ squid_port)
-     if (air_gapped | default(false) | bool
-         and (groups['staging'] | default([]) | length > 0))
-     else '' }}
+# the staging Squid proxy. Only HTTPS_PROXY is set, so http:// calls never use it.
+open_webui_https_proxy: '{{ squid_proxy_url }}'
 open_webui_no_proxy: >-
-  {{ ['localhost', '127.0.0.1', '.svc', '.cluster.local', '10.42.0.0/16', '10.43.0.0/16',
-      '.' ~ server_hostname]
-     | unique | join(',') }}
+  {{ (squid_no_proxy + [server_hostname, '.' ~ server_hostname]) | unique | join(',') }}
 
 # PostgreSQL configuration
 open_webui_postgres_user: openwebui
@@ -226,7 +220,8 @@ open_webui_bootstrap_name: 'Scout Deploy Bot'
 
 # External OpenAI-compatible model APIs; shape documented at `openaiConnections`
 # in helm/open-webui-bootstrap/values.yaml. Secret values go in
-# open_webui_openai_connection_secrets (vault).
+# open_webui_openai_connection_secrets (vault). Air-gapped clusters also need
+# each url and tokenUrl host in squid_extra_allowed_domains.
 open_webui_openai_connections: []
 open_webui_openai_connection_secrets: {}
 

@@ -42,7 +42,7 @@ def test_archive_cannot_substitute_another_image(tmp_path, tags):
 
 
 def test_required_build_cannot_fall_back_to_predecessor(tmp_path):
-    with pytest.raises(ValueError, match="missing current-attempt"):
+    with pytest.raises(ValueError, match="missing planned image archive"):
         candidate.prepare_images(
             [{"image-name": "launchpad"}],
             {"flags": {"launchpad": True}},

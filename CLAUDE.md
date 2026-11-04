@@ -238,7 +238,7 @@ the ADR itself before changing anything it covers.
 - **0035** service-mode deploy base — one `service_mode` (aws|on-prem) var flips the storage/identity + ingress/auth edges in the `deploy/` base and `scout-config` artifact. Read before touching the aws/on-prem edge, IRSA roles, or the ALB-OIDC ingress
 - **0037** Keycloak realm fragments — an app ships its own client as a labelled ConfigMap that a reconciler applies. Read before adding a client or changing `scout-realm.json`
 - **0038** pluggable monitoring — Pluggable Apps get logs, metrics, and sidecar-discovered dashboards from any namespace; alert rules and datasources are deferred. Read before adding a Pluggable App's monitoring or making alerts/datasources pluggable
-- **0039** report-viewer search actions — toolbar buttons are a chart-rendered action catalog, gated by Keycloak client roles on a Bearer JWT Traefik injects on every request (including the SPA's own). Read before adding/gating a search-detail action or touching report-viewer's auth path
+- **0039** report-viewer search actions — toolbar buttons are a chart-rendered action catalog plus actions other charts publish as labeled ConfigMaps, gated by Keycloak client roles on a Bearer JWT Traefik injects on every request (including the SPA's own). Read before adding/gating a search-detail action or touching report-viewer's auth path
 
 For 0030/0031 start with `docs/internal/adr/0030-0031-tldr.md`; the phased migration plan
 is `docs/internal/gitops-implementation-plan.md`.
@@ -277,7 +277,10 @@ code, trim or streamline the existing comments in the area you touch.
   rebuild; an `inventory.yaml` change (`report_viewer_custom_actions`,
   `report_viewer_explain_search`/`report_viewer_download_csv`) plus a redeploy, which
   renders through to `helm/report-viewer`'s `actions.*` values. Authoring guide:
-  `docs/source/customize/report-viewer-actions.md` (ADR 0039).
+  `docs/source/customize/report-viewer-actions.md` (ADR 0039). A separately installed
+  app ships its own button instead: a ConfigMap labeled
+  `report-viewer.scout.xnat.org/actions: "true"` in its chart, plus a by-name Secret
+  grant for its token (same guide).
 - **Add a Superset dashboard, chart, or dataset** — export the asset YAML into
   `helm/scout-dashboards/files/analytics/<charts|dashboards|datasets/Scout_Data_Lake>/<bundle>/`; a new
   bundle also needs its name in `scout_dashboard_bundles` in inventory. See

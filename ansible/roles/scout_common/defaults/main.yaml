@@ -24,7 +24,7 @@ helm_chart_values_files: []
 # Shared notebook image (scipy-notebook + trino-python-client + voila).
 # Used as JupyterHub's singleuser image and as Voila's image.
 scout_notebook_image_name: ghcr.io/washu-tag/scout-notebook
-scout_notebook_image_tag: latest
+scout_notebook_image_tag: 5.2.0
 
 # Shared OWUI DB name
 open_webui_database: openwebui
@@ -99,8 +99,23 @@ squid_letsencrypt_domains:
   - acme-v02.api.letsencrypt.org
   - acme-staging-v02.api.letsencrypt.org
 
-# Squid forward proxy port (on staging node for air-gapped IdP access)
+# Squid forward proxy on the staging node for air-gapped clusters
 squid_port: 3128
+squid_proxy_url: >-
+  {{ ('http://' ~ (hostvars[groups['staging'][0]].external_url | default(groups['staging'][0]))
+      ~ ':' ~ (hostvars[groups['staging'][0]].squid_port | default(squid_port)))
+     if (air_gapped | default(false) | bool
+         and (groups['staging'] | default([]) | length > 0))
+     else '' }}
+# Namespace suffixes keep {svc}.{ns} hosts direct. Listed explicitly, since a
+# *_namespace lookup also matches play-scoped vars and varies between runs.
+squid_no_proxy: >-
+  {{ ['10.42.0.0/16', '10.43.0.0/16', '.svc', '.svc.cluster.local', '127.0.0.1',
+      'localhost', 'kubernetes.default']
+     + ([scout_core_namespace, scout_data_namespace, scout_extractor_namespace,
+         scout_analytics_namespace, scout_operators_namespace, scout_monitoring_namespace,
+         traefik_namespace, xnat_namespace]
+        | map('regex_replace', '^', '.') | list) }}
 
 # Domains required by each IdP for air-gapped proxy access
 # Used by both squid (allowlist) and keycloak (proxy mappings)

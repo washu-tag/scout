@@ -114,7 +114,9 @@
         certificate:
           requestAutoCert: false
         buckets: '{{ minio_buckets }}'
-        users: '{{ minio_credentials }}'
+        # No users: the bootstrap Job creates them. The operator would set each
+        # one's policy to consoleAdmin, replacing what it has, at a moment that
+        # races the Job's attach/detach.
       ingress: '{{ minio_ingress_config }}'
 
 # The console UI detects a lapsed login by parsing its API's JSON 401, and
@@ -279,18 +281,16 @@
                     mc alias set local http://{{ minio_tenant_name }}-hl.{{ minio_tenant_namespace }}:9000 \
                       "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" --insecure
 
-                    # The MinIO operator's tenant.users reconcile only honors
-                    # the list on first install — adding entries later
-                    # doesn't create new IAM users. Ensure each user exists
-                    # before attaching policies. mc admin user add is
-                    # idempotent (re-runs on existing user succeed quietly).
+                    # Create each user before attaching policies. mc admin
+                    # user add is idempotent (re-runs on existing user
+                    # succeed quietly).
                     {% for u in minio_users %}
                     echo "Ensuring user {{ u.access_key }} exists..."
                     mc admin user add local {{ u.access_key | quote }} "$(cat /usercreds/{{ u.access_key }}/CONSOLE_SECRET_KEY)"
                     {% endfor %}
 
-                    # Ensure buckets exist (same reason: tenant.buckets is
-                    # honored on first install only).
+                    # Ensure buckets exist (tenant.buckets is honored on
+                    # first install only).
                     {% for b in minio_buckets %}
                     echo "Ensuring bucket {{ b.name }} exists..."
                     mc mb --ignore-existing local/{{ b.name }}
@@ -301,9 +301,9 @@
                     {% endfor %}
 
                     # Apply policies and attach to users. consoleAdmin
-                    # detach is tolerant: users created via the operator's
-                    # tenant.users path inherit consoleAdmin and we want to
-                    # strip it; users created via mc admin user add never
+                    # detach is tolerant: users the operator created on
+                    # installs that had tenant.users carry consoleAdmin and we
+                    # want to strip it; users created via mc admin user add never
                     # had it, so the detach is a no-op and shouldn't fail
                     # the script.
                     {% for p in minio_policies %}

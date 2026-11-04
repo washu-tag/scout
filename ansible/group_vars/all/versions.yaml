@@ -83,7 +83,7 @@ trino_jmx_exporter_version: 1.4.0
 
 # Analytics & Query Engines - OPA (Trino access control)
 # renovate: datasource=docker depName=openpolicyagent/opa
-opa_image_tag: 1.16.2
+opa_image_tag: 1.21.4
 
 # Identity Provider - Keycloak
 # Renovate customManager also bumps keycloak/VERSION + keycloak/Dockerfile FROM in

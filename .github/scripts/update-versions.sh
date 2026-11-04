@@ -132,6 +132,11 @@ update_file "keycloak-fragment-reconciler/pyproject.toml" \
     "\\1$PYTHON_VERSION\\2" \
     "pyproject.toml version"
 
+update_file "examples/xnat-explore-poc/pyproject.toml" \
+    '^(version = ")[^"]+(")'  \
+    "\\1$PYTHON_VERSION\\2" \
+    "pyproject.toml version"
+
 echo "$DOCKER_TAG" > "extractor/hl7-transformer/VERSION"
 echo "  - VERSION file: extractor/hl7-transformer/VERSION"
 
@@ -140,6 +145,9 @@ echo "  - VERSION file: report-viewer/VERSION"
 
 echo "$DOCKER_TAG" > "keycloak-fragment-reconciler/VERSION"
 echo "  - VERSION file: keycloak-fragment-reconciler/VERSION"
+
+echo "$DOCKER_TAG" > "examples/xnat-explore-poc/VERSION"
+echo "  - VERSION file: examples/xnat-explore-poc/VERSION"
 
 echo ""
 echo "Gradle build files..."
