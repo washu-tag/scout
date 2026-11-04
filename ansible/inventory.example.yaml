@@ -711,6 +711,14 @@ k3s_cluster:
     # enable_hl7_listener: true
 
     #---------------------------------------------------------------------------
+    # Telepresence (developer access to the cluster network; ansible/roles/telepresence)
+    #---------------------------------------------------------------------------
+    # enable_telepresence: true
+    # Opens Trino and report-viewer to the traffic manager's namespace so they can be
+    # intercepted. Only for clusters without production data.
+    # telepresence_allow_protected_workloads: true
+
+    #---------------------------------------------------------------------------
     # Chatbot (Open WebUI)
     #---------------------------------------------------------------------------
     # Uncomment the following line to enable the Chat service

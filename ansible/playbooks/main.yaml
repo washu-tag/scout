@@ -72,3 +72,6 @@
 
 - name: Install data-generator
   import_playbook: data_generator.yaml
+
+- name: Install Telepresence
+  import_playbook: telepresence.yaml
