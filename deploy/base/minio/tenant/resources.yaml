@@ -9,8 +9,8 @@ spec:
   url: https://operator.min.io
 ---
 # MinIO Tenant. Root/OIDC creds live in configSecret `minio-scout-env-configuration`
-# (fixed name, seeded by site, not committed); per-user CONSOLE_* secrets under
-# tenant.users likewise. Release name mirrors the Ansible role (= tenant namespace).
+# (fixed name, seeded by site, not committed); the per-user CONSOLE_* secrets the
+# bootstrap Job reads likewise. Release name mirrors the Ansible role (= tenant namespace).
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -88,8 +88,10 @@ spec:
         protocol: http
       certificate:
         requestAutoCert: false
-      # tenant.buckets/users honored on first install only; the bootstrap
-      # Job reconciles them idempotently every run.
+      # tenant.buckets honored on first install only; the bootstrap Job
+      # reconciles them, and creates the users, idempotently every run. No
+      # tenant.users: the operator sets each one's policy to consoleAdmin,
+      # replacing what it has, at a moment that races the Job's attach/detach.
       buckets:
         - name: '${loki_chunks_bucket}'
         - name: '${loki_ruler_bucket}'
@@ -100,12 +102,6 @@ spec:
         # Versioned so a corrupt OPA bundle PUT can roll back (ADR 0021).
         - name: '${opa_bundles_bucket}'
           versioned: true
-      users:
-        - name: '${s3_lake_reader}-creds'
-        - name: '${s3_lake_writer}-creds'
-        - name: '${s3_loki_writer}-creds'
-        - name: '${s3_opa_bundle_writer}-creds'
-        - name: '${s3_opa_bundle_reader}-creds'
     ingress:
       console:
         enabled: true
@@ -239,7 +235,7 @@ data:
     }
 ---
 # Reconciles MinIO IAM (users + buckets + policies) every run; operator honors
-# tenant.users/buckets on first install only. force=Enabled because immutable Job
+# tenant.buckets on first install only. force=Enabled because immutable Job
 # fields change with config, so Flux must recreate rather than patch.
 apiVersion: batch/v1
 kind: Job
@@ -296,8 +292,8 @@ spec:
                 sleep 5
               done
 
-              # Ensure each user exists before attaching policies (tenant.users
-              # first-install only). mc admin user add is idempotent.
+              # Create each user before attaching policies. mc admin user add
+              # is idempotent.
               for u in '${s3_lake_reader}' '${s3_lake_writer}' '${s3_loki_writer}' \
                        '${s3_opa_bundle_writer}' '${s3_opa_bundle_reader}'; do
                 echo "Ensuring user $$u exists..."
@@ -315,9 +311,9 @@ spec:
               mc version enable local/${opa_bundles_bucket}
 
               # Create/refresh each policy and attach to its user. consoleAdmin
-              # detach is tolerant: operator tenant.users inherit consoleAdmin and
-              # we strip it; mc-created users never had it, so detach no-ops and
-              # must not fail the script.
+              # detach is tolerant: users the operator created on installs that
+              # had tenant.users carry consoleAdmin and we strip it; mc-created
+              # users never had it, so detach no-ops and must not fail the script.
               for pair in 'lake-r ${s3_lake_reader}' 'lake-rw ${s3_lake_writer}' \
                           'loki-rw ${s3_loki_writer}' 'opa-bundle-w ${s3_opa_bundle_writer}' \
                           'opa-bundle-r ${s3_opa_bundle_reader}'; do
