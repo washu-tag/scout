@@ -127,8 +127,70 @@ data:
     ) -}}
     {{- end -}}
     {{- end -}}
+    {{- end -}}
+    {{- range $c := .Values.openaiConnections -}}
+    {{- range $m := $c.models -}}
+    {{- $connModelId := ternary (printf "%s.%s" $c.prefixId $m.id) $m.id (not (empty $c.prefixId)) -}}
+    {{- if and (not $m.ui) $hideBase -}}
+    {{- $models = append $models (dict
+        "id" $connModelId
+        "base_model_id" nil
+        "name" $connModelId
+        "meta" (dict)
+        "params" (dict)
+        "is_active" false
+        "access_grants" $publicRead
+    ) -}}
+    {{- end -}}
+    {{- if $m.ui -}}
+    {{- /* OWUI stores custom param values as JSON strings */ -}}
+    {{- $custom := dict -}}
+    {{- range $k, $v := (default (dict) $m.params) -}}
+    {{- $_ := set $custom $k (ternary $v (toJson $v) (kindIs "string" $v)) -}}
+    {{- end -}}
+    {{- $params := dict
+        "system_file" $defaults.systemPromptFile
+        "function_calling" (default $defaults.functionCalling $m.ui.function_calling)
+        "custom_params" $custom -}}
+    {{- if $m.ui.reasoning_effort -}}
+    {{- $_ := set $params "reasoning_effort" $m.ui.reasoning_effort -}}
+    {{- end -}}
+    {{- if $m.ui.compact_token_threshold -}}
+    {{- $_ := set $params "compact_token_threshold" ($m.ui.compact_token_threshold | int) -}}
+    {{- end -}}
+    {{- $models = append $models (dict
+        "id" $connModelId
+        "base_model_id" nil
+        "name" $m.ui.name
+        "meta" (dict
+            "profile_image_url" (default $profile $m.ui.profile_image_url)
+            "description" (default "" $m.ui.description)
+            "toolIds" (default $defaults.toolIds $m.ui.tool_ids)
+            "suggestion_prompts" (default $defaults.suggestionPrompts $m.ui.suggestion_prompts)
+            "capabilities" (default $defaults.capabilities $m.ui.capabilities)
+            "builtinTools" (default $defaults.builtinTools $m.ui.builtin_tools)
+        )
+        "params" $params
+        "is_active" true
+        "access_grants" $publicRead
+    ) -}}
+    {{- end -}}
+    {{- end -}}
     {{- end }}
     {{ $models | toJson }}
+
+  # Secrets appear only as env var names; bootstrap.py reads the values.
+  openai_connections.json: |-
+    {{- $connections := list -}}
+    {{- range $c := .Values.openaiConnections -}}
+    {{- $conn := omit $c "models" -}}
+    {{- $_ := set $conn "modelIds" (list) -}}
+    {{- range $m := $c.models -}}
+    {{- $_ := set $conn "modelIds" (append $conn.modelIds $m.id) -}}
+    {{- end -}}
+    {{- $connections = append $connections $conn -}}
+    {{- end }}
+    {{ $connections | toJson }}
 
   # Payload files referenced by filters.json[].content_file and
   # models.json[].params.system_file — globbed straight from the chart's

@@ -16,15 +16,12 @@
           resources: '{{ verify_node_resources | default({}) }}'
 
     - name: Add Squid proxy connectivity check for air-gapped deployments
-      when:
-        - air_gapped | default(false) | bool
-        - groups.get('staging', []) | length > 0
+      when: squid_proxy_url | length > 0
       vars:
-        _staging_host: "{{ hostvars[groups['staging'][0]].external_url | default(groups['staging'][0]) }}"
         _squid_check:
           description: 'Squid proxy on staging'
-          host: '{{ _staging_host }}'
-          port: '{{ squid_port }}'
+          host: "{{ squid_proxy_url | urlsplit('hostname') }}"
+          port: "{{ squid_proxy_url | urlsplit('port') }}"
           expect: reachable
       ansible.builtin.set_fact:
         _verify_config: >-

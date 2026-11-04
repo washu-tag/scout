@@ -113,10 +113,8 @@
           - groups.get('staging', []) | length > 0
         fail_msg: "air_gapped is true but no hosts are defined in the 'staging' inventory group"
 
-    - name: Resolve staging hostname and proxy port
+    - name: Initialize proxy mappings
       ansible.builtin.set_fact:
-        _staging_hostname: "{{ hostvars[groups['staging'][0]].external_url | default(groups['staging'][0]) }}"
-        _squid_port: "{{ hostvars[groups['staging'][0]].squid_port | default(squid_port) }}"
         _proxy_mappings: []
 
     - name: Add Microsoft IdP proxy mappings
@@ -124,14 +122,14 @@
         - keycloak_microsoft_client_id is defined
         - keycloak_microsoft_client_id | length > 0
       ansible.builtin.set_fact:
-        _proxy_mappings: "{{ _proxy_mappings + squid_microsoft_domains | map('replace', '.', '\\.') | map('regex_replace', '(.+)', '\\1;http://' ~ _staging_hostname ~ ':' ~ _squid_port) | list }}"
+        _proxy_mappings: "{{ _proxy_mappings + squid_microsoft_domains | map('replace', '.', '\\.') | map('regex_replace', '(.+)', '\\1;' ~ squid_proxy_url) | list }}"
 
     - name: Add GitHub IdP proxy mappings
       when:
         - keycloak_gh_client_id is defined
         - keycloak_gh_client_id | length > 0
       ansible.builtin.set_fact:
-        _proxy_mappings: "{{ _proxy_mappings + squid_github_domains | map('replace', '.', '\\.') | map('regex_replace', '(.+)', '\\1;http://' ~ _staging_hostname ~ ':' ~ _squid_port) | list }}"
+        _proxy_mappings: "{{ _proxy_mappings + squid_github_domains | map('replace', '.', '\\.') | map('regex_replace', '(.+)', '\\1;' ~ squid_proxy_url) | list }}"
 
     - name: Build proxy-mappings option
       when: _proxy_mappings | length > 0

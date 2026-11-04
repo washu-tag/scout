@@ -101,3 +101,52 @@ scoutDefaults:
   keepAliveResident: '-1'
   keepAliveCold: '5m'
   hideBaseModels: true
+
+# Secret with the env vars named by openaiConnections' *Env fields. Mounted by
+# the Job and CronJob only.
+connectionSecretName: open-webui-connection-secrets
+
+# OpenAI-compatible connections. When non-empty, bootstrap replaces OWUI's
+# OpenAI connection list with these. Models with `ui:` become Scout Explorer
+# models (same ui fields as scoutModels) and `params` become OWUI custom
+# params; models without `ui:` are hidden unless scoutDefaults.hideBaseModels
+# is false.
+#
+# - url: https://llm.example.org/v1
+#   apiType: responses            # or chat_completions (default)
+#   prefixId: ''                  # model ids become <prefixId>.<id>
+#   headersFromEnv: {}            # e.g. {X-Api-Key: LLM_API_KEY}
+#   apiKeyEnv: ''                 # static bearer key, or use oauth2
+#   oauth2:                       # client-credentials, refreshed by the CronJob
+#     tokenUrl: https://login.example.org/oauth2/token
+#     scope: api://example/.default  # optional
+#     clientIdEnv: LLM_CLIENT_ID
+#     clientSecretEnv: LLM_CLIENT_SECRET
+#   models:
+#     - id: some-model
+#       params: {reasoning: {effort: high, summary: auto}}
+#       ui: {name: 'Scout Explorer (Some Model)', description: ''}
+openaiConnections: []
+
+# Rendered only when a connection uses oauth2. Keep the schedule well under
+# the token lifetime.
+tokenRefresh:
+  schedule: '*/20 * * * *'
+  backoffLimit: 3
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: [ALL]
+    seccompProfile:
+      type: RuntimeDefault
+
+# HTTPS proxy for the Job and CronJob's token requests.
+proxy:
+  https: ''
+  noProxy: ''

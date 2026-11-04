@@ -94,10 +94,10 @@ Partial draft/promotion: re-dispatch Release with the same version.
    legs and package publication must succeed in that attempt; skipped jobs or
    artifacts left by an earlier attempt cannot authorize release.
 4. Use the tooling and chart catalog from the stamped source. Package and sign
-   the fifteen release-version Helm charts for existing Ansible consumers,
+   the release-version Helm charts for existing Ansible consumers,
    reusing an existing chart only after verifying its signature and stamped
    source revision. The producer
-   has already published the seven Scout-versioned image aliases. Promotion
+   has already published the Scout-versioned image aliases. Promotion
    checks those images against the signed haul and records the separately
    packaged chart digests; their bytes are not the charts tested by the Flux proof.
 5. Revalidate evidence, verify all three package artifacts by digest and managed
@@ -269,8 +269,8 @@ completed build. The next producer includes all accumulated changes since the
 verified predecessor. A release still needs a successful build of its exact
 stamped commit; a newer commit's result cannot replace a cancelled release build.
 
-The first build after migrating an unsigned historical manifest rebuilds all
-nine images and fifteen charts, carrying no components from that manifest.
+The first build after migrating an unsigned historical manifest rebuilds every
+image and chart in the CI catalog, carrying no components from that manifest.
 Subsequent builds can carry unchanged digests from a verified signed predecessor.
 
 | Component | Responsibility |
@@ -414,6 +414,8 @@ This section documents all files containing version strings. The Release Workflo
 | `report-viewer/VERSION` | entire file | `latest` |
 | `keycloak-fragment-reconciler/pyproject.toml` | `version` | `0.0.dev0` |
 | `keycloak-fragment-reconciler/VERSION` | entire file | `latest` |
+| `examples/xnat-explore-poc/pyproject.toml` | `version` | `0.0.dev0` |
+| `examples/xnat-explore-poc/VERSION` | entire file | `latest` |
 
 ### Java/Gradle Build Files
 
