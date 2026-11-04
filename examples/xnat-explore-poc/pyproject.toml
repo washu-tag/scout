@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xnat_explore_poc"
-version = "5.2.0"
+version = "0.0.dev0"
 description = "Fake backend-call target proving report-viewer's pluggable action mechanism (#739 PoC) - not a real XNAT integration"
 requires-python = ">= 3.11"
 dependencies = [
