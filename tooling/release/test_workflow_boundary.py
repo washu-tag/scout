@@ -1,6 +1,8 @@
 """Keep publication privilege and recovery serialization around the shared gate."""
 
 from pathlib import Path
+import json
+import os
 import subprocess
 import sys
 
@@ -122,6 +124,12 @@ def test_branch_releases_retain_exact_candidate_copy_and_attempt_downloads():
     assert len(downloads) == 2
     for download in downloads:
         assert download["if"] == "github.ref_name != 'main'"
+        artifact_id = download["with"]["artifact-ids"]
+        assert artifact_id in (
+            "${{ needs.wait-for-build.outputs.ci_candidate_artifact_id }}",
+            "${{ needs.wait-for-build.outputs.ci_images_artifact_id }}",
+        )
+        assert artifact_id[4:-3] + " == ''" in download["with"]["name"]
         assert (
             "needs.wait-for-build.outputs.ci_artifact_attempt"
             in download["with"]["name"]
@@ -195,15 +203,102 @@ def test_ci_handoff_waits_for_all_jobs_and_preserves_generation():
         for step in job.get("steps", []):
             artifact = step.get("with", {}).get("name", "")
             pattern = step.get("with", {}).get("pattern", "")
-            if artifact.startswith(("flux-", "producer-plan-")) or pattern.startswith(
-                "*-attempt-"
-            ):
-                assert "needs.changes.outputs.artifact-attempt" in artifact + pattern
-                assert step["with"].get("overwrite", False) is False
+            assert not pattern
+            if artifact.startswith("producer-plan-"):
+                assert "needs.changes.outputs.artifact-attempt" in artifact
                 assert "changes" in job["needs"]
+            if artifact.startswith("flux-"):
+                assert step["uses"].startswith("actions/upload-artifact@")
+                assert "github.run_attempt" in artifact
+                assert step["with"].get("overwrite", False) is False
+            artifact_ids = step.get("with", {}).get("artifact-ids", "")
+            if "needs.prepare-flux-artifacts.outputs" in artifact_ids:
+                assert "prepare-flux-artifacts" in job["needs"]
+                assert "|| '0'" in artifact_ids
     uploads = [
         step
         for step in handoff["steps"]
         if "actions/upload-artifact@" in step.get("uses", "")
     ]
     assert uploads[0]["with"]["name"] == "scout-config-ref-${{ github.run_attempt }}"
+
+
+def test_image_producer_outputs_and_consumers_cover_the_ci_catalog():
+    jobs = workflow("ci.yaml")["jobs"]
+    build = jobs["build-and-upload"]
+    names = {row["image-name"] for row in build["strategy"]["matrix"]["include"]}
+    assert build["outputs"].keys() == names
+    for name, output in build["outputs"].items():
+        assert output == (
+            "${{ matrix.image-name == '"
+            + name
+            + "' && steps.build.outputs.artifact-id || '' }}"
+        )
+    actions = {"docker-push", "k3s-image-import-or-pull", "trivy-scan-image"}
+    for job in jobs.values():
+        for step in job.get("steps", []):
+            if step.get("uses", "").removeprefix("./.github/actions/") not in actions:
+                continue
+            assert "build-and-upload" in job["needs"]
+            name = step["with"]["image-name"]
+            key = (
+                "matrix.image-name"
+                if name == "${{ matrix.image-name }}"
+                else repr(name)
+            )
+            assert step["with"]["artifact-id"] == (
+                "${{ needs.build-and-upload.outputs[" + key + "] }}"
+            )
+    for action in actions:
+        data = yaml.safe_load(
+            (ROOT / ".github/actions" / action / "action.yaml").read_text()
+        )
+        download = next(
+            s
+            for s in data["runs"]["steps"]
+            if "actions/download-artifact@" in s.get("uses", "")
+        )
+        assert download["with"]["artifact-ids"] == "${{ inputs.artifact-id || '0' }}"
+        assert not download.get("continue-on-error", False)
+
+
+@pytest.mark.parametrize(
+    "outputs,expected",
+    [
+        (
+            {"a": "101", "b": "55", "skipped": ""},
+            "101,55",
+        ),
+        ({}, ""),
+        ({"a": ""}, ""),
+        ({"a": "0"}, None),
+        ({"a": "-1"}, None),
+        ({"a": "123\nother=value"}, None),
+    ],
+)
+def test_image_selection_uses_only_explicit_producer_ids(tmp_path, outputs, expected):
+    job = workflow("ci.yaml")["jobs"]["prepare-flux-artifacts"]
+    selector = next(s for s in job["steps"] if s.get("id") == "image-artifacts")
+    output = tmp_path / "output"
+    result = subprocess.run(
+        ["bash", "-e", "-c", selector["run"]],
+        env={
+            **os.environ,
+            "IMAGE_ARTIFACTS": json.dumps(outputs),
+            "GITHUB_OUTPUT": str(output),
+        },
+        capture_output=True,
+    )
+    if expected is None:
+        assert result.returncode != 0
+        assert not output.exists()
+    else:
+        assert result.returncode == 0
+        assert output.read_text() == f"ids={expected}\n"
+    download = next(
+        s
+        for s in job["steps"]
+        if s.get("with", {}).get("artifact-ids")
+        == "${{ steps.image-artifacts.outputs.ids }}"
+    )
+    assert download["if"] == "steps.image-artifacts.outputs.ids != ''"

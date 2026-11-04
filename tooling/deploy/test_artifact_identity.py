@@ -443,7 +443,13 @@ def test_schema_and_field_set_must_agree(release_identity, schema, has_bundle):
 
 def test_rerun_receipt_keeps_original_manifest_identity(identity):
     receipt, raw = identity
-    receipt.update(schemaVersion=3, artifactAttempt=receipt["runAttempt"], runAttempt=3)
+    receipt.update(
+        schemaVersion=3,
+        artifactAttempt=receipt["runAttempt"],
+        runAttempt=3,
+        candidateArtifactId=501,
+        imagesArtifactId=502,
+    )
     validate_receipt(receipt, **{**CONTEXT, "run_attempt": 3})
     validate_manifest(raw, receipt)
     receipt["artifactAttempt"] = 1
@@ -454,6 +460,69 @@ def test_rerun_receipt_keeps_original_manifest_identity(identity):
 @pytest.mark.parametrize("attempt", [0, -1, True, 2.0, "2", 4])
 def test_rerun_receipt_rejects_invalid_generation(identity, attempt):
     receipt, _ = identity
-    receipt.update(schemaVersion=3, artifactAttempt=attempt, runAttempt=3)
+    receipt.update(
+        schemaVersion=3,
+        artifactAttempt=attempt,
+        runAttempt=3,
+        candidateArtifactId=501,
+        imagesArtifactId=502,
+    )
     with pytest.raises(IdentityError, match="invalid artifactAttempt"):
         validate_receipt(receipt, **{**CONTEXT, "run_attempt": 3})
+
+
+@pytest.mark.parametrize("has_bundle", [False, True])
+def test_schema3_create_preserves_exact_candidate_uploads(
+    identity, tmp_path, has_bundle
+):
+    receipt, raw = identity
+    output = tmp_path / "receipt.json"
+    args = [
+        "create",
+        *context_args({**CONTEXT, "run_attempt": 3}),
+        "--artifact-attempt",
+        "2",
+        "--candidate-artifact-id",
+        "501",
+        "--images-artifact-id",
+        "502",
+        "--version",
+        receipt["version"],
+        "--manifest-digest",
+        receipt["manifestDigest"],
+        "--config-digest",
+        receipt["configDigest"],
+        "--output",
+        str(output),
+    ]
+    if has_bundle:
+        args += ["--bundle-digest", "sha256:" + "b" * 64]
+    assert main(args) == 0
+    created = load_receipt(output)
+    assert created["schemaVersion"] == 3
+    assert created["candidateArtifactId"] == 501
+    assert created["imagesArtifactId"] == 502
+    validate_receipt(
+        created, **{**CONTEXT, "run_attempt": 3}, require_bundle=has_bundle
+    )
+    validate_manifest(raw, created)
+    output.unlink()
+    index = args.index("--candidate-artifact-id")
+    del args[index : index + 2]
+    assert main(args) == 1
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("field", ["candidateArtifactId", "imagesArtifactId"])
+@pytest.mark.parametrize("value", [None, 0, -1, True, 1.5, "501", "501\nother=value"])
+def test_schema3_rejects_invalid_upload_ids(identity, field, value):
+    receipt, _ = identity
+    receipt.update(
+        schemaVersion=3,
+        artifactAttempt=2,
+        candidateArtifactId=501,
+        imagesArtifactId=502,
+    )
+    receipt[field] = value
+    with pytest.raises(IdentityError, match="invalid " + field):
+        validate_receipt(receipt, **CONTEXT)

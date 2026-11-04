@@ -681,7 +681,13 @@ def test_signed_bundle_must_bind_the_tested_manifest_and_attempt(
 
 def rerun_fixture():
     api, oci = fixture()
-    api.producer.update(schemaVersion=3, artifactAttempt=2, runAttempt=3)
+    api.producer.update(
+        schemaVersion=3,
+        artifactAttempt=2,
+        runAttempt=3,
+        candidateArtifactId=501,
+        imagesArtifactId=502,
+    )
     api.runs[101]["run_attempt"] = 3
     for job in api.jobs:
         job["run_attempt"] = 3
@@ -741,6 +747,20 @@ def test_branch_partial_rerun_selects_exact_receipt_generation():
     selected = p.find_evidence(api, p.REPOSITORY, SHA, "release/4.2")
     assert selected["runAttempt"] == 3
     assert selected["artifactAttempt"] == 2
+    assert selected["candidateArtifactId"] == 501
+    assert selected["imagesArtifactId"] == 502
+
+
+@pytest.mark.parametrize("rerun", [False, True])
+def test_wait_exports_receipt_upload_ids_without_guessing(monkeypatch, tmp_path, rerun):
+    api, _ = rerun_fixture() if rerun else fixture()
+    result, output, _, _ = wait_http(monkeypatch, tmp_path, [], api=api)
+    assert result == 0
+    values = dict(line.split("=", 1) for line in output.read_text().splitlines())
+    assert values["candidate_artifact_id"] == ("501" if rerun else "")
+    assert values["images_artifact_id"] == ("502" if rerun else "")
+    assert values["artifact_attempt"] == "2"
+    assert values["run_attempt"] == ("3" if rerun else "2")
 
 
 @pytest.mark.parametrize("branch", ["main", "release/4.2"])

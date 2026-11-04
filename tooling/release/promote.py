@@ -1153,6 +1153,8 @@ def main(argv=None):
                 "artifact_attempt": producer.get(
                     "artifactAttempt", producer["runAttempt"]
                 ),
+                "candidate_artifact_id": producer.get("candidateArtifactId", ""),
+                "images_artifact_id": producer.get("imagesArtifactId", ""),
                 "build_version": producer["version"],
                 "sha": producer["revision"],
             }

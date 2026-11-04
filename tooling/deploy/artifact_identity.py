@@ -74,7 +74,7 @@ def validate_receipt(
     if schema == 2 or (schema == 3 and "bundleDigest" in receipt):
         fields.add("bundleDigest")
     if schema == 3:
-        fields.add("artifactAttempt")
+        fields.update(("artifactAttempt", "candidateArtifactId", "imagesArtifactId"))
     if set(receipt) != fields:
         raise IdentityError("receipt must contain exactly the schema fields")
     if require_bundle and "bundleDigest" not in fields:
@@ -85,7 +85,10 @@ def validate_receipt(
         raise IdentityError("invalid repository")
     if not _matches(REVISION, receipt["revision"]):
         raise IdentityError("invalid revision")
-    for field in ("runId", "runAttempt"):
+    identifiers = ("runId", "runAttempt")
+    if schema == 3:
+        identifiers += ("candidateArtifactId", "imagesArtifactId")
+    for field in identifiers:
         if type(receipt[field]) is not int or receipt[field] <= 0:
             raise IdentityError("invalid " + field)
     if schema == 3 and (
@@ -152,6 +155,8 @@ def main(argv=None):
         command.add_argument("--run-id", required=True, type=int)
         command.add_argument("--run-attempt", required=True, type=int)
     create.add_argument("--artifact-attempt", type=int)
+    create.add_argument("--candidate-artifact-id", type=int)
+    create.add_argument("--images-artifact-id", type=int)
     create.add_argument("--version", required=True)
     create.add_argument("--manifest-digest", required=True)
     create.add_argument("--bundle-digest")
@@ -180,6 +185,8 @@ def main(argv=None):
             }
             if args.artifact_attempt is not None:
                 receipt["artifactAttempt"] = args.artifact_attempt
+                receipt["candidateArtifactId"] = args.candidate_artifact_id
+                receipt["imagesArtifactId"] = args.images_artifact_id
             if args.bundle_digest is not None:
                 receipt["bundleDigest"] = args.bundle_digest
         else:

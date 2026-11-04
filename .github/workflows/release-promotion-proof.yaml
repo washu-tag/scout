@@ -9,6 +9,9 @@ on:
       - tooling/release/**
       - tooling/deploy/artifact_identity.py
       - .github/actions/k3s-image-import-or-pull/**
+      - .github/actions/docker-build-cache/**
+      - .github/actions/docker-push/**
+      - .github/actions/trivy-scan-image/**
       - .github/scripts/test_k3s_image_import.py
       - .github/workflows/ci.yaml
       - .github/workflows/release*.yaml
@@ -18,6 +21,9 @@ on:
       - tooling/release/**
       - tooling/deploy/artifact_identity.py
       - .github/actions/k3s-image-import-or-pull/**
+      - .github/actions/docker-build-cache/**
+      - .github/actions/docker-push/**
+      - .github/actions/trivy-scan-image/**
       - .github/scripts/test_k3s_image_import.py
       - .github/workflows/ci.yaml
       - .github/workflows/release*.yaml

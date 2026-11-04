@@ -250,7 +250,12 @@ def test_chart_written_before_draft_cannot_be_reused_after_a_new_stamp():
 
 def branch_fixture():
     api, oci = fixture()
-    api.producer.update(schemaVersion=3, artifactAttempt=2)
+    api.producer.update(
+        schemaVersion=3,
+        artifactAttempt=2,
+        candidateArtifactId=501,
+        imagesArtifactId=502,
+    )
     del api.producer["bundleDigest"]
     api.jobs = [job for job in api.jobs if job["name"] in p.TEST_JOBS]
     api.jobs.append(dict(api.jobs[0], name="record-ci-artifacts"))

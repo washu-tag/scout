@@ -689,8 +689,8 @@ def test_planner_inventory_and_workflow_matrices_stay_in_sync():
     ):
         steps = jobs[name]["steps"]
         assert any(
-            step.get("with", {}).get("name")
-            == "flux-candidate-${{ needs.changes.outputs.artifact-attempt }}"
+            step.get("with", {}).get("artifact-ids")
+            == "${{ needs.prepare-flux-artifacts.outputs.candidate-id || '0' }}"
             for step in steps
         )
         assert any(
@@ -874,10 +874,7 @@ def test_scan_requires_planned_archive_without_download_fallback(
         if step.get("uses", "").startswith("actions/download-artifact@")
     )
     assert download["if"] == "steps.mode.outputs.mode == 'tar'"
-    assert (
-        download["with"]["name"]
-        == "${{ inputs.image-name }}-attempt-${{ env.SCOUT_ARTIFACT_ATTEMPT }}"
-    )
+    assert download["with"]["artifact-ids"] == "${{ inputs.artifact-id || '0' }}"
     assert not any(step.get("continue-on-error") for step in SCAN_ACTION)
 
 

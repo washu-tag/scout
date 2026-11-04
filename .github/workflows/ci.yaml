@@ -277,10 +277,20 @@ jobs:
           fi
           echo "cosign.pub matches the derived public key."
   build-and-upload:
-    env:
-      SCOUT_ARTIFACT_ATTEMPT: ${{ needs.changes.outputs.artifact-attempt }}
     runs-on: ubuntu-latest
     needs: changes
+    # Distinct keys preserve outputs from retained successful matrix legs.
+    outputs:
+      hl7log-extractor: ${{ matrix.image-name == 'hl7log-extractor' && steps.build.outputs.artifact-id || '' }}
+      hl7-transformer: ${{ matrix.image-name == 'hl7-transformer' && steps.build.outputs.artifact-id || '' }}
+      hl7-listener: ${{ matrix.image-name == 'hl7-listener' && steps.build.outputs.artifact-id || '' }}
+      scout-notebook: ${{ matrix.image-name == 'scout-notebook' && steps.build.outputs.artifact-id || '' }}
+      launchpad: ${{ matrix.image-name == 'launchpad' && steps.build.outputs.artifact-id || '' }}
+      superset: ${{ matrix.image-name == 'superset' && steps.build.outputs.artifact-id || '' }}
+      keycloak: ${{ matrix.image-name == 'keycloak' && steps.build.outputs.artifact-id || '' }}
+      report-viewer: ${{ matrix.image-name == 'report-viewer' && steps.build.outputs.artifact-id || '' }}
+      xnat-explore-poc: ${{ matrix.image-name == 'xnat-explore-poc' && steps.build.outputs.artifact-id || '' }}
+      keycloak-fragment-reconciler: ${{ matrix.image-name == 'keycloak-fragment-reconciler' && steps.build.outputs.artifact-id || '' }}
     permissions:
       contents: read
       packages: read
@@ -317,6 +327,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: 'Build/Cache Image - ${{ matrix.image-name }}'
+        id: build
         if: needs.changes.outputs[matrix.image-name] == 'true'
         uses: ./.github/actions/docker-build-cache
         with:
@@ -510,12 +521,16 @@ jobs:
           path: predecessor
       - uses: ./.github/actions/trivy-scan-image
         with:
+          artifact-id: ${{ needs.build-and-upload.outputs[matrix.image-name] }}
           image-name: ${{ matrix.image-name }}
           subproject: ${{ matrix.subproject }}
           scan-published: ${{ needs.changes.outputs.release_pr }}
           allow-vulnerabilities: ${{ matrix.allow-failure == true }}
   prepare-flux-artifacts:
     runs-on: ubuntu-latest
+    outputs:
+      candidate-id: ${{ steps.candidate.outputs.artifact-id }}
+      images-id: ${{ steps.images.outputs.artifact-id }}
     needs:
       - changes
       - build-and-upload
@@ -553,27 +568,38 @@ jobs:
         with:
           name: producer-plan-${{ needs.changes.outputs.artifact-attempt }}
           path: predecessor
+      - name: Select the producer image uploads
+        id: image-artifacts
+        env:
+          IMAGE_ARTIFACTS: ${{ toJSON(needs.build-and-upload.outputs) }}
+        run: |
+          set -euo pipefail
+          ids=$(jq -er '[.[] | select(. != "") | if test("^[1-9][0-9]*$") then . else error("invalid image artifact ID") end] | join(",")' <<< "$IMAGE_ARTIFACTS")
+          echo "ids=$ids" >> "$GITHUB_OUTPUT"
       - name: Download the planned image artifacts
+        if: steps.image-artifacts.outputs.ids != ''
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
-          pattern: '*-attempt-${{ needs.changes.outputs.artifact-attempt }}'
+          artifact-ids: ${{ steps.image-artifacts.outputs.ids }}
           path: images
           merge-multiple: true
       - name: Assemble immutable images, charts and config
         run: python3 .github/scripts/prepare-flux-artifacts.py --images images --predecessor predecessor --output candidate --registry "$CI_REGISTRY"
       - name: Save candidate metadata, charts and config
+        id: candidate
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: flux-candidate-${{ needs.changes.outputs.artifact-attempt }}
+          name: flux-candidate-${{ github.run_attempt }}
           path: |
             candidate/
             !candidate/images/**
           if-no-files-found: error
           retention-days: 7
       - name: Save canonical candidate images
+        id: images
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: flux-images-${{ needs.changes.outputs.artifact-attempt }}
+          name: flux-images-${{ github.run_attempt }}
           path: candidate/images/
           if-no-files-found: error
           retention-days: 7
@@ -624,12 +650,12 @@ jobs:
       - name: Download the tested candidate metadata and charts
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
-          name: flux-candidate-${{ needs.changes.outputs.artifact-attempt }}
+          artifact-ids: ${{ needs.prepare-flux-artifacts.outputs.candidate-id || '0' }}
           path: candidate
       - name: Download the tested candidate images
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
-          name: flux-images-${{ needs.changes.outputs.artifact-attempt }}
+          artifact-ids: ${{ needs.prepare-flux-artifacts.outputs.images-id || '0' }}
           path: candidate/images
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
@@ -962,7 +988,6 @@ jobs:
       contents: read
       packages: read
     env:
-      SCOUT_ARTIFACT_ATTEMPT: ${{ needs.changes.outputs.artifact-attempt }}
       KUBECONFIG: /etc/rancher/k3s/k3s.yaml
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1012,12 +1037,14 @@ jobs:
       - name: 'Push image to k3s - hl7log-extractor'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
+          artifact-id: ${{ needs.build-and-upload.outputs['hl7log-extractor'] }}
           subproject: extractor/hl7log-extractor
           image-name: hl7log-extractor
           artifact-required: ${{ needs.changes.outputs['hl7log-extractor'] }}
       - name: 'Push image to k3s - hl7-transformer'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
+          artifact-id: ${{ needs.build-and-upload.outputs['hl7-transformer'] }}
           subproject: extractor/hl7-transformer
           image-name: hl7-transformer
           artifact-required: ${{ needs.changes.outputs['hl7-transformer'] }}
@@ -1136,7 +1163,6 @@ jobs:
       contents: read
       packages: read
     env:
-      SCOUT_ARTIFACT_ATTEMPT: ${{ needs.changes.outputs.artifact-attempt }}
       KUBECONFIG: /etc/rancher/k3s/k3s.yaml
     strategy:
       fail-fast: false
@@ -1207,6 +1233,7 @@ jobs:
       - name: 'Push image to k3s - keycloak'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
+          artifact-id: ${{ needs.build-and-upload.outputs['keycloak'] }}
           subproject: keycloak
           image-name: keycloak
           artifact-required: ${{ needs.changes.outputs['keycloak'] }}
@@ -1215,12 +1242,14 @@ jobs:
       - name: 'Push image to k3s - keycloak-fragment-reconciler'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
+          artifact-id: ${{ needs.build-and-upload.outputs['keycloak-fragment-reconciler'] }}
           subproject: keycloak-fragment-reconciler
           image-name: keycloak-fragment-reconciler
           artifact-required: ${{ needs.changes.outputs['keycloak-fragment-reconciler'] }}
       - name: 'Push image to k3s - launchpad'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
+          artifact-id: ${{ needs.build-and-upload.outputs['launchpad'] }}
           subproject: launchpad
           image-name: launchpad
           artifact-required: ${{ needs.changes.outputs['launchpad'] }}
@@ -1228,6 +1257,7 @@ jobs:
         if: matrix.side == 'analytics'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
+          artifact-id: ${{ needs.build-and-upload.outputs['superset'] }}
           subproject: helm/superset
           image-name: superset
           artifact-required: ${{ needs.changes.outputs['superset'] }}
@@ -1235,6 +1265,7 @@ jobs:
         if: matrix.side == 'analytics'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
+          artifact-id: ${{ needs.build-and-upload.outputs['report-viewer'] }}
           subproject: report-viewer
           image-name: report-viewer
           artifact-required: ${{ needs.changes.outputs['report-viewer'] }}
@@ -1245,6 +1276,7 @@ jobs:
         if: matrix.side == 'analytics'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
+          artifact-id: ${{ needs.build-and-upload.outputs['hl7-transformer'] }}
           subproject: extractor/hl7-transformer
           image-name: hl7-transformer
           artifact-required: ${{ needs.changes.outputs['hl7-transformer'] }}
@@ -1252,6 +1284,7 @@ jobs:
         if: matrix.side == 'notebooks'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
+          artifact-id: ${{ needs.build-and-upload.outputs['scout-notebook'] }}
           subproject: helm/scout-notebook
           image-name: scout-notebook
           artifact-required: ${{ needs.changes.outputs['scout-notebook'] }}
@@ -1473,12 +1506,12 @@ jobs:
       - name: Download the tested candidate metadata and charts
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
-          name: flux-candidate-${{ needs.changes.outputs.artifact-attempt }}
+          artifact-ids: ${{ needs.prepare-flux-artifacts.outputs.candidate-id || '0' }}
           path: candidate
       - name: Download the tested candidate images
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
-          name: flux-images-${{ needs.changes.outputs.artifact-attempt }}
+          artifact-ids: ${{ needs.prepare-flux-artifacts.outputs.images-id || '0' }}
           path: candidate/images
       - name: Require the planned candidate
         run: python3 .github/scripts/copy-flux-artifacts.py validate --candidate candidate
@@ -1499,6 +1532,7 @@ jobs:
       contents: read
       packages: write
     needs:
+      - prepare-flux-artifacts
       - changes
       - deploy-and-test
       - smoke-test
@@ -1581,7 +1615,7 @@ jobs:
       - name: Download the tested candidate metadata and charts
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
-          name: flux-candidate-${{ needs.changes.outputs.artifact-attempt }}
+          artifact-ids: ${{ needs.prepare-flux-artifacts.outputs.candidate-id || '0' }}
           path: candidate
       - name: Require the planned candidate
         run: python3 .github/scripts/copy-flux-artifacts.py validate --candidate candidate
@@ -1597,15 +1631,13 @@ jobs:
 
   publish-demo:
     if: startsWith(github.ref_name, 'demo') && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
-    env:
-      SCOUT_ARTIFACT_ATTEMPT: ${{ needs.changes.outputs.artifact-attempt }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
       attestations: write
       id-token: write
-    needs: [changes, deploy-and-test, scan-images, smoke-test]
+    needs: [changes, build-and-upload, deploy-and-test, scan-images, smoke-test]
     steps:
       - name: Checkout GitHub Action
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1636,51 +1668,61 @@ jobs:
         if: needs.changes.outputs.scout-notebook == 'true'
         uses: ./.github/actions/docker-push
         with:
+          artifact-id: ${{ needs.build-and-upload.outputs['scout-notebook'] }}
           image-name: scout-notebook
       - name: 'Push Image - hl7log-extractor'
         if: needs.changes.outputs.hl7log-extractor == 'true'
         uses: ./.github/actions/docker-push
         with:
+          artifact-id: ${{ needs.build-and-upload.outputs['hl7log-extractor'] }}
           image-name: hl7log-extractor
       - name: 'Push Image - hl7-transformer'
         if: needs.changes.outputs.hl7-transformer == 'true'
         uses: ./.github/actions/docker-push
         with:
+          artifact-id: ${{ needs.build-and-upload.outputs['hl7-transformer'] }}
           image-name: hl7-transformer
       - name: 'Push Image - hl7-listener'
         if: needs.changes.outputs.hl7-listener == 'true'
         uses: ./.github/actions/docker-push
         with:
+          artifact-id: ${{ needs.build-and-upload.outputs['hl7-listener'] }}
           image-name: hl7-listener
       - name: 'Push Image - launchpad'
         if: needs.changes.outputs.launchpad == 'true'
         uses: ./.github/actions/docker-push
         with:
+          artifact-id: ${{ needs.build-and-upload.outputs['launchpad'] }}
           image-name: launchpad
       - name: 'Push Image - superset'
         if: needs.changes.outputs.superset == 'true'
         uses: ./.github/actions/docker-push
         with:
+          artifact-id: ${{ needs.build-and-upload.outputs['superset'] }}
           image-name: superset
       - name: 'Push Image - keycloak'
         if: needs.changes.outputs.keycloak == 'true'
         uses: ./.github/actions/docker-push
         with:
+          artifact-id: ${{ needs.build-and-upload.outputs['keycloak'] }}
           image-name: keycloak
       - name: 'Push Image - report-viewer'
         if: needs.changes.outputs.report-viewer == 'true'
         uses: ./.github/actions/docker-push
         with:
+          artifact-id: ${{ needs.build-and-upload.outputs['report-viewer'] }}
           image-name: report-viewer
       - name: 'Push Image - xnat-explore-poc'
         if: needs.changes.outputs.xnat-explore-poc == 'true'
         uses: ./.github/actions/docker-push
         with:
+          artifact-id: ${{ needs.build-and-upload.outputs['xnat-explore-poc'] }}
           image-name: xnat-explore-poc
       - name: 'Push Image - keycloak-fragment-reconciler'
         if: needs.changes.outputs.keycloak-fragment-reconciler == 'true'
         uses: ./.github/actions/docker-push
         with:
+          artifact-id: ${{ needs.build-and-upload.outputs['keycloak-fragment-reconciler'] }}
           image-name: keycloak-fragment-reconciler
 
   haul-guard-canary:
@@ -1707,6 +1749,7 @@ jobs:
     if: github.ref_name == 'main' && needs.publish.result == 'success' && needs.publish-charts.result == 'success'
     runs-on: ubuntu-latest
     needs:
+      - prepare-flux-artifacts
       - changes
       - publish
       - publish-charts
@@ -1755,7 +1798,7 @@ jobs:
       - name: Download the tested candidate metadata and charts
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
-          name: flux-candidate-${{ needs.changes.outputs.artifact-attempt }}
+          artifact-ids: ${{ needs.prepare-flux-artifacts.outputs.candidate-id || '0' }}
           path: candidate
       - name: Require the planned candidate
         run: python3 .github/scripts/copy-flux-artifacts.py validate --candidate candidate
@@ -1778,6 +1821,7 @@ jobs:
     if: github.ref_name == 'main' && needs.publish-haul.result == 'success' && needs.publish-haul.outputs.ready == 'true'
     runs-on: ubuntu-latest
     needs:
+      - prepare-flux-artifacts
       - changes
       - publish-haul
     permissions:
@@ -1810,7 +1854,7 @@ jobs:
       - name: Download the tested candidate metadata and charts
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
-          name: flux-candidate-${{ needs.changes.outputs.artifact-attempt }}
+          artifact-ids: ${{ needs.prepare-flux-artifacts.outputs.candidate-id || '0' }}
           path: candidate
       - name: Require the planned candidate
         run: python3 .github/scripts/copy-flux-artifacts.py validate --candidate candidate
@@ -1851,6 +1895,8 @@ jobs:
       SCOUT_ARTIFACT_ATTEMPT: ${{ needs.changes.outputs.artifact-attempt }}
       VERSION: ${{ needs.changes.outputs.version }}
       BUNDLE_DIGEST: ${{ needs.publish-haul.outputs.bundle-digest }}
+      CANDIDATE_ARTIFACT_ID: ${{ needs.prepare-flux-artifacts.outputs.candidate-id }}
+      IMAGES_ARTIFACT_ID: ${{ needs.prepare-flux-artifacts.outputs.images-id }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -1861,7 +1907,7 @@ jobs:
       - run: pip install pyyaml
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
-          name: flux-candidate-${{ needs.changes.outputs.artifact-attempt }}
+          artifact-ids: ${{ needs.prepare-flux-artifacts.outputs.candidate-id || '0' }}
           path: candidate
       - name: Record the candidate authorized by this successful CI attempt
         run: |
@@ -1873,6 +1919,8 @@ jobs:
             --repository "$GITHUB_REPOSITORY" --revision "$GITHUB_SHA" \
             --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
             --artifact-attempt "$SCOUT_ARTIFACT_ATTEMPT" --version "$VERSION" \
+            --candidate-artifact-id "$CANDIDATE_ARTIFACT_ID" \
+            --images-artifact-id "$IMAGES_ARTIFACT_ID" \
             --manifest-digest "$(jq -er .manifest.digest candidate/index.json)" \
             --config-digest "$(jq -er .config.digest candidate/index.json)" \
             "${args[@]}" --output "$RUNNER_TEMP/scout-config-ref.json"
