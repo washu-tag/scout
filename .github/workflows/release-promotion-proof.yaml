@@ -8,6 +8,11 @@ on:
     paths:
       - tooling/release/**
       - tooling/deploy/artifact_identity.py
+      - .github/actions/k3s-image-import-or-pull/**
+      - .github/actions/docker-build-cache/**
+      - .github/actions/docker-push/**
+      - .github/actions/trivy-scan-image/**
+      - .github/scripts/test_k3s_image_import.py
       - .github/workflows/ci.yaml
       - .github/workflows/release*.yaml
   push:
@@ -15,6 +20,11 @@ on:
     paths:
       - tooling/release/**
       - tooling/deploy/artifact_identity.py
+      - .github/actions/k3s-image-import-or-pull/**
+      - .github/actions/docker-build-cache/**
+      - .github/actions/docker-push/**
+      - .github/actions/trivy-scan-image/**
+      - .github/scripts/test_k3s_image_import.py
       - .github/workflows/ci.yaml
       - .github/workflows/release*.yaml
 
@@ -57,6 +67,7 @@ jobs:
           tooling/deploy/test_artifact_identity.py
           .github/ci_resources/flux/test_verify_config.py
           .github/scripts/test_copy_flux_artifacts.py
+          .github/scripts/test_k3s_image_import.py
           --junitxml="$RUNNER_TEMP/release-protocol.xml"
       - name: Save test results
         if: always()

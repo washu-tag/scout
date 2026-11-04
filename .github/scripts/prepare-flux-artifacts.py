@@ -114,7 +114,7 @@ def prepare_images(matrix, plan, images, output, registry, previous, digests):
         if fresh:
             if not archive.is_file():
                 raise ValueError(
-                    f"missing current-attempt image archive: {archive}; rerun all jobs"
+                    f"missing planned image archive: {archive}; rerun all jobs"
                 )
             loaded_ref = archive_reference(archive, name)
             tag = plan["version"]
@@ -256,7 +256,7 @@ def prepare(images: Path, predecessor: Path, output: Path, registry: str):
         os.environ["GITHUB_REPOSITORY"],
         os.environ["GITHUB_SHA"],
         int(os.environ["GITHUB_RUN_ID"]),
-        int(os.environ["GITHUB_RUN_ATTEMPT"]),
+        int(os.environ["SCOUT_ARTIFACT_ATTEMPT"]),
         os.environ["VERSION"],
     )
     plan = producer_plan.validate(predecessor, context)
@@ -268,7 +268,7 @@ def prepare(images: Path, predecessor: Path, output: Path, registry: str):
     output.mkdir(parents=True, exist_ok=False)
     (output / "images").mkdir()
     (output / "images/keep.txt").write_text(
-        "Layouts are present only for images rebuilt in this attempt.\n"
+        "Layouts are present only for images rebuilt in this generation.\n"
     )
     with tempfile.TemporaryDirectory(prefix="scout-candidate-") as temp:
         scratch = Path(temp)
