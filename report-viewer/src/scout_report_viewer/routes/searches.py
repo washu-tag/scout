@@ -117,6 +117,7 @@ _HEAVY_COLS: frozenset[str] = frozenset(
         "report_section_findings",
         "report_section_impression",
         "report_section_addendum",
+        "report_section_technician_note",
     }
 )
 

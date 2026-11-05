@@ -34,7 +34,8 @@ import { FiltersModal } from './searchDetail/FiltersModal';
 import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
 import { ActionsToolbar } from './searchDetail/ActionsToolbar';
 import { ContractIcon, ExpandIcon } from './searchDetail/icons';
-import { fmtCell, fmtDate } from './searchDetail/format';
+import { fmtCell, fmtDate, fmtHeader } from './searchDetail/format';
+import { columnKind, toNumber } from './searchDetail/columnKind';
 import { ColumnProfileRow } from './searchDetail/ColumnProfileRow';
 import { EvidenceCell } from './searchDetail/EvidenceCell';
 import { hasEvidence } from './searchDetail/evidenceStats';
@@ -89,6 +90,11 @@ const OTHER_TOOLBAR_SIBLINGS = 3 + (embedded ? 1 : 0);
 
 // Exported with Matched on so the CSV has the phrases, not just the category.
 const EVIDENCE_EXPORT = ['ev_positive_span', 'ev_negative_span', 'ev_dx_codes', 'ev_dx_text'];
+
+const CONFIGURED_FIELDS = new Set(COLUMNS_CONFIG.map((c) => c.field));
+// Used by the page but never shown as a column of their own.
+const INTERNAL_FIELDS = new Set(['primary_report_identifier', ...EVIDENCE_EXPORT]);
+const EXTRA_COLUMN_WIDTH = 110;
 
 const columnHelper = createColumnHelper<Row>();
 
@@ -297,9 +303,10 @@ export default function SearchDetailPage() {
     [],
   );
 
-  const columns = useMemo(
-    () =>
-      COLUMNS_CONFIG.filter((c) => available.includes(c.field)).map((c) =>
+  const columns = useMemo(() => {
+    const rows = rowsQ.data?.rows ?? [];
+    return [
+      ...COLUMNS_CONFIG.filter((c) => available.includes(c.field)).map((c) =>
         columnHelper.accessor((row: Row) => row[c.field], {
           id: c.field,
           header: c.title,
@@ -318,8 +325,30 @@ export default function SearchDetailPage() {
           meta: { align: c.align, mono: c.mono },
         }),
       ),
-    [available],
-  );
+      ...available
+        .filter((f) => !CONFIGURED_FIELDS.has(f) && !INTERNAL_FIELDS.has(f))
+        .map((field) => {
+          const numeric = columnKind(field, rows) === 'numeric';
+          return columnHelper.accessor((row: Row) => row[field], {
+            id: field,
+            header: fmtHeader(field),
+            size: EXTRA_COLUMN_WIDTH,
+            cell: (info) => fmtCell(info.getValue()),
+            sortingFn: numeric
+              ? (a, b, id) => {
+                  const x = toNumber(a.getValue(id));
+                  const y = toNumber(b.getValue(id));
+                  if (x === undefined || y === undefined) {
+                    return x === y ? 0 : x === undefined ? 1 : -1;
+                  }
+                  return x - y;
+                }
+              : 'auto',
+            meta: { align: numeric ? 'right' : undefined },
+          });
+        }),
+    ];
+  }, [available, rowsQ.data]);
 
   // Filter the full in-memory cohort in fetch order (the order the search SQL
   // returned) so the initial view preserves the LLM's ORDER BY; TanStack then
