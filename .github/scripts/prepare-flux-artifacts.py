@@ -67,6 +67,11 @@ def descriptor(reference, *, local=False):
     return json.loads(run(*args, reference, capture=True))
 
 
+def upstream_reference(reference):
+    """Pin reference to its digest. A versions.yaml value may already carry one."""
+    return f"{reference.split('@')[0]}@{descriptor(reference)['digest']}"
+
+
 def archive_reference(archive: Path, name: str) -> str:
     with tarfile.open(archive) as bundle:
         stream = bundle.extractfile("manifest.json")
@@ -301,7 +306,7 @@ def prepare(images: Path, predecessor: Path, output: Path, registry: str):
         )
         (output / "haul-upstream.yaml").write_text(
             render_images(
-                [f"{ref}@{descriptor(ref)['digest']}" for ref in upstream],
+                [upstream_reference(ref) for ref in upstream],
                 name="scout-upstream",
             )
         )
