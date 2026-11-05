@@ -41,6 +41,14 @@ def test_archive_cannot_substitute_another_image(tmp_path, tags):
         )
 
 
+@pytest.mark.parametrize(
+    "ref", ["docker.io/x/db:1-35", f"docker.io/x/db:1-35@{DIGEST}"]
+)
+def test_upstream_ref_carries_one_digest(monkeypatch, ref):
+    monkeypatch.setattr(candidate, "descriptor", lambda reference: {"digest": DIGEST})
+    assert candidate.upstream_reference(ref) == f"docker.io/x/db:1-35@{DIGEST}"
+
+
 def test_required_build_cannot_fall_back_to_predecessor(tmp_path):
     with pytest.raises(ValueError, match="missing planned image archive"):
         candidate.prepare_images(
