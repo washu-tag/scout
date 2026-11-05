@@ -94,9 +94,12 @@ staging:
     # If false, you must manually log in to Nexus and accept the EULA during setup.
     accept_nexus_eula: true
     # Upstream credentials for a Harbor proxy, needed for private images. Read-only,
-    # and limited to the packages this site needs: proxy projects are public.
+    # and limited to the packages this site needs. A proxy with credentials is private,
+    # and the nodes log in to it as robot$scout-pull with harbor_pull_robot_password
+    # (8-128 characters, with an uppercase letter, a lowercase letter and a digit).
     # harbor_ghcr_proxy_username: <account>
     # harbor_ghcr_proxy_password: $(echo $GHCR_TOKEN | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # harbor_pull_robot_password: $(echo $ROBOT_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     # Traefik
     tls_cert_path: ''

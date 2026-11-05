@@ -71,10 +71,32 @@
           'registry_name': item.registry_name,
           'registry_type': item.registry_type,
           'registry_url': item.registry_url,
-          'project_name': lookup('vars', 'harbor_' + item.registry_name + '_proxy_project', default=item.project_name)
+          'project_name': lookup('vars', 'harbor_' + item.registry_name + '_proxy_project', default=item.project_name),
+          'private': lookup('vars', 'harbor_' + item.registry_name + '_proxy_username', default='') | length > 0
         }]
       }}
   loop: '{{ harbor_registry_proxies }}'
+
+- name: Check upstream credentials are set in pairs
+  ansible.builtin.assert:
+    that: >-
+      (lookup('vars', 'harbor_' + item.registry_name + '_proxy_username', default='') | length > 0) ==
+      (lookup('vars', 'harbor_' + item.registry_name + '_proxy_password', default='') | length > 0)
+    fail_msg: 'Set both harbor_{{ item.registry_name }}_proxy_username and harbor_{{ item.registry_name }}_proxy_password, or neither.'
+    quiet: true
+  loop: '{{ harbor_registry_proxies_final }}'
+  loop_control:
+    label: '{{ item.registry_name }}'
+
+- name: Check the pull robot password is set when a proxy has upstream credentials
+  ansible.builtin.assert:
+    that:
+      - harbor_pull_robot_password | default('') is match('(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{8,128}$')
+    fail_msg: >-
+      A proxy with upstream credentials is private, so set harbor_pull_robot_password for the
+      nodes' pull robot: 8-128 characters, with an uppercase letter, a lowercase letter and a digit.
+    quiet: true
+  when: harbor_registry_proxies_final | selectattr('private') | list | length > 0
 
 - name: Create registry endpoints
   ansible.builtin.uri:
@@ -97,7 +119,7 @@
 
 - name: Get registries list
   ansible.builtin.uri:
-    url: '{{ harbor_registry_url }}/api/v2.0/registries'
+    url: '{{ harbor_registry_url }}/api/v2.0/registries?page_size=100'
     follow_redirects: none
     user: admin
     password: '{{ harbor_admin_password }}'
@@ -122,7 +144,7 @@
   loop: '{{ harbor_registry_proxies_final }}'
   loop_control:
     label: '{{ item.registry_name }}'
-  when: lookup('vars', 'harbor_' + item.registry_name + '_proxy_username', default='') | length > 0
+  when: item.private
   no_log: true
   changed_when: true
 
@@ -139,10 +161,123 @@
     body:
       project_name: '{{ item.project_name }}'
       registry_id: "{{ registries_response.json | selectattr('name', 'equalto', item.registry_name) | map(attribute='id') | first }}"
-      public: true
+      public: '{{ not item.private }}'
   loop: '{{ harbor_registry_proxies_final }}'
   register: project_create_result
   changed_when: project_create_result.status == 201
+
+- name: Get proxy cache projects
+  ansible.builtin.uri:
+    url: '{{ harbor_registry_url }}/api/v2.0/projects?page_size=100'
+    follow_redirects: none
+    user: admin
+    password: '{{ harbor_admin_password }}'
+    force_basic_auth: true
+  register: harbor_projects_response
+
+# Only ever public -> private: removing a proxy's credentials from inventory leaves them in
+# Harbor, so its project stays private until they're removed there too.
+- name: Make proxy cache projects with upstream credentials private
+  ansible.builtin.uri:
+    url: '{{ harbor_registry_url }}/api/v2.0/projects/{{ item.project_name }}'
+    follow_redirects: none
+    method: PUT
+    user: admin
+    password: '{{ harbor_admin_password }}'
+    force_basic_auth: true
+    body_format: json
+    body:
+      metadata:
+        public: 'false'
+  vars:
+    harbor_project_public: "{{ harbor_projects_response.json | selectattr('name', 'equalto', item.project_name) | map(attribute='metadata.public') | first }}"
+  loop: '{{ harbor_registry_proxies_final }}'
+  loop_control:
+    label: '{{ item.project_name }}'
+  when: item.private and harbor_project_public == 'true'
+  changed_when: true
+
+# The nodes log in to Harbor as this robot once a proxy project is private. It only needs the
+# private ones: Harbor lets any login pull from a public project.
+- name: Pull robot for the nodes
+  when: harbor_registry_proxies_final | selectattr('private') | list | length > 0
+  block:
+    - name: Get system robot accounts
+      ansible.builtin.uri:
+        url: '{{ harbor_registry_url }}/api/v2.0/robots?q=Level%3Dsystem&page_size=100'
+        follow_redirects: none
+        user: admin
+        password: '{{ harbor_admin_password }}'
+        force_basic_auth: true
+      register: harbor_robots_response
+
+    - name: List the pull robot's permissions
+      ansible.builtin.set_fact:
+        harbor_pull_robot_permissions: >-
+          {{ harbor_pull_robot_permissions | default([]) + [{
+               'kind': 'project',
+               'namespace': item.project_name,
+               'access': [{'resource': 'repository', 'action': 'pull'}]
+             }] }}
+      loop: "{{ harbor_registry_proxies_final | selectattr('private') | list }}"
+
+    - name: Find the pull robot
+      ansible.builtin.set_fact:
+        harbor_pull_robot: "{{ harbor_robots_response.json | selectattr('name', 'equalto', 'robot$' + harbor_pull_robot_name) | first | default({}) }}"
+
+    # Harbor won't change a robot's projects in place, so recreate it when the private proxies change.
+    - name: Delete the pull robot when its projects differ from the private proxies
+      ansible.builtin.uri:
+        url: '{{ harbor_registry_url }}/api/v2.0/robots/{{ harbor_pull_robot.id }}'
+        follow_redirects: none
+        method: DELETE
+        user: admin
+        password: '{{ harbor_admin_password }}'
+        force_basic_auth: true
+      when:
+        - harbor_pull_robot | length > 0
+        - >-
+          harbor_pull_robot.permissions | map(attribute='namespace') | sort | list !=
+          harbor_pull_robot_permissions | map(attribute='namespace') | sort | list
+      register: harbor_robot_delete_result
+      changed_when: true
+
+    - name: Create the pull robot
+      ansible.builtin.uri:
+        url: '{{ harbor_registry_url }}/api/v2.0/robots'
+        follow_redirects: none
+        method: POST
+        user: admin
+        password: '{{ harbor_admin_password }}'
+        force_basic_auth: true
+        body_format: json
+        status_code: [201]
+        body:
+          name: '{{ harbor_pull_robot_name }}'
+          description: Pull-only login the cluster nodes use for Harbor's proxy projects
+          duration: -1
+          level: system
+          disable: false
+          permissions: '{{ harbor_pull_robot_permissions }}'
+      when: harbor_pull_robot | length == 0 or harbor_robot_delete_result is changed
+      register: harbor_robot_create_result
+      no_log: true
+      changed_when: true
+
+    # Harbor never returns a robot's password, so set it on every run.
+    - name: Set the pull robot's password
+      ansible.builtin.uri:
+        url: '{{ harbor_registry_url }}/api/v2.0/robots/{{ harbor_robot_create_result.json.id | default(harbor_pull_robot.id) }}'
+        follow_redirects: none
+        method: PATCH
+        user: admin
+        password: '{{ harbor_admin_password }}'
+        force_basic_auth: true
+        body_format: json
+        body:
+          secret: '{{ harbor_pull_robot_password }}'
+      no_log: true
+      changed_when: true
 
 - name: Display Harbor deployment status
   ansible.builtin.debug:

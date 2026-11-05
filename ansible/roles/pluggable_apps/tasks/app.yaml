@@ -33,7 +33,7 @@
           metadata:
             name: '{{ pluggable_app_secret.key }}'
             namespace: '{{ pluggable_app.namespace }}'
-          stringData: '{{ pluggable_app_secret.value }}'
+          stringData: "{{ dict(pluggable_app_secret.value.keys() | zip(pluggable_app_secret.value.values() | map('string'))) }}"
       loop: '{{ pluggable_app.secrets | default({}) | dict2items }}'
       loop_control:
         loop_var: pluggable_app_secret

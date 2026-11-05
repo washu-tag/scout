@@ -2,10 +2,10 @@
 
 A Pluggable App is a Helm chart that a site installs into its Scout cluster. The other pages
 in this section cover what goes in the chart. This one covers installing it from the site's
-own configuration, so it deploys with the rest of Scout rather than as a separate step.
+own configuration, so it deploys with the rest of Scout.
 
-Scout discovers launchpad chips, report-viewer buttons, Keycloak fragments and Grafana
-dashboards while it runs, so an app can be installed, upgraded or removed at any time.
+Scout picks up an app's parts while it runs, so an app can be installed, upgraded or
+removed at any time.
 
 ## With Ansible
 
@@ -23,7 +23,7 @@ pluggable_apps:
         existingSecret: example-app-database
     secrets:
       example-app-database:
-        url: 'postgresql://example_app:{{ example_app_db_password }}@{{ db_host }}:{{ db_port }}/example_app'
+        url: "postgresql://example_app:{{ example_app_db_password | urlencode | replace('/', '%2F') }}@{{ db_host }}:{{ db_port }}/example_app"
     database:
       name: example_app
       owner: example_app
@@ -35,7 +35,27 @@ installs only the apps. To remove one, set `state: absent` on its entry and run
 `make install-pluggable-apps` again. That uninstalls the release and leaves its namespace,
 Secrets and database in place.
 
-The full list of fields is in the [role README](https://github.com/washu-tag/scout/tree/main/ansible/roles/pluggable_apps/README.md).
+### Entry fields
+
+| Field | Required | Notes |
+| --- | --- | --- |
+| `name` | yes | Helm release name. |
+| `namespace` | yes | Created if missing. |
+| `chart` | unless `state: absent` | An `oci://` reference or a local chart directory. |
+| `version` | for `oci://` charts | The chart version to install. |
+| `values` | no | Chart values. May reference vaulted variables and Scout variables such as `server_hostname` and `db_host`. |
+| `secrets` | no | Secrets to create in `namespace` before the install, as `{<name>: {<key>: <value>}}`. For charts that read credentials from an existing Secret. Quote values that YAML would read as a number or boolean. |
+| `database` | no | `{name, owner, password}`. Creates the role and database in Scout's Postgres, as Scout's own services do. `name` and `owner` may contain only lowercase letters, digits and underscores. |
+| `registry` | no | `{username, password}` for an `oci://` chart in a private registry. Logs helm in on the Ansible host before the install. |
+| `timeout` | no | Helm wait timeout, default `5m`. |
+| `state` | no | `present` (default) or `absent`, which uninstalls the release. The namespace, Secrets and database are left in place. |
+
+To keep an app's values in a file beside the inventory, load them with a template lookup,
+which also fills in variables such as `server_hostname`:
+
+```yaml
+values: "{{ lookup('template', inventory_dir + '/example-app-values.yaml') | from_yaml }}"
+```
 
 ### Private registries
 
@@ -45,10 +65,11 @@ The full list of fields is in the [role README](https://github.com/washu-tag/sco
   proxy caches, which pull from the upstream anonymously. For a private image on
   `ghcr.io`, set `harbor_ghcr_proxy_username` and `harbor_ghcr_proxy_password` on the
   staging group, vault-encrypted, and run `make install-staging`. Harbor checks them against
-  the upstream, and rejects ones it can't use with a 400. The chart keeps its
-  `ghcr.io` image references, and no pull Secret is needed. Harbor's proxy projects are
-  public, so anyone who can reach Harbor can pull what those credentials can read: use a
-  read-only token from an account that can read only the packages the site needs.
+  the upstream, and rejects ones it can't use with a 400. A proxy project with credentials
+  is private, so also set `harbor_pull_robot_password` there: Harbor gets a pull-only robot
+  account, `robot$scout-pull`, and `make install-k3s` gives the nodes its login. The chart
+  keeps its `ghcr.io` image references, and no pull Secret is needed. Use a read-only token
+  from an account that can read only the packages the site needs.
 
 ## With GitOps
 
@@ -72,12 +93,21 @@ included. That differs from `state: absent` under Ansible.
 
 On an air-gapped site, Flux fetches charts itself rather than through the nodes' registry
 mirror, so the `OCIRepository` URL names the Harbor proxy project. Images keep their
-`ghcr.io` references, and private ones need the same Harbor credentials as above.
+`ghcr.io` references, and private ones need the same Harbor credentials as above. Two more
+fields on the `OCIRepository`, each naming a Secret in its namespace:
+
+- `secretRef`, when the proxy project is private: a `kubernetes.io/dockerconfigjson` Secret
+  with the `robot$scout-pull` login.
+- `certSecretRef`, when Harbor uses the staging playbook's default self-signed certificate:
+  a Secret with that certificate under `ca.crt`. The nodes skip verifying it, but Flux
+  doesn't.
 
 ### Databases
 
-An app's database goes in Scout's Postgres cluster. The site adds three resources for it to
-the cluster's namespace, beside the app's own:
+An app's database goes in Scout's Postgres. On an aws site that's RDS, which has no CNPG
+resources: create the app's role and database there the way the site creates Scout's own.
+On-prem, the site adds three resources for it to the CNPG cluster's namespace, beside the
+app's own:
 
 - A `kubernetes.io/basic-auth` Secret with the app's `username` and `password`, labelled
   `cnpg.io/reload: 'true'` so a password change applies at once. The app reads the same

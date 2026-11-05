@@ -21,6 +21,12 @@ spec:
   layerSelector:
     mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
     operation: copy
+  # Air-gapped only. A private Harbor proxy project needs the robot$scout-pull login, and
+  # Harbor's default self-signed certificate needs its ca.crt; both Secrets go in this namespace.
+  # secretRef:
+  #   name: harbor-pull
+  # certSecretRef:
+  #   name: harbor-ca
 ---
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
