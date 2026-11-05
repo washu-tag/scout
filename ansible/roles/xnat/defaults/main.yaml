@@ -67,6 +67,23 @@ xnat_smtp_enabled: true
 xnat_smtp_host: mailhog-service.mailhog
 xnat_smtp_port: '1025'
 
+# --- DICOM C-STORE receivers ----------------------------------------------
+# After each deploy the role makes every listed receiver (identified by ae_title +
+# port) match its entry in XNAT; receivers not listed are left alone. The default
+# matches the receiver XNAT creates on first boot. Per receiver:
+#   ae_title, port   - the lowercased ae_title also names the Service port, so it
+#                      must be DNS-label safe (no '_')
+#   enabled          - default true; false stops the receiver in XNAT and drops
+#                      its port from the xnat-dicom-scp Service
+#   settings         - other receiver fields, named as in XNAT's /xapi/dicomscp
+#                      API (identifier, customProcessing, anonymizationEnabled, ...)
+#   nodePort / loadBalancerIP - Service-only, for those service types
+xnat_dicom_scp_service_type: NodePort
+xnat_dicom_scp_annotations: {}
+xnat_dicom_scp_receivers:
+  - ae_title: XNAT
+    port: 8104
+
 # --- Postgres (CNPG-managed, like the rest of Scout) ----------------------
 # REQUIRED when enable_xnat is true — set in inventory (vault-encrypted).
 xnat_postgres_password: ''

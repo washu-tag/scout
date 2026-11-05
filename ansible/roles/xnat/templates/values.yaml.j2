@@ -76,6 +76,16 @@ ingress:
         - path: /
           pathType: Prefix
 
+{% set _scp_ports = [] %}
+{% for r in xnat_dicom_scp_receivers if r.enabled | default(true) | bool %}
+{%   set _ = _scp_ports.append(r | dict2items | selectattr('key', 'in', ['ae_title', 'port', 'nodePort', 'loadBalancerIP']) | items2dict) %}
+{% endfor %}
+{# "recievers" is the chart's spelling. #}
+dicom_scp:
+  serviceType: {{ xnat_dicom_scp_service_type }}
+  annotations: {{ xnat_dicom_scp_annotations | to_json }}
+  recievers: {{ _scp_ports | to_json }}
+
 volumes:
 {% for vol, size in xnat_volume_sizes.items() %}
   {{ vol }}:

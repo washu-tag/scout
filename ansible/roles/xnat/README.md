@@ -219,12 +219,35 @@ Grafana. The chart's bundled bokysan/postfix subchart is disabled
 > `prefs-init.ini` only seeds preferences on **first boot**; afterward change
 > them via the admin UI / config service.
 
+## DICOM receivers
+
+`xnat_dicom_scp_receivers` declares XNAT's DICOM C-STORE receivers. After each
+deploy, `tasks/configure_dicom_scp.yaml` makes every listed receiver match its
+entry through XNAT's `/xapi/dicomscp` API, keyed on AE title + port: it creates a
+missing one and updates only the fields that differ. Receivers you don't list are
+left alone. The enabled receivers' ports are exposed on the `xnat-dicom-scp`
+Service (`xnat_dicom_scp_service_type`, NodePort by default).
+
+The default lists the `XNAT:8104` receiver that XNAT creates on first boot, so it
+changes nothing. To turn that receiver off and add others:
+
+```yaml
+xnat_dicom_scp_receivers:
+  - {ae_title: XNAT, port: 8104, enabled: false}
+  - ae_title: MYAE
+    port: 8105
+    settings:                       # any other field of the /xapi/dicomscp API
+      identifier: myObjectIdentifier
+      customProcessing: true
+```
+
 ## Key variables
 
 See `defaults/main.yaml`. Commonly set in inventory: `enable_xnat`,
 `keycloak_xnat_client_secret`, `xnat_postgres_password`, `xnat_admin_password`,
-`xnat_site_id`, `xnat_admin_email`, `xnat_smtp_host`, `xnat_plugins`.
-Chart and image versions are pinned in `group_vars/all/versions.yaml`.
+`xnat_site_id`, `xnat_admin_email`, `xnat_smtp_host`, `xnat_plugins`,
+`xnat_dicom_scp_receivers`. Chart and image versions are pinned in
+`group_vars/all/versions.yaml`.
 
 Startup and readiness use the unauthenticated `/xapi/siteConfig/buildInfo`
 endpoint; liveness checks the TCP listener.

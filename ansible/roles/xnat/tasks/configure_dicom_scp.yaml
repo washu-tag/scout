@@ -1,0 +1,53 @@
+---
+# Make each receiver in xnat_dicom_scp_receivers match its declaration in XNAT:
+# create it when missing, PUT only the fields that differ. Receivers that are not
+# listed are left alone. Admin creds are no_log'd, so the status codes are checked
+# in a separate task that can show them.
+
+- name: Wait for the XNAT REST API to answer
+  ansible.builtin.include_tasks: wait_for_api.yaml
+
+- name: Read the DICOM SCP receivers
+  no_log: true
+  kubernetes.core.k8s_exec:
+    namespace: '{{ xnat_namespace }}'
+    pod: '{{ xnat_helm_release_name }}-0'
+    container: xnat
+    command: >-
+      sh -c "curl -s -f -u 'admin:{{ xnat_admin_password }}'
+      http://localhost:8080/xapi/dicomscp"
+  register: _xnat_scp_read
+  changed_when: false
+
+- name: Plan the DICOM SCP receiver changes
+  vars:
+    _xnat_scp_current: '{{ _xnat_scp_read.stdout | from_json }}'
+  ansible.builtin.set_fact:
+    _xnat_scp_plan: "{{ lookup('template', 'dicom-scp-plan.json.j2') | from_json }}"
+
+- name: Apply the DICOM SCP receiver changes
+  no_log: true
+  loop: '{{ _xnat_scp_plan }}'
+  kubernetes.core.k8s_exec:
+    namespace: '{{ xnat_namespace }}'
+    pod: '{{ xnat_helm_release_name }}-0'
+    container: xnat
+    command: >-
+      sh -c "echo {{ item.body | to_json | b64encode }} | base64 -d > /tmp/dicomscp.json &&
+      curl -s -o /tmp/dicomscp.out -w '%{http_code}\n' -u 'admin:{{ xnat_admin_password }}'
+      -X {{ item.method }} -H 'content-type: application/json' --data @/tmp/dicomscp.json
+      http://localhost:8080/xapi/dicomscp{{ item.path }}; cat /tmp/dicomscp.out"
+  register: _xnat_scp_apply
+  changed_when: true
+  failed_when: false
+
+- name: Check the DICOM SCP receiver changes
+  loop: '{{ _xnat_scp_apply.results | default([]) }}'
+  loop_control:
+    label: '{{ item.item.method }} {{ item.item.label }}'
+  ansible.builtin.assert:
+    that: (item.stdout_lines | default(['']) | first) in ['200', '201']
+    fail_msg: >-
+      {{ item.item.method }} of DICOM receiver {{ item.item.label }} failed:
+      {{ item.stdout | default(item.msg | default('')) }}
+    quiet: true
