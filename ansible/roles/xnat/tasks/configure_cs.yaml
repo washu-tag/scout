@@ -8,18 +8,7 @@
 # avoid shell quoting, and the admin creds are no_log'd.
 
 - name: Wait for the XNAT REST API to answer
-  kubernetes.core.k8s_exec:
-    namespace: '{{ xnat_namespace }}'
-    pod: '{{ xnat_helm_release_name }}-0'
-    container: xnat
-    command: >-
-      sh -c "curl -s -o /dev/null -w '%{http_code}' --max-time 10
-      http://localhost:8080/xapi/siteConfig/buildInfo"
-  register: _xnat_cs_api
-  changed_when: false
-  retries: 45
-  delay: 20
-  until: (_xnat_cs_api.stdout | default('')) == '200'
+  ansible.builtin.include_tasks: wait_for_api.yaml
 
 - name: Read the current container-service backend
   no_log: true
