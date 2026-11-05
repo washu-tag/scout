@@ -7,7 +7,7 @@
 {%-   set label = r.ae_title ~ ':' ~ r.port -%}
 {%-   if have is none -%}
 {%-     if want.enabled -%}
-{%-       set _ = plan.append({'label': label, 'method': 'POST', 'path': '', 'body': want}) -%}
+{%-       set _ = plan.append({'label': label, 'method': 'POST', 'path': '/xapi/dicomscp', 'body': want}) -%}
 {%-     endif -%}
 {%-   else -%}
 {%-     set diff = {} -%}
@@ -15,7 +15,7 @@
 {%-       set _ = diff.update({k: v}) -%}
 {%-     endfor -%}
 {%-     if diff -%}
-{%-       set _ = plan.append({'label': label, 'method': 'PUT', 'path': '/' ~ have.id, 'body': diff}) -%}
+{%-       set _ = plan.append({'label': label, 'method': 'PUT', 'path': '/xapi/dicomscp/' ~ have.id, 'body': diff}) -%}
 {%-     endif -%}
 {%-   endif -%}
 {%- endfor -%}
