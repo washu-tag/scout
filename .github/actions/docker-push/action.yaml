@@ -4,6 +4,9 @@ description: >-
   build-lane version is given, also publishes a 0.YYYYMMDD.<run> tag
   and records the pushed digest for the ADR 0030 build manifest.
 inputs:
+  artifact-id:
+    description: 'ID of the producer upload; required when downloading a rebuilt image'
+    required: false
   image-name:
     description: 'Name for docker image'
     required: true
@@ -24,7 +27,7 @@ runs:
     - name: Download artifact
       uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       with:
-        name: ${{ inputs.image-name }}-attempt-${{ github.run_attempt }}
+        artifact-ids: ${{ inputs.artifact-id || '0' }}
         path: ${{ runner.temp }}
     - name: Push image
       id: push

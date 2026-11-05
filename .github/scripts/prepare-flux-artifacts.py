@@ -67,6 +67,11 @@ def descriptor(reference, *, local=False):
     return json.loads(run(*args, reference, capture=True))
 
 
+def upstream_reference(reference):
+    """Pin reference to its digest. A versions.yaml value may already carry one."""
+    return f"{reference.split('@')[0]}@{descriptor(reference)['digest']}"
+
+
 def archive_reference(archive: Path, name: str) -> str:
     with tarfile.open(archive) as bundle:
         stream = bundle.extractfile("manifest.json")
@@ -114,7 +119,7 @@ def prepare_images(matrix, plan, images, output, registry, previous, digests):
         if fresh:
             if not archive.is_file():
                 raise ValueError(
-                    f"missing current-attempt image archive: {archive}; rerun all jobs"
+                    f"missing planned image archive: {archive}; rerun all jobs"
                 )
             loaded_ref = archive_reference(archive, name)
             tag = plan["version"]
@@ -256,7 +261,7 @@ def prepare(images: Path, predecessor: Path, output: Path, registry: str):
         os.environ["GITHUB_REPOSITORY"],
         os.environ["GITHUB_SHA"],
         int(os.environ["GITHUB_RUN_ID"]),
-        int(os.environ["GITHUB_RUN_ATTEMPT"]),
+        int(os.environ["SCOUT_ARTIFACT_ATTEMPT"]),
         os.environ["VERSION"],
     )
     plan = producer_plan.validate(predecessor, context)
@@ -268,7 +273,7 @@ def prepare(images: Path, predecessor: Path, output: Path, registry: str):
     output.mkdir(parents=True, exist_ok=False)
     (output / "images").mkdir()
     (output / "images/keep.txt").write_text(
-        "Layouts are present only for images rebuilt in this attempt.\n"
+        "Layouts are present only for images rebuilt in this generation.\n"
     )
     with tempfile.TemporaryDirectory(prefix="scout-candidate-") as temp:
         scratch = Path(temp)
@@ -301,7 +306,7 @@ def prepare(images: Path, predecessor: Path, output: Path, registry: str):
         )
         (output / "haul-upstream.yaml").write_text(
             render_images(
-                [f"{ref}@{descriptor(ref)['digest']}" for ref in upstream],
+                [upstream_reference(ref) for ref in upstream],
                 name="scout-upstream",
             )
         )

@@ -163,8 +163,10 @@ dcm4che_tools_version: 5.35.1
 # together. (A mismatched combo wedged the deploy in PR #400.)
 # renovate: datasource=docker depName=dcm4che/dcm4chee-arc-psql
 dcm4chee_arc_version: 5.35.2
+# dcm4che deleted every PostgreSQL 18 tag for family 35, so this pins the 18.3-35 image by its
+# digest, which Docker Hub still serves. Drop the digest when moving to the next family.
 # renovate: datasource=docker depName=dcm4che/postgres-dcm4chee versioning=loose
-dcm4chee_db_version: 18.3-35
+dcm4chee_db_version: 18.3-35@sha256:8e82e631cb013161dfa8c520da09c3c7a56b4c8d2858748a12626a2992518616
 # renovate: datasource=docker depName=dcm4che/slapd-dcm4chee versioning=loose
 dcm4chee_ldap_version: 2.6.15-35.2
 
