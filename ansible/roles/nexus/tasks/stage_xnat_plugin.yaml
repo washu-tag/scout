@@ -67,25 +67,44 @@
       ansible.builtin.command:
         argv:
           - curl
-          - -fsS
+          - -sS
           - --retry
           - '3'
           - --connect-timeout
           - '30'
+          - -D
+          - '{{ _stage_tmp.path }}/headers'
           - -o
           - '{{ _stage_tmp.path }}/artifact'
+          - -w
+          - '%{http_code}'
           - '{{ _url }}'
       register: _stage_download
       failed_when: false
       changed_when: true
 
+    # Not curl -f: S3 answers a request to the wrong regional endpoint with a 301,
+    # which -f lets through, saving S3's XML error as the artifact.
+    - name: Read S3's answer to a failed download
+      when: _stage_download.rc == 0 and _stage_download.stdout != '200'
+      ansible.builtin.slurp:
+        src: '{{ _stage_tmp.path }}/{{ item }}'
+      loop: [headers, artifact]
+      register: _stage_answer
+
     - name: Fail if the download failed
-      when: _stage_download.rc != 0
+      when: _stage_download.rc != 0 or _stage_download.stdout != '200'
+      vars:
+        _answer: "{{ _stage_answer.results | default([]) | map(attribute='content') | map('b64decode') | list }}"
+        _bucket_region: "{{ _answer | first | default('') | regex_search('(?im)^x-amz-bucket-region:\\s*(\\S+)', '\\1') | default([''], true) | first }}"
       ansible.builtin.fail:
         msg: >-
           Could not download {{ _plugin_source.stage_from }}:
-          {{ _stage_download.stderr | trim }}. Check the object exists and that the
-          xnat_plugin_stage_s3_* credentials and region can read it.
+          {{ (_stage_download.stderr | trim) if _stage_download.rc != 0 else
+             ('S3 answered HTTP ' ~ _stage_download.stdout ~ ': ' ~ (_answer | last | default('') | regex_replace('\s+', ' ') | trim)) }}
+          {{ ('The bucket is in ' ~ _bucket_region ~ ', so set xnat_plugin_stage_s3_region: ' ~ _bucket_region ~ '.')
+             if _bucket_region and _bucket_region != xnat_plugin_stage_s3_region else
+             'Check the object exists and that the xnat_plugin_stage_s3_* credentials and region can read it.' }}
 
     - name: Checksum the download
       ansible.builtin.stat:
