@@ -153,7 +153,7 @@
              ('Nexus answered HTTP ' ~ (_stage_upload.stdout_lines | last) ~ ': ' ~ (_stage_upload.stdout_lines[:-1] | join(' '))) }}
 
     - name: Read back the uploaded {{ _plugin_source.coordinates }}
-      ansible.builtin.get_url:
+      ansible.builtin.uri:
         url: '{{ nexus_api_base_url }}/repository/{{ nexus_maven_hosted_repo.name }}/{{ _stage_gav.path }}'
         dest: '{{ _stage_tmp.path }}/uploaded'
         ca_path: '{{ staging_api_ca_path | default(omit, true) }}'
