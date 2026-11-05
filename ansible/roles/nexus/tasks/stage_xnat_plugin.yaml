@@ -130,6 +130,9 @@
         user: admin
         password: '{{ nexus_root_password }}'
         force_basic_auth: true
+        # The artifact is on the staging node; without this, uri looks for it on
+        # the controller.
+        remote_src: true
         body_format: form-multipart
         body: >-
           {{ {
