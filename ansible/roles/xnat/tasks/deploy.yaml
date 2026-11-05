@@ -87,6 +87,17 @@
       future enhancement — see ADR 0027.)
     quiet: true
 
+- name: Guard stage_from plugins to air-gapped clusters with Nexus
+  ansible.builtin.assert:
+    that:
+      - xnat_staged_plugin_sources | length == 0
+        or ((air_gapped | default(false) | bool) and package_proxy_mode | default('none') == 'nexus')
+    fail_msg: >
+      One or more xnat_plugins set source.stage_from, which stages the jar into the
+      staging node's Nexus (ADR 0040) and so requires air_gapped: true and
+      package_proxy_mode: nexus.
+    quiet: true
+
 - name: Configure Maven proxy trust (repository URL + staging CA)
   ansible.builtin.include_tasks: proxy_trust.yaml
 

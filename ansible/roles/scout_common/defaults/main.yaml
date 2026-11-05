@@ -350,6 +350,10 @@ enable_xnat: false
 #     #              artifacts not on Central (e.g. XNAT plugins published to jfrog).
 #     #              NOTE: release versions only -- the chart rejects a -SNAPSHOT
 #     #              coordinate (resolving one needs maven-metadata.xml); use type: url.
+#     #              stage_from: s3://bucket/key.jar  (OPTIONAL, air-gapped only; ADR 0040)
+#     #              The staging run uploads the object to the Nexus hosted repo under
+#     #              `coordinates`; omit repo_url.
+#     #              sha256: <hex>  (OPTIONAL; any type; verified on stage and install)
 #     # image:       repository, tag                       (chart-native plugins: map)
 #   config: list of property files, each:
 #     mechanism: authplugins | file | extraConfig
@@ -448,6 +452,14 @@ xnat_coordinate_repo_urls: >-
      | selectattr('source.type', 'equalto', 'coordinates')
      | map(attribute='source.repo_url', default='')
      | reject('equalto', '') | unique | list }}
+
+# Sources of plugins staged from S3 into the Nexus hosted repo (ADR 0040). Projects
+# only `source`, for the same lazy-templating reason as above.
+xnat_staged_plugin_sources: >-
+  {{ xnat_plugins_all
+     | map(attribute='source')
+     | selectattr('stage_from', 'defined')
+     | list }}
 
 enable_data_generator: false
 

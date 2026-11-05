@@ -1,0 +1,131 @@
+---
+# One staged plugin: if its coordinate is already in the hosted repo, S3 is not
+# contacted; otherwise fetch it once and upload it.
+- name: Parse {{ _plugin_source.coordinates }}
+  vars:
+    _f: "{{ _plugin_source.coordinates.split(':') }}"
+  ansible.builtin.set_fact:
+    _stage_gav:
+      group_id: '{{ _f[0] }}'
+      artifact_id: '{{ _f[1] }}'
+      version: '{{ _f[2] }}'
+      extension: "{{ _f[3] if (_f | length > 3 and _f[3]) else 'jar' }}"
+      classifier: "{{ _f[4] if (_f | length > 4) else '' }}"
+      path: '{{ _plugin_source.coordinates | maven_artifact_path }}'
+    _stage_sha256: "{{ _plugin_source.sha256 | default('') | lower }}"
+
+- name: Look up in the hosted repo {{ _plugin_source.coordinates }}
+  ansible.builtin.uri:
+    url: >-
+      {{ nexus_api_base_url }}/service/rest/v1/search/assets?repository={{ nexus_maven_hosted_repo.name | urlencode
+      }}&maven.groupId={{ _stage_gav.group_id | urlencode
+      }}&maven.artifactId={{ _stage_gav.artifact_id | urlencode
+      }}&maven.baseVersion={{ _stage_gav.version | urlencode }}
+    user: admin
+    password: '{{ nexus_root_password }}'
+    force_basic_auth: true
+  register: _stage_search
+
+- name: Find the staged asset
+  ansible.builtin.set_fact:
+    _stage_asset: >-
+      {{ _stage_search.json['items']
+         | selectattr('path', 'in', [_stage_gav.path, '/' ~ _stage_gav.path])
+         | first | default({}) }}
+
+- name: Check sha256 of the staged {{ _plugin_source.coordinates }}
+  when: _stage_asset | length > 0 and _stage_sha256 | length > 0
+  ansible.builtin.assert:
+    that:
+      - _stage_asset.checksum.sha256 | lower == _stage_sha256
+    fail_msg: >-
+      {{ _plugin_source.coordinates }} is already in {{ nexus_maven_hosted_repo.name }}
+      with sha256 {{ _stage_asset.checksum.sha256 }}, but xnat_plugins declares
+      {{ _stage_sha256 }}. A published version is never replaced: if
+      {{ _plugin_source.stage_from }} holds a new build, bump the version in
+      `coordinates`; otherwise correct the declared sha256.
+    quiet: true
+
+- name: Fetch and upload {{ _plugin_source.stage_from }}
+  when: _stage_asset | length == 0
+  block:
+    - name: Create a download directory
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: xnat-plugin
+      register: _stage_tmp
+
+    - name: Download {{ _plugin_source.stage_from }}
+      no_log: true
+      vars:
+        _url: >-
+          {{ _plugin_source.stage_from | s3_presigned_url(
+               xnat_plugin_stage_s3_region,
+               xnat_plugin_stage_s3_access_key_id,
+               xnat_plugin_stage_s3_secret_access_key,
+               xnat_plugin_stage_s3_session_token) }}
+      ansible.builtin.command:
+        argv:
+          - curl
+          - -fsS
+          - --retry
+          - '3'
+          - --connect-timeout
+          - '30'
+          - -o
+          - '{{ _stage_tmp.path }}/artifact'
+          - '{{ _url }}'
+      register: _stage_download
+      failed_when: false
+      changed_when: true
+
+    - name: Fail if the download failed
+      when: _stage_download.rc != 0
+      ansible.builtin.fail:
+        msg: >-
+          Could not download {{ _plugin_source.stage_from }}:
+          {{ _stage_download.stderr | trim }}. Check the object exists and that the
+          xnat_plugin_stage_s3_* credentials and region can read it.
+
+    - name: Checksum the download
+      ansible.builtin.stat:
+        path: '{{ _stage_tmp.path }}/artifact'
+        checksum_algorithm: sha256
+      register: _stage_file
+
+    - name: Check the download against sha256
+      when: _stage_sha256 | length > 0
+      ansible.builtin.assert:
+        that:
+          - _stage_file.stat.checksum == _stage_sha256
+        fail_msg: >-
+          {{ _plugin_source.stage_from }} has sha256 {{ _stage_file.stat.checksum }},
+          but xnat_plugins declares {{ _stage_sha256 }} for
+          {{ _plugin_source.coordinates }}. Nothing was uploaded.
+        quiet: true
+
+    - name: Upload to the hosted repo {{ _plugin_source.coordinates }}
+      ansible.builtin.uri:
+        url: '{{ nexus_api_base_url }}/service/rest/v1/components?repository={{ nexus_maven_hosted_repo.name | urlencode }}'
+        method: POST
+        user: admin
+        password: '{{ nexus_root_password }}'
+        force_basic_auth: true
+        body_format: form-multipart
+        body: >-
+          {{ {
+               'maven2.groupId': _stage_gav.group_id,
+               'maven2.artifactId': _stage_gav.artifact_id,
+               'maven2.version': _stage_gav.version,
+               'maven2.generate-pom': 'true',
+               'maven2.asset1': {'filename': _stage_tmp.path ~ '/artifact', 'mime_type': 'application/java-archive'},
+               'maven2.asset1.extension': _stage_gav.extension,
+             } | combine({'maven2.asset1.classifier': _stage_gav.classifier} if _stage_gav.classifier else {}) }}
+        status_code: [204]
+      changed_when: true
+  always:
+    - name: Remove the download directory
+      when: _stage_tmp.path is defined
+      ansible.builtin.file:
+        path: '{{ _stage_tmp.path }}'
+        state: absent

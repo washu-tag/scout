@@ -103,6 +103,12 @@
         status_code: [200, 204]
       when: not nexus_eula.json.accepted
 
+- name: Stage XNAT plugins from S3
+  ansible.builtin.include_tasks: stage_xnat_plugins.yaml
+  when:
+    - enable_xnat | default(false) | bool
+    - xnat_staged_plugin_sources | length > 0
+
 - name: Display Nexus deployment status
   ansible.builtin.debug:
     msg: 'Nexus deployed successfully at https://{{ nexus_hostname }}'

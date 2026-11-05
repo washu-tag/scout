@@ -34,9 +34,13 @@ an ordinary `coordinates` plugin.
   which has egress, the task first checks whether the declared coordinate already exists
   in the hosted repo. If it does, the task does not contact S3 at all, so a staged
   release is fetched from S3 exactly once and every later run and pod start reads from
-  Nexus. Only a missing coordinate is downloaded from `stage_from`, with AWS credentials
-  from vault-backed inventory variables, and uploaded through the Nexus components API.
-  Allow-once means a published release is never silently replaced.
+  Nexus. Only a missing coordinate is downloaded from `stage_from` and uploaded through
+  the Nexus components API. Allow-once means a published release is never silently
+  replaced.
+- **The credentials stay on the controller.** The AWS credentials are vault-backed
+  inventory variables. Ansible uses them on the control node to presign a short-lived
+  GET URL for the object, and the staging node downloads that URL with `curl`. The
+  staging node needs no AWS CLI, SDK or credentials.
 - **An optional checksum pins the jar.** If `source.sha256` is set, the task checks it
   after downloading from S3, and the chart checks it again at install, as it does today.
   When the coordinate already exists, the task compares `sha256` against the checksum
@@ -61,9 +65,8 @@ an ordinary `coordinates` plugin.
   `make install-staging` first. Without this check, a forgotten staging run would show
   up only as a failed init container in a pod that never starts.
 - **The cluster side is unchanged.** The plugin renders as `source: coordinates` with
-  `mavenUrl` set to `maven_proxy_url`. The AWS credentials exist only on the staging
-  node, for the length of the task. They never become a Kubernetes Secret, and the
-  cluster never talks to S3.
+  `mavenUrl` set to `maven_proxy_url`. The AWS credentials never become a Kubernetes
+  Secret, and the cluster never talks to S3.
 
 This decision covers only air-gapped deployments. A `stage_from` plugin on a
 non-air-gapped site is rejected at deploy time. Connected sites that need private S3
