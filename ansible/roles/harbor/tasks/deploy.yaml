@@ -126,6 +126,15 @@
     force_basic_auth: true
   register: registries_response
 
+# The credentials task hides its errors (no_log), so name a missing endpoint here instead.
+- name: Check every proxy's registry endpoint is listed
+  ansible.builtin.assert:
+    that: registries_response.json | map(attribute='name') is superset(harbor_registry_proxies_final | map(attribute='registry_name'))
+    fail_msg: >-
+      Harbor's registry list is missing
+      {{ harbor_registry_proxies_final | map(attribute='registry_name') | difference(registries_response.json | map(attribute='name')) | join(', ') }}.
+    quiet: true
+
 - name: Set upstream credentials on registry endpoints
   ansible.builtin.uri:
     url: '{{ harbor_registry_url }}/api/v2.0/registries/{{ harbor_registry_id }}'
