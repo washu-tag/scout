@@ -124,8 +124,21 @@ nexus_maven_group:
   versionPolicy: RELEASE
   memberNames: >-
     {{ ['maven-central']
-       + (nexus_maven_repos_xnat_plugins | map(attribute='name') | list
+       + ([nexus_maven_hosted_repo.name] + nexus_maven_repos_xnat_plugins | map(attribute='name') | list
           if (enable_xnat | default(false) | bool) else []) }}
+
+# Hosted repo for XNAT plugin jars staged from S3 (ADR 0040). Created only when
+# enable_xnat. No cleanup policy: these jars have no upstream to refetch from.
+nexus_maven_hosted_repo:
+  name: xnat-plugins-hosted
+  blobStoreName: default
+
+# AWS credentials for fetching `stage_from` plugin jars. Used only on the staging
+# node; set them (vault-encrypted) in the staging group's vars.
+xnat_plugin_stage_s3_region: ''
+xnat_plugin_stage_s3_access_key_id: ''
+xnat_plugin_stage_s3_secret_access_key: ''
+xnat_plugin_stage_s3_session_token: ''
 
 # Computed — uses external_url/inventory_hostname of the staging host (where this role runs)
 # Same pattern as harbor_hostname in ansible/roles/harbor/defaults/main.yaml

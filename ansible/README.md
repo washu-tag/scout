@@ -430,6 +430,18 @@ memory: "{{ hl7_transformer_spark_memory | multiply_memory(3) }}"
 **Services using this filter:**
 - HL7 Transformer (Spark memory → container limits)
 
+#### `s3_presigned_url`
+
+Presigns an S3 GET URL (AWS SigV4 query auth) on the controller, so the host that
+downloads the object needs only `curl`, not the AWS CLI, boto3 or the credentials.
+Used by the nexus role to stage XNAT plugin jars from S3 (ADR 0040).
+
+```yaml
+url: "{{ 's3://bucket/key.jar' | s3_presigned_url(region, access_key_id, secret_access_key, session_token) }}"
+```
+
+The URL is valid for 300 seconds by default (`expires=`).
+
 ### Creating Custom Filters
 
 1. **Create filter plugin file** in `filter_plugins/`:

@@ -104,6 +104,17 @@ plugin logs go to files under `$XNAT_HOME/logs` where nothing collects them.
   `pluginInstaller.caCertSecret` (per ADR-0016) so the fetch trusts Nexus's
   self-signed HTTPS. Release versions only — a `-SNAPSHOT` coordinate is rejected
   at render time, since resolving one needs `maven-metadata.xml`.
+- **S3**: a jar in a private bucket is staged into the Nexus hosted repo
+  `xnat-plugins-hosted` by `make install-staging` and then installed as an
+  ordinary coordinate plugin. Add `stage_from: s3://bucket/key.jar` to a
+  `coordinates` plugin (no `repo_url`), and set `xnat_plugin_stage_s3_region`,
+  `xnat_plugin_stage_s3_access_key_id` and `xnat_plugin_stage_s3_secret_access_key`
+  in the staging group's vars. Staging fetches each coordinate from S3 once; later
+  runs leave it alone. An optional `sha256` (get it with
+  `aws s3 cp s3://bucket/key.jar - | sha256sum`) is checked on download, against
+  the copy already in Nexus on later runs, and by the chart at install. To ship a new
+  build, bump the version in `coordinates`. The XNAT deploy fails early, naming the
+  plugin, if staging has not run. See ADR 0040.
 - **url** needs egress today, so on air-gapped clusters use coordinates, image or
   file instead. The chart can rewrite url plugins onto a mirror
   (`pluginRepository.baseUrl` replaces a matching prefix, e.g. `https://github.com`),
