@@ -66,6 +66,10 @@ temporal_version: 1.7.0
 # so the `temporal` CLI matches; Renovate bumps the pair together (renovate.json5).
 # renovate: datasource=docker depName=temporalio/admin-tools
 temporal_admin_tools_image_tag: 1.32.0
+# The chart's default UI lags; 2.57.0+ is built with a Go that rejects the
+# compromised eMudhra intermediates (CVE-2026-111943).
+# renovate: datasource=docker depName=temporalio/ui
+temporal_ui_image_tag: 2.58.1
 
 # Real-Time HL7 Ingestion - Strimzi Kafka (MLLP -> Kafka -> batcher -> MinIO).
 # The listener/batcher image is built in CI (hl7-listener/), not pinned here.
