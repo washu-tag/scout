@@ -1,0 +1,76 @@
+---
+- name: Validate pluggable app entry
+  ansible.builtin.assert:
+    that:
+      - pluggable_app.name | default('') | length > 0
+      - pluggable_app.namespace | default('') | length > 0
+      - pluggable_app.state | default('present') in ['present', 'absent']
+      - pluggable_app.state | default('present') == 'absent' or pluggable_app.chart | default('') | length > 0
+      - pluggable_app.chart | default('') is not match('oci://') or pluggable_app.version is defined
+      - pluggable_app.registry is not defined or pluggable_app.chart | default('') is match('oci://')
+    fail_msg: >-
+      Each pluggable_apps entry needs a name and a namespace, a chart unless state is absent,
+      and a version when the chart is an oci:// reference. registry applies only to an oci:// chart.
+    quiet: true
+
+- name: Prepare {{ pluggable_app.name }}
+  when: pluggable_app.state | default('present') == 'present'
+  block:
+    - name: Create namespace for {{ pluggable_app.name }}
+      ansible.builtin.include_role:
+        name: scout_common
+        tasks_from: namespace
+      vars:
+        ns: '{{ pluggable_app.namespace }}'
+
+    - name: Create secrets for {{ pluggable_app.name }}
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          type: Opaque
+          metadata:
+            name: '{{ pluggable_app_secret.key }}'
+            namespace: '{{ pluggable_app.namespace }}'
+          stringData: "{{ dict(pluggable_app_secret.value.keys() | zip(pluggable_app_secret.value.values() | map('string'))) }}"
+      loop: '{{ pluggable_app.secrets | default({}) | dict2items }}'
+      loop_control:
+        loop_var: pluggable_app_secret
+        label: '{{ pluggable_app_secret.key }}'
+      no_log: true
+
+    - name: Create database for {{ pluggable_app.name }}
+      ansible.builtin.include_role:
+        name: scout_common
+        tasks_from: create_db_with_owner
+      vars:
+        db_name: '{{ pluggable_app.database.name }}'
+        db_owner: '{{ pluggable_app.database.owner }}'
+        db_owner_pass: '{{ pluggable_app.database.password }}'
+      when: pluggable_app.database is defined
+
+    # Runs where deploy_helm_chart runs helm for an OCI chart.
+    - name: Log in to the chart registry for {{ pluggable_app.name }}
+      kubernetes.core.helm_registry_auth:
+        host: "{{ pluggable_app.chart | regex_replace('^oci://([^/]+)/.*$', '\\1') }}"
+        username: '{{ pluggable_app.registry.username }}'
+        password: '{{ pluggable_app.registry.password }}'
+      delegate_to: localhost
+      no_log: true
+      when: pluggable_app.registry is defined
+
+- name: Helm release for {{ pluggable_app.name }}
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+    apply:
+      no_log: true
+  vars:
+    helm_chart_name: '{{ pluggable_app.name }}'
+    helm_chart_ref: '{{ pluggable_app.chart | default(omit) }}'
+    helm_chart_version: '{{ pluggable_app.version | default(omit) }}'
+    helm_chart_namespace: '{{ pluggable_app.namespace }}'
+    helm_chart_values: "{{ pluggable_app.get('values', {}) }}"
+    helm_chart_timeout: "{{ pluggable_app.timeout | default('5m') }}"
+    helm_chart_state: "{{ pluggable_app.state | default('present') }}"

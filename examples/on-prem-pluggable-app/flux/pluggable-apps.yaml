@@ -1,0 +1,24 @@
+# The site's Flux Kustomization for its Pluggable Apps. It goes in flux-system beside the
+# two site roots (deploy/README.md), so it can substitute from cluster-vars, and
+# reconciles ./pluggable-apps in the site repo. `flux-system` is the site repo's source,
+# as `flux bootstrap` names it.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: pluggable-apps
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./pluggable-apps
+  prune: true
+  wait: true
+  timeout: 10m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  # No dependsOn: launchpad and the fragment reconciler find the app whenever it
+  # appears. Add only what an app needs at startup, such as postgres-ready.

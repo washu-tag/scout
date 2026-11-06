@@ -1,0 +1,43 @@
+# One Pluggable App: its namespace, its chart pinned by digest, and the release.
+# ${server_hostname} and ${keycloak_namespace} come from cluster-vars.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: scout-example
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: example-app
+  namespace: scout-example
+spec:
+  interval: 1h
+  # Where the site pushed the chart, and the digest `helm push` printed. On an
+  # air-gapped site, name the Harbor proxy project for that registry instead: Flux
+  # fetches charts itself, not through the nodes' mirror.
+  url: oci://ghcr.io/example-org/charts/example-pluggable-app
+  ref:
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  # Air-gapped only. A private Harbor proxy project needs the robot$scout-pull login, and
+  # Harbor's default self-signed certificate needs its ca.crt; both Secrets go in this namespace.
+  # secretRef:
+  #   name: harbor-pull
+  # certSecretRef:
+  #   name: harbor-ca
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: example-app
+  namespace: scout-example
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: example-app
+  values:
+    domain: '${server_hostname}'
+    reconcilerNamespace: '${keycloak_namespace}'

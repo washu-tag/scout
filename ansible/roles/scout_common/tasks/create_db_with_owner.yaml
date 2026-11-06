@@ -4,7 +4,11 @@
       - (db_name is defined and db_name | length > 0) and
         (db_owner is defined and db_owner | length > 0) and
         (db_owner_pass is defined and db_owner_pass | length > 0)
-    fail_msg: 'Provide db_name, db_owner, and db_owner_pass for database initialization'
+      - db_name is match('^[a-z_][a-z0-9_]*$')
+      - db_owner is match('^[a-z_][a-z0-9_]*$')
+    fail_msg: >-
+      Provide db_name, db_owner, and db_owner_pass for database initialization. db_name and
+      db_owner may contain only lowercase letters, digits and underscores, and can't start with a digit.
 
 - name: Execute initialization SQL
   ansible.builtin.include_role:
@@ -15,7 +19,7 @@
       DO $do$
       BEGIN
         IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '{{ db_owner }}') THEN
-          CREATE USER {{ db_owner }} WITH PASSWORD '{{ db_owner_pass }}';
+          CREATE USER {{ db_owner }} WITH PASSWORD '{{ db_owner_pass | replace("'", "''") }}';
         END IF;
       END;
       $do$ LANGUAGE plpgsql;
