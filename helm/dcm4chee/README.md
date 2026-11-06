@@ -13,22 +13,6 @@ and is the same approach used for Orthanc (`orthanc.<server_hostname>`). The wil
 `*.<server_hostname>` TLS cert (see `scout_common`) already covers the subdomain, and the app's
 own UI path (`/dcm4chee-arc/ui2`) lives under that subdomain root.
 
-## Known limitations
-
-There may be some sort of persistent and intermittent connectivity
-issue in attempting to communicate with the PACS over DIMSE. For example, in attempting to perform a C-ECHO twice, it may work once and then fail the next time like this:
-```shell
-$ echoscu -aec DCM4CHEE myurl 11112 -v
-I: Requesting Association
-I: Association Accepted (Max Send PDV: 16366)
-I: Sending Echo Request (MsgID 1)
-I: Received Echo Response (Success)
-I: Releasing Association
-$ echoscu -aec DCM4CHEE myurl 11112 -v
-I: Requesting Association
-F: Association Request Failed: 0006:031c TCP Initialization Error: Connection refused
-```
-
 ## Configuration
 
 The following variables are required to be set:
