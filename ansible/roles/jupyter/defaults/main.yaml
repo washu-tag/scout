@@ -90,6 +90,29 @@ jupyter_cpu_profile:
 jupyter_profiles:
   - '{{ jupyter_cpu_profile }}'
 
+# Site-wide env for notebook pods, such as ANTHROPIC_BASE_URL for coding agents.
+jupyter_singleuser_environment: {}
+# Outbound HTTPS from notebook pods goes through Squid, which limits it to the allowlist.
+jupyter_singleuser_https_proxy: '{{ squid_proxy_url }}'
+jupyter_singleuser_no_proxy: >-
+  {{ (squid_no_proxy + [server_hostname, '.' ~ server_hostname]
+      + ([nexus_host] if package_proxy_mode == 'nexus' and nexus_host else []))
+     | unique | join(',') }}
+# Added to every profile in jupyter_profiles: the page a server opens on.
+jupyter_interfaces:
+  interface:
+    display_name: 'Interface'
+    choices:
+      jupyterlab:
+        display_name: 'JupyterLab'
+        default: true
+        kubespawner_override:
+          default_url: '/lab'
+      vscode:
+        display_name: 'VS Code'
+        kubespawner_override:
+          default_url: '/vscode/'
+
 # Egress network policy: allow singleuser pods to reach an external CIDR
 # By default, JupyterHub's network policy blocks egress to private IP ranges
 # (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16) while allowing public internet.

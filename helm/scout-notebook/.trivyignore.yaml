@@ -1,6 +1,6 @@
 # Everything below is bundled inside the upstream
-# quay.io/jupyter/scipy-notebook base image (or vendored inside its
-# dependencies' assets, including pip's), not code we write. There is no fixed
+# quay.io/jupyter/scipy-notebook base image or code-server (or vendored inside
+# their dependencies' assets, including pip's), not code we write. There is no fixed
 # release to bump to and no rebuilt base adopting the fixes yet. Recurring
 # linux-libc-dev kernel-header CVEs are handled separately, by package, in
 # .trivyignore.rego — not enumerated here. Revisit when a newer
@@ -51,3 +51,35 @@ vulnerabilities:
       msgpack 1.1.2 vendored in pip 26.2.2, used only to read pip's own HTTP
       cache. pip 26.3 vendors msgpack 1.2.4 but is not on conda-forge yet; raise
       the pip floor in the Dockerfile and remove this when it is.
+  - id: CVE-2026-87018
+    paths:
+      - usr/lib/code-server/lib/vscode/node_modules/undici/package.json
+    expired_at: 2026-12-01
+    statement: &undici-statement >-
+      undici 7.29.1 bundled in VS Code core inside code-server 4.145.0, the
+      newest release; replacing it would mean patching code-server's install.
+      Remove when a code-server release ships undici >=7.30.1.
+  - id: CVE-2026-109383
+    paths:
+      - usr/lib/code-server/lib/vscode/node_modules/undici/package.json
+    expired_at: 2026-12-01
+    statement: *undici-statement
+  - id: CVE-2026-109829
+    paths:
+      - usr/lib/code-server/lib/vscode/node_modules/undici/package.json
+    expired_at: 2026-12-01
+    statement: *undici-statement
+  - id: CVE-2026-109869
+    paths:
+      - usr/lib/code-server/lib/vscode/node_modules/undici/package.json
+    expired_at: 2026-12-01
+    statement: *undici-statement
+  - id: CVE-2026-111943
+    paths:
+      - usr/local/bin/lazygit
+    expired_at: 2026-12-01
+    statement: >-
+      Go 1.26.9 stdlib in the lazygit 0.66.2 release binary, the newest
+      release. lazygit drives the git CLI for remotes; its own Go TLS is the
+      GitHub update check, against the image's current CA store. Remove when a
+      lazygit release is built with Go >=1.26.10.

@@ -588,6 +588,43 @@ jupyter_profiles:
         nvidia.com/gpu: '1'
 ```
 
+### VS Code and Coding Agents
+
+The `scout-notebook` image includes [code-server](https://github.com/coder/code-server)
+with the Claude Code, Python, and Jupyter extensions, the Claude Code and Codex CLIs,
+and a browser terminal (ttyd) attached to a persistent tmux session at `/terminal/`,
+with [herdr](https://herdr.dev), [workmux](https://github.com/raine/workmux), and
+lazygit. VS Code and the terminal run in the same server as JupyterLab, so JupyterHub
+launches, authenticates, and culls them together, and JupyterLab's launcher links to
+both. Workspace trust is off, since the home folder is the user's own.
+
+Every profile in `jupyter_profiles`, custom ones included, gets an **Interface**
+option (JupyterLab or VS Code) that sets the page the server opens on. The choices
+are `jupyter_interfaces`.
+
+The JupyterHub ingress uses its own `jupyter-security-headers` middleware rather than
+the global `security-headers`: the same headers, plus what VS Code webviews (the
+Claude Code panel, notebooks) need. That is `blob:` workers and frames, same-origin
+framing instead of `'none'`, and VS Code's `*.vscode-resource.vscode-cdn.net` host,
+which its service worker answers inside the browser.
+
+Users bring their own LLM credentials (see the user docs). To point everyone at a
+shared endpoint, such as an Anthropic-compatible LLM gateway, set environment
+defaults for notebook pods. Users can still override them in `~/.claude/settings.json`:
+
+```yaml
+jupyter_singleuser_environment:
+  ANTHROPIC_BASE_URL: 'https://llm-gateway.example.org/anthropic'
+  ANTHROPIC_MODEL: 'claude-sonnet-5'
+```
+
+On air-gapped clusters, notebook pods send outbound HTTPS through the staging node's
+Squid proxy (`HTTPS_PROXY`), with cluster services, Scout hostnames, and Nexus
+excluded. The LLM endpoint's domain must be in
+`squid_extra_allowed_domains`, and `jupyter_egress_allow_cidr` must cover the staging
+node. Extensions are baked into the image, since the Open VSX marketplace is
+unreachable there.
+
 ### Completely Replacing Default Profiles
 
 To completely replace the default profiles with your own custom profiles, define `jupyter_profiles` without including `jupyter_cpu_profile`:

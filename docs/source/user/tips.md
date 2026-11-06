@@ -71,6 +71,62 @@ Every environment you create must include `ipykernel` for `nb_conda_kernels` to 
 In air-gapped deployments, package requests are routed through a proxy transparently -- no extra configuration is needed.
 ```
 
+### VS Code, Terminal, and Claude Code
+
+Your notebook server also runs VS Code and a full-window terminal, with the same
+Python environment, Scout SDK, and home directory, so `scout.query()` works the same
+everywhere. Open them from the JupyterLab launcher, or by URL under your server, and
+use them side by side in separate tabs:
+
+- **VS Code** (`/vscode/`): VS Code in the browser, with Python and notebook support.
+  Pick **VS Code** under **Interface** on the server options page to open your server
+  straight into it.
+- **Terminal** (`/terminal/`): a terminal in a tmux session named `main`. The session
+  keeps running if you close the tab or lose your connection; reopen the page to
+  reattach. The mouse wheel scrolls; hold Shift while dragging to select text.
+
+The terminal also has [herdr](https://herdr.dev) for running several coding agents side
+by side, [workmux](https://github.com/raine/workmux) for git worktree workflows,
+[lazygit](https://github.com/jesseduffield/lazygit), `vim`, `rg`, `fd`, and `jq`.
+
+The Claude Code CLI (`claude` in the terminal), the Claude Code extension, and the
+[Codex CLI](https://github.com/openai/codex) (`codex`) are preinstalled. Connect them to
+your own account or API endpoint. Settings in your home directory persist across server
+restarts. For example, to use an API key with an Anthropic-compatible endpoint, add to
+`~/.claude/settings.json`:
+
+```json
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://llm-gateway.example.org/anthropic",
+    "ANTHROPIC_API_KEY": "your-key"
+  }
+}
+```
+
+Or run `claude` in the terminal and follow the login prompt. Your site may already
+set a default endpoint for you.
+
+Codex reads `~/.codex/config.toml`. For an OpenAI Responses-compatible endpoint,
+add a provider there:
+
+```toml
+model = "gpt-5"
+model_provider = "gateway"
+
+[model_providers.gateway]
+name = "LLM gateway"
+base_url = "https://llm-gateway.example.org/openai/v1"
+requires_openai_auth = true
+```
+
+Then store your key with `printenv LLM_GATEWAY_KEY | codex login --with-api-key`.
+
+```{important}
+Anything a coding agent reads, including query results, is sent to the model provider you
+configure. Only use a provider your organization has approved for the data you work with.
+```
+
 ### Working with Report Sections
 
 The Delta Lake schema includes parsed report sections:
