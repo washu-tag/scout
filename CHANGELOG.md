@@ -1,5 +1,20 @@
 # Changelog
 
+## [5.3.0](https://github.com/washu-tag/scout/compare/v5.2.0...v5.3.0) (2026-11-06)
+
+
+### Features
+
+* **pluggable-apps:** install site apps with Ansible or GitOps ([#945](https://github.com/washu-tag/scout/issues/945)) ([d67bfcb](https://github.com/washu-tag/scout/commit/d67bfcb6679eb50d11a2f8024479f9c8b694e14d))
+
+
+### Bug Fixes
+
+* **ci:** preserve artifacts across failed-job reruns ([#906](https://github.com/washu-tag/scout/issues/906)) ([2f3885a](https://github.com/washu-tag/scout/commit/2f3885aaab8129edb3e943afcba20574bb50d429))
+* **dcm4chee:** pin the db image by digest ([#954](https://github.com/washu-tag/scout/issues/954)) ([5a7e132](https://github.com/washu-tag/scout/commit/5a7e132fb8ff0a234739e7ddf22e7bb751a15269))
+* **dcm4chee:** route the DICOM LoadBalancer only to the arc pod ([#956](https://github.com/washu-tag/scout/issues/956)) ([77707c1](https://github.com/washu-tag/scout/commit/77707c101c0ad43e16773e98a2cd36d559d66c1e))
+* **minio:** stop the operator racing the IAM bootstrap Job ([#949](https://github.com/washu-tag/scout/issues/949)) ([050ed59](https://github.com/washu-tag/scout/commit/050ed596aa38006270a0640120604e945f2ffe9c))
+
 ## [5.2.0](https://github.com/washu-tag/scout/compare/v5.1.1...v5.2.0) (2026-11-04)
 
 
