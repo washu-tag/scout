@@ -123,7 +123,7 @@ jupyter_helm_chart_version: 4.4.2
 # renovate: datasource=helm registryUrl=https://helm.openwebui.com/ depName=open-webui
 open_webui_helm_chart_version: 16.6.0
 # renovate: datasource=docker depName=ghcr.io/open-webui/open-webui
-open_webui_image_tag: 0.11.4
+open_webui_image_tag: v0.13.0
 # renovate: datasource=docker depName=ollama/ollama
 ollama_image_tag: 0.35.1
 
