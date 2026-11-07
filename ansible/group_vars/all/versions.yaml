@@ -61,11 +61,11 @@ minio_client_image_tag: RELEASE.2026-09-16T00-00-00Z
 
 # Orchestration & Workflow
 # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/ depName=temporal
-temporal_version: 1.7.0
+temporal_version: 1.8.0
 # admin-tools tag must equal the Temporal server version (this chart's appVersion)
 # so the `temporal` CLI matches; Renovate bumps the pair together (renovate.json5).
 # renovate: datasource=docker depName=temporalio/admin-tools
-temporal_admin_tools_image_tag: 1.32.0
+temporal_admin_tools_image_tag: 1.32.2
 # The chart's default UI lags; 2.57.0+ is built with a Go that rejects the
 # compromised eMudhra intermediates (CVE-2026-111943).
 # renovate: datasource=docker depName=temporalio/ui
