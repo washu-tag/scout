@@ -1,0 +1,27 @@
+{
+  "ServerProxy": {
+    "servers": {
+      "terminal": {
+        "command": [
+          "ttyd",
+          "--interface",
+          "127.0.0.1",
+          "--port",
+          "{port}",
+          "--writable",
+          "--client-option",
+          "disableLeaveAlert=true",
+          "tmux",
+          "new-session",
+          "-A",
+          "-s",
+          "main"
+        ],
+        "timeout": 30,
+        "launcher_entry": {
+          "title": "Terminal (tmux)"
+        }
+      }
+    }
+  }
+}

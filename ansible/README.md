@@ -588,6 +588,29 @@ jupyter_profiles:
         nvidia.com/gpu: '1'
 ```
 
+### VS Code and Coding Agents
+
+Every notebook server also runs VS Code in the browser
+([code-server](https://github.com/coder/code-server)) with the Claude Code and Codex
+coding agents. Each profile gets an **Interface** option, JupyterLab (the default),
+VS Code, or Terminal, that picks the page the server opens on. The choices are
+`jupyter_interfaces`.
+
+Users bring their own LLM keys (see the user docs). To point everyone at a shared
+gateway, set defaults in inventory. Users can override them:
+
+```yaml
+jupyter_singleuser_environment:
+  ANTHROPIC_BASE_URL: 'https://llm-gateway.example.org/anthropic'
+```
+
+On air-gapped clusters, add the gateway domain to `squid_extra_allowed_domains` and
+make sure `jupyter_egress_allow_cidr` covers the staging node. Notebook pods reach it
+through Squid.
+
+VS Code needs a slightly looser Content Security Policy than the rest of Scout, so
+JupyterHub uses its own `jupyter-security-headers` middleware.
+
 ### Completely Replacing Default Profiles
 
 To completely replace the default profiles with your own custom profiles, define `jupyter_profiles` without including `jupyter_cpu_profile`:

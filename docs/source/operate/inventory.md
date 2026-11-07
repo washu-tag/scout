@@ -582,6 +582,12 @@ jupyter_hub_resources:
   limits:
     cpu: 2
     memory: 2G
+
+# Optional site-wide env for notebook pods, e.g. an LLM gateway for coding agents.
+# Users can override it. See ansible/README.md "VS Code and Coding Agents" for
+# air-gapped requirements.
+jupyter_singleuser_environment:
+  ANTHROPIC_BASE_URL: 'https://llm-gateway.example.org/anthropic'
 ```
 
 #### Other Services

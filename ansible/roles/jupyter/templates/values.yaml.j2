@@ -173,7 +173,7 @@ ingress:
     traefik.ingress.kubernetes.io/router.middlewares: >-
       kube-system-oauth2-proxy-error@kubernetescrd,
       kube-system-oauth2-proxy-auth@kubernetescrd,
-      kube-system-security-headers@kubernetescrd
+      {{ jupyter_namespace }}-jupyter-security-headers@kubernetescrd
   hosts:
     - 'jupyter.{{ server_hostname }}'
     - '*.jupyter.{{ server_hostname }}'
@@ -203,7 +203,11 @@ singleuser:
       ephemeral-storage: 10Mi
     limits:
       ephemeral-storage: '{{ jupyter_singleuser_ephemeral_storage_limit }}'
-  profileList: {{ jupyter_profiles | to_json }}
+{% set _profiles = [] %}
+{% for _profile in jupyter_profiles %}
+{%   set _ = _profiles.append(_profile | combine({'profile_options': jupyter_interfaces | combine(_profile.profile_options | default({}))})) %}
+{% endfor %}
+  profileList: {{ _profiles | to_json }}
 {% if jupyter_target_node_name is defined %}
   nodeSelector:
     kubernetes.io/hostname: '{{ jupyter_target_node_name }}'
@@ -292,6 +296,13 @@ singleuser:
     # Ollama service for LLM calls from notebooks
     OLLAMA_URL: 'http://ollama.{{ chatbot_namespace }}:11434'
     OLLAMA_MODEL: '{{ ollama_default_model }}'
+{% if jupyter_singleuser_https_proxy %}
+    HTTPS_PROXY: '{{ jupyter_singleuser_https_proxy }}'
+    NO_PROXY: '{{ jupyter_singleuser_no_proxy }}'
+{% endif %}
+{% for _name, _value in jupyter_singleuser_environment.items() %}
+    {{ _name }}: {{ _value | string | to_json }}
+{% endfor %}
   extraFiles:
     jupyter-server-config:
       mountPath: /etc/jupyter/jupyter_server_config.py

@@ -1,0 +1,31 @@
+---
+# The global security-headers (ADR 0012) plus what VS Code webviews need.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: jupyter-security-headers
+  namespace: '{{ jupyter_namespace }}'
+spec:
+  headers:
+    stsSeconds: 31536000
+    stsIncludeSubdomains: true
+    frameDeny: false
+    customFrameOptionsValue: SAMEORIGIN
+    contentTypeNosniff: true
+    contentSecurityPolicy: >-
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' {{ _vscode_resource }};
+      style-src 'self' 'unsafe-inline' {{ _vscode_resource }};
+      img-src 'self' data: blob: {{ _vscode_resource }};
+      font-src 'self' data: {{ _vscode_resource }};
+      media-src 'self' blob: {{ _vscode_resource }};
+      connect-src 'self' ws: wss: {{ _vscode_resource }} {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
+      worker-src 'self' blob:;
+      frame-src 'self' blob:;
+      form-action 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
+      frame-ancestors 'self'
+    customResponseHeaders:
+      Permissions-Policy: 'camera=(), microphone=(), geolocation=(), payment=()'
+      Cross-Origin-Opener-Policy: 'same-origin'
+      X-Powered-By: ''
+      Server: ''
