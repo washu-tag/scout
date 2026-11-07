@@ -590,40 +590,26 @@ jupyter_profiles:
 
 ### VS Code and Coding Agents
 
-The `scout-notebook` image includes [code-server](https://github.com/coder/code-server)
-with the Claude Code, Python, and Jupyter extensions, the Claude Code and Codex CLIs,
-and a browser terminal (ttyd) attached to a persistent tmux session at `/terminal/`,
-with [herdr](https://herdr.dev), [workmux](https://github.com/raine/workmux), and
-lazygit. VS Code and the terminal run in the same server as JupyterLab, so JupyterHub
-launches, authenticates, and culls them together, and JupyterLab's launcher links to
-both. Workspace trust is off, since the home folder is the user's own.
+Every notebook server also runs VS Code in the browser
+([code-server](https://github.com/coder/code-server)) with the Claude Code and Codex
+coding agents. Each profile gets an **Interface** option, JupyterLab (the default),
+VS Code, or Terminal, that picks the page the server opens on. The choices are
+`jupyter_interfaces`.
 
-Every profile in `jupyter_profiles`, custom ones included, gets an **Interface**
-option (JupyterLab or VS Code) that sets the page the server opens on. The choices
-are `jupyter_interfaces`.
-
-The JupyterHub ingress uses its own `jupyter-security-headers` middleware rather than
-the global `security-headers`: the same headers, plus what VS Code webviews (the
-Claude Code panel, notebooks) need. That is `blob:` workers and frames, same-origin
-framing instead of `'none'`, and VS Code's `*.vscode-resource.vscode-cdn.net` host,
-which its service worker answers inside the browser.
-
-Users bring their own LLM credentials (see the user docs). To point everyone at a
-shared endpoint, such as an Anthropic-compatible LLM gateway, set environment
-defaults for notebook pods. Users can still override them in `~/.claude/settings.json`:
+Users bring their own LLM keys (see the user docs). To point everyone at a shared
+gateway, set defaults in inventory. Users can override them:
 
 ```yaml
 jupyter_singleuser_environment:
   ANTHROPIC_BASE_URL: 'https://llm-gateway.example.org/anthropic'
-  ANTHROPIC_MODEL: 'claude-sonnet-5'
 ```
 
-On air-gapped clusters, notebook pods send outbound HTTPS through the staging node's
-Squid proxy (`HTTPS_PROXY`), with cluster services, Scout hostnames, and Nexus
-excluded. The LLM endpoint's domain must be in
-`squid_extra_allowed_domains`, and `jupyter_egress_allow_cidr` must cover the staging
-node. Extensions are baked into the image, since the Open VSX marketplace is
-unreachable there.
+On air-gapped clusters, add the gateway domain to `squid_extra_allowed_domains` and
+make sure `jupyter_egress_allow_cidr` covers the staging node. Notebook pods reach it
+through Squid.
+
+VS Code needs a slightly looser Content Security Policy than the rest of Scout, so
+JupyterHub uses its own `jupyter-security-headers` middleware.
 
 ### Completely Replacing Default Profiles
 
