@@ -48,8 +48,9 @@ mirrored Superset dockerize image. Use a repository without a tag or digest, and
 tag such as `dockerize@sha256:<verified-digest>`. The chart joins them with a colon.
 These values cover both Deployment init containers and the database-init Helm
 hook. The default image post-rendering path does not rewrite Helm hook resources.
-Both fields are required in GitOps `cluster-vars`; connected sites can use
-`apache/superset` and `dockerize`.
+Both deployment paths default to `apache/superset` and `dockerize` for connected
+sites. The GitOps generator emits these keys even for older site values files;
+existing `cluster-vars` ConfigMaps without them use the same defaults.
 
 ### Operating System
 

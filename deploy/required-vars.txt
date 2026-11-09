@@ -1,9 +1,10 @@
-# Required cluster-vars (Phase 3, ADR 0031). A site/CI must provide every key
-# below in the `cluster-vars` ConfigMap that the Flux Kustomizations reference via
-# postBuild.substituteFrom. Run the kustomize-controller with
-# StrictPostBuildSubstitutions so a missing key fails the build; without it a missing
-# key renders empty. s3_sse_type, s3_username, minio_oidc_enabled and temporal_web_auth
-# are the exceptions: they default to NONE, minio, on and oidc. Auto-derived from the
+# Generated cluster-vars output contract (Phase 3, ADR 0031). The generator emits
+# every key below for the ConfigMap referenced by postBuild.substituteFrom.
+# StrictPostBuildSubstitutions rejects missing variables without native defaults.
+# Flux defaults s3_sse_type, s3_username, minio_oidc_enabled and temporal_web_auth
+# to NONE, minio, on and oidc. Superset init-image repository/tag default to
+# apache/superset and dockerize in Flux and the generator, preserving older inputs
+# and ConfigMaps while keeping both keys in generated output. Auto-derived from the
 # ${...} vars used across deploy/ and enforced by validate-deploy.yaml; regenerate
 # with the snippet in that workflow when bases add
 # or drop a substitution. Site-repo CI (Phase 4) and the staging reconciler

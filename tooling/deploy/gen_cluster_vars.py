@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Generate the ``cluster-vars`` ConfigMap for the Phase 3 GitOps deploy lane (ADR 0031).
 
-Flux Kustomizations under ``deploy/`` substituteFrom this ConfigMap under
-StrictPostBuildSubstitutions, so every key in ``deploy/required-vars.txt`` must be
-present. Reads a site's flat values source and emits the ConfigMap, computing
-derived keys the way the Ansible roles do so both lanes stay byte-identical.
+Flux Kustomizations under ``deploy/`` use this ConfigMap with
+StrictPostBuildSubstitutions. Generated data contains every key in
+``deploy/required-vars.txt``; native defaults also support older ConfigMaps.
+Reads a site's flat values source and emits the ConfigMap, computing
+derived keys and connected-site defaults the way the Ansible roles do so both
+lanes stay byte-identical.
 
 ``--values`` is a JSON object mirroring the Ansible variable shape (mostly flat;
 the four nested resource/parameter dicts are flattened here, plus a few Ansible
@@ -50,12 +52,18 @@ def load_required(path) -> list:
 
 
 def derive(values: dict) -> dict:
-    """Keys the Ansible roles compute rather than read straight from vars.
+    """Computed keys and optional defaults matching the Ansible roles.
 
-    Raises KeyError (fail closed) if any derivation input is absent -- an
+    Raises KeyError (fail closed) if a required derivation input is absent -- an
     incomplete values file must never render a partial ConfigMap.
     """
     out = {}
+    out["superset_init_image_repository"] = str(
+        values.get("superset_init_image_repository", "apache/superset")
+    )
+    out["superset_init_image_tag"] = str(
+        values.get("superset_init_image_tag", "dockerize")
+    )
 
     # sizing: JVM heap -> K8s memory (multipliers per the Ansible tasks/templates,
     # NOT the stale defaults comments)
