@@ -11,6 +11,7 @@ version: 0.1.0
 from __future__ import annotations
 
 import asyncio
+import base64
 import inspect
 import json
 import logging
@@ -54,6 +55,9 @@ return await new Promise((resolve) => {
 });
 """
 _SIGN_IN_JS = "window.location.assign('/oauth/oidc/login');"
+# Same name and value oauth2-proxy sets on browser requests, so a dev
+# intercept filtered on it catches the caller's chat traffic too.
+_ROUTING_HEADER = "X-Auth-Request-Preferred-Username"
 # Holds the un-awaited sign-in tasks so they aren't garbage-collected.
 _PENDING_PROMPTS: set[asyncio.Task] = set()
 _VIEWER_NOTE = (
@@ -699,16 +703,15 @@ class Tools:
         async def attempt(bearer: Optional[str]) -> Optional[httpx.Response]:
             if not bearer:
                 return None
+            headers = {"Authorization": f"Bearer {bearer}"}
+            username = _routing_username(bearer)
+            if username:
+                headers[_ROUTING_HEADER] = username
             try:
                 async with httpx.AsyncClient(
                     timeout=self.valves.request_timeout_seconds
                 ) as c:
-                    return await c.request(
-                        method,
-                        url,
-                        headers={"Authorization": f"Bearer {bearer}"},
-                        **kwargs,
-                    )
+                    return await c.request(method, url, headers=headers, **kwargs)
             except httpx.TimeoutException:
                 raise ServiceTimeoutError("timed out")
             except httpx.RequestError:
@@ -1049,6 +1052,19 @@ class _Auth:
         except Exception:
             log.exception("OWUI event call failed: %s", event.get("type"))
             return None
+
+
+def _routing_username(bearer: str) -> str:
+    """`preferred_username` from the bearer, unverified. Routing only:
+    report-viewer authenticates on the bearer itself."""
+    try:
+        payload = bearer.split(".")[1]
+        claims = json.loads(
+            base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4))
+        )
+        return str(claims.get("preferred_username") or "")
+    except (IndexError, ValueError, AttributeError):
+        return ""
 
 
 def _chat_id(meta: Any) -> str:

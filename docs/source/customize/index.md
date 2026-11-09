@@ -6,6 +6,7 @@ Build and deploy custom Scout components.
 - **[Report-Viewer Search Actions](report-viewer-actions.md)** — Add or gate a search-detail toolbar button, or hand off to a separate service.
 - **[Authenticate Users to Your Service](service-authentication.md)** — Put your service behind Scout's login, so Scout's auth protects your service and users log in to your service with their Scout accounts.
 - **[Monitoring](monitoring.md)** — Ensure your service's logs and metrics are collected, and create Grafana dashboards to visualize them.
+- **[Install a Pluggable App](install.md)** — Install your app's chart from the site's own configuration, with Ansible or GitOps.
 
 ```{toctree}
 :hidden:
@@ -13,4 +14,5 @@ launchpad-chips
 report-viewer-actions
 service-authentication
 monitoring
+install
 ```
