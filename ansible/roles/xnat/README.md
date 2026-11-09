@@ -17,7 +17,8 @@ nothing XNAT is created — and the Keycloak realm omits the `xnat` client and t
 > **Authorization note:** oauth2-proxy admits approved Scout users at the edge,
 > and the openid plugin then requires the `xnat-access` client role, both at
 > browser sign-in and for bearer tokens. A user without it is refused and gets
-> no XNAT account. See ADR 0026.
+> no XNAT account. ADR 0026 records the earlier posture, when the role was not
+> enforced.
 
 ## How it deploys
 
