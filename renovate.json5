@@ -233,6 +233,16 @@
         "#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<depName>[^\\s]+?)(?:\\s+versioning=(?<versioning>[^\\s]+?))?(?:\\s+extractVersion=(?<extractVersion>[^\\s]+?))?\\n\\s*(?:image|imageName):\\s*['\"]?[^\\s'\"@]+:(?<currentValue>[^\\s'\"@]+)"
       ]
     },
+    // scout-notebook pins its downloaded tools as annotated Dockerfile ARGs:
+    //   # renovate: datasource=npm depName=@anthropic-ai/claude-code
+    //   ARG CLAUDE_CODE_VERSION=1.2.3
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["helm/scout-notebook/Dockerfile"],
+      "matchStrings": [
+        "#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<depName>[^\\s]+?)(?:\\s+extractVersion=(?<extractVersion>[^\\s]+?))?\\nARG\\s+[A-Z0-9_]+=(?<currentValue>[^\\s]+)"
+      ]
+    },
     // Keycloak version is also baked into two non-yaml files that need
     // to bump in lockstep with versions.yaml: `keycloak/VERSION` (CI
     // image-tag derivation -- ghcr.io/washu-tag/keycloak:<this>) and

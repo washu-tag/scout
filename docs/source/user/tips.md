@@ -71,6 +71,62 @@ Every environment you create must include `ipykernel` for `nb_conda_kernels` to 
 In air-gapped deployments, package requests are routed through a proxy transparently -- no extra configuration is needed.
 ```
 
+### VS Code, Claude Code, and Codex
+
+Your notebook server also runs VS Code in the browser (code-server), with the same
+Python environment, Scout SDK, and home directory as JupyterLab, so `scout.query()` and
+your notebooks work the same in both. To open your server in VS Code, pick **VS Code**
+under **Interface** on the server options page. You can also open it from the
+JupyterLab launcher and keep both open in separate tabs.
+
+The **Terminal** option opens a full-window terminal instead. It runs in a tmux
+session that keeps running if you close the tab, so you can reopen it and pick up
+where you left off.
+
+The Claude Code extension, the Claude Code CLI (`claude`), and the
+[Codex CLI](https://github.com/openai/codex) (`codex`) are preinstalled. Point them at
+an LLM gateway your organization provides. Their settings live in your home directory,
+so they persist across server restarts.
+
+**Claude Code.** Add the gateway URL and your key to `~/.claude/settings.json`. If your
+site already sets the URL, you only need the key:
+
+```json
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://llm-gateway.example.org/anthropic",
+    "ANTHROPIC_AUTH_TOKEN": "your-key"
+  }
+}
+```
+
+**Codex.** Export your key in `~/.bashrc`, then open a new terminal:
+
+```bash
+export LLM_GATEWAY_KEY="your-key"
+```
+
+Add the gateway as a provider in `~/.codex/config.toml`:
+
+```toml
+model = "gpt-5.4-mini"
+model_provider = "gateway"
+
+[model_providers.gateway]
+name = "LLM gateway"
+base_url = "https://llm-gateway.example.org/v1"
+env_key = "LLM_GATEWAY_KEY"
+wire_api = "responses"
+```
+
+To use another model the gateway serves, run `codex -m gpt-5.4`, or pick one with
+`/model` inside Codex.
+
+```{important}
+Anything a coding agent reads, including query results, is sent to the model provider you
+configure. Only use a provider your organization has approved for the data you work with.
+```
+
 ### Working with Report Sections
 
 The Delta Lake schema includes parsed report sections:

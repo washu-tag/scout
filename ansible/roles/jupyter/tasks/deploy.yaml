@@ -98,6 +98,15 @@
     _staging_ca_cert_pod_path: /etc/pki/staging-secret/ca.crt
   when: _package_proxy_needs_staging_cert | default(false) | bool
 
+- name: Create Jupyter security headers middleware
+  delegate_to: localhost
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'security-headers-middleware.yaml.j2') | from_yaml }}"
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+  vars:
+    _vscode_resource: 'https://*.vscode-resource.vscode-cdn.net'
+
 - name: Discover quickstart sample files
   delegate_to: localhost
   ansible.builtin.find:
