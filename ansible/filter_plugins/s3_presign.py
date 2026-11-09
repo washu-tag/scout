@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-"""Custom Jinja2 filter that presigns an S3 GET URL (AWS SigV4, query auth).
+"""Custom Jinja2 filters for ``s3://bucket/key`` URIs.
 
-``s3_presigned_url`` turns an ``s3://bucket/key`` URI plus static credentials
-into a short-lived HTTPS URL, computed entirely on the controller. The host that
-downloads the object then needs only curl: no AWS CLI, boto3, or credentials.
+``s3_presigned_url`` turns the URI plus static credentials into a short-lived
+HTTPS GET URL (AWS SigV4, query auth), computed entirely on the controller. The
+host that downloads the object then needs no AWS CLI, boto3, or credentials.
+
+``s3_object_path`` gives ``bucket/key``, encoded for a URL path, for mirroring
+the object at the same path elsewhere.
 """
 
 import datetime
@@ -20,8 +23,17 @@ def _parse_s3_uri(uri):
     parts = urlsplit(uri)
     key = parts.path.lstrip("/")
     if parts.scheme != "s3" or not parts.netloc or not key:
-        raise ValueError("s3_presigned_url: expected s3://bucket/key, got %r" % uri)
+        raise ValueError("expected s3://bucket/key, got %r" % uri)
     return parts.netloc, key
+
+
+def _encode_path(path):
+    return quote(path, safe="/~")
+
+
+def s3_object_path(uri):
+    """``bucket/key`` of ``uri``, URI-encoded except for slashes."""
+    return _encode_path("%s/%s" % _parse_s3_uri(uri))
 
 
 def s3_presigned_url(
@@ -29,7 +41,6 @@ def s3_presigned_url(
     region,
     access_key_id,
     secret_access_key,
-    session_token="",
     expires=300,
     now=None,
 ):
@@ -52,7 +63,7 @@ def s3_presigned_url(
             else "%s.s3.%s.amazonaws.com" % (bucket, region)
         )
         path = "/" + key
-    canonical_uri = quote(path, safe="/~")
+    canonical_uri = _encode_path(path)
 
     now = now or datetime.datetime.now(datetime.timezone.utc)
     amz_date = now.strftime("%Y%m%dT%H%M%SZ")
@@ -66,8 +77,6 @@ def s3_presigned_url(
         "X-Amz-Expires": str(int(expires)),
         "X-Amz-SignedHeaders": "host",
     }
-    if session_token:
-        params["X-Amz-Security-Token"] = session_token
     query = "&".join(
         "%s=%s" % (quote(k, safe="~"), quote(v, safe="~"))
         for k, v in sorted(params.items())
@@ -109,4 +118,7 @@ class FilterModule(object):
     """Ansible filter plugin class."""
 
     def filters(self):
-        return {"s3_presigned_url": s3_presigned_url}
+        return {
+            "s3_object_path": s3_object_path,
+            "s3_presigned_url": s3_presigned_url,
+        }

@@ -14,7 +14,9 @@ filter_plugins_path = Path(__file__).parent.parent.parent.parent / "filter_plugi
 sys.path.insert(0, str(filter_plugins_path))
 
 import pytest
-from s3_presign import s3_presigned_url
+from s3_presign import s3_object_path, s3_presigned_url
+
+MALFORMED_URIS = ["https://bucket/key", "s3://bucket", "s3://bucket/", "s3:///key"]
 
 # The worked example from the AWS S3 docs, "Authenticating Requests: Using Query
 # Parameters (AWS Signature Version 4)".
@@ -67,17 +69,7 @@ class TestS3PresignedUrl:
         )
         assert urlsplit(url).path == "/plugins/my%20plugin%2B1.jar"
 
-    def test_session_token_is_signed_into_the_query(self):
-        with_token = s3_presigned_url(**{**AWS_EXAMPLE, "session_token": "tok/en=="})
-        assert _query(with_token)["X-Amz-Security-Token"] == "tok/en=="
-        assert (
-            _query(with_token)["X-Amz-Signature"]
-            != _query(s3_presigned_url(**AWS_EXAMPLE))["X-Amz-Signature"]
-        )
-
-    @pytest.mark.parametrize(
-        "uri", ["https://bucket/key", "s3://bucket", "s3://bucket/", "s3:///key"]
-    )
+    @pytest.mark.parametrize("uri", MALFORMED_URIS)
     def test_rejects_malformed_uris(self, uri):
         with pytest.raises(ValueError):
             s3_presigned_url(**{**AWS_EXAMPLE, "uri": uri})
@@ -85,3 +77,22 @@ class TestS3PresignedUrl:
     def test_requires_credentials(self):
         with pytest.raises(ValueError):
             s3_presigned_url(**{**AWS_EXAMPLE, "secret_access_key": ""})
+
+
+class TestS3ObjectPath:
+    def test_is_bucket_then_key(self):
+        assert (
+            s3_object_path("s3://my.bucket/plugins/a-1.0.jar")
+            == "my.bucket/plugins/a-1.0.jar"
+        )
+
+    def test_encodes_like_the_signed_path(self):
+        assert (
+            s3_object_path("s3://examplebucket/plugins/my plugin+1.jar")
+            == "examplebucket/plugins/my%20plugin%2B1.jar"
+        )
+
+    @pytest.mark.parametrize("uri", MALFORMED_URIS)
+    def test_rejects_malformed_uris(self, uri):
+        with pytest.raises(ValueError):
+            s3_object_path(uri)

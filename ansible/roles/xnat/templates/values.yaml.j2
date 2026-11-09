@@ -137,13 +137,20 @@ plugins:
     repository: {{ p.source.repository }}
     tag: '{{ p.source.tag }}'
 {% else %}
-    source: {{ p.source.type }}
+{#- Air-gapped, an s3 plugin installs from the copy `make install-staging` put in
+    Nexus (ADR 0040). #}
+{% set _s3_via_nexus = p.source.type == 's3' and (air_gapped | bool) %}
+    source: {{ 'url' if _s3_via_nexus else p.source.type }}
     target: {{ p.target }}
 {% if p.source.type == 'coordinates' %}
     coordinates: '{{ p.source.coordinates }}'
     # Air-gapped: resolve through the Nexus group; otherwise the plugin's own
     # repo_url (or Maven Central). Set per plugin so plugins in different repos work.
     mavenUrl: '{{ maven_proxy_url if (air_gapped | bool) else (p.source.repo_url | default("https://repo1.maven.org/maven2/", true)) }}'
+{% elif _s3_via_nexus %}
+    url: '{{ xnat_s3_plugin_mirror_url }}/{{ p.source.s3_uri | s3_object_path }}'
+{% elif p.source.type == 's3' %}
+    s3Uri: '{{ p.source.s3_uri }}'
 {% elif p.source.type == 'url' %}
     url: '{{ p.source.url }}'
 {% elif p.source.type == 'file' %}
@@ -153,7 +160,7 @@ plugins:
       name: xnat-plugin-{{ p.name }}-jar
       key: {{ p.source.secret.key | default('plugin.jar') }}
 {% endif %}
-{% if p.source.sha256 | default('') %}
+{% if p.source.sha256 | default('') and p.source.type != 's3' %}
     sha256: '{{ p.source.sha256 }}'
 {% endif %}
 {% endif %}
@@ -175,12 +182,19 @@ pluginInstaller:
 {% if _xnat_needs_staging_cert | default(false) | bool %}
   caCertSecret: staging-ca-cert
 {% endif %}
+{# --- Connected, the installer downloads s3 plugins from S3 itself. The chart has
+     one S3 setting, so this excludes the dev side-load below (asserted in
+     deploy.yaml). --#}
+{% if xnat_s3_plugins_direct | bool %}
+  s3:
+    region: '{{ xnat_plugin_s3_region }}'
+    existingSecret: xnat-s3-plugin-credentials
 {# --- Dev/test side-load (xnat_dev_war / xnat_dev_plugins): the chart pulls both
      from the staging bucket, so there are no hand-rolled init containers left.
      Artifacts are staged to MinIO by tasks/dev_stage.yaml; the chart's S3 support
      reaches it via endpointUrl + the xnat-dev-minio Secret, whose keys are
      S3_USER / S3_PASS rather than the AWS names. --#}
-{% if (xnat_dev_war | length) or (xnat_dev_plugins | length) %}
+{% elif (xnat_dev_war | length) or (xnat_dev_plugins | length) %}
   s3:
     image: '{{ xnat_dev_awscli_image }}'
     endpointUrl: '{{ s3_endpoint }}'

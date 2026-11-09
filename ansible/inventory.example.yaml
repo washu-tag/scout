@@ -42,7 +42,7 @@ all:
     # the `all` level, NOT under k3s_cluster: the staging Nexus role derives one
     # Maven proxy per distinct coordinate `repo_url` so air-gapped deploys can
     # resolve the artifacts, and the staging host only sees `all` vars. Each entry
-    # names a source (file | url | coordinates | image) and optional config files;
+    # names a source (file | url | coordinates | s3 | image) and optional config files;
     # see ansible/roles/xnat/README.md. For air-gapped + a non-Central repo, set
     # `repo_url` AND re-run `make install-staging` after changing this list.
     # xnat_plugins:
@@ -60,18 +60,18 @@ all:
     #         properties:
     #           my.plugin.setting: "value"
     #
-    # Air-gapped only: a jar in a private S3 bucket is staged into Nexus by
-    # `make install-staging` (ADR 0040), using the xnat_plugin_stage_s3_* credentials
-    # in the staging group's vars. A coordinate already in Nexus is never fetched again.
+    # A jar in a private S3 bucket (ADR 0040), declared the same way connected or
+    # air-gapped; air-gapped, `make install-staging` copies it into Nexus first.
+    # Publish each new build under a new key.
     #   - name: my-s3-plugin
     #     target: my-s3-plugin.jar
     #     source:
-    #       type: coordinates
-    #       coordinates: edu.example:my-s3-plugin:1.0.0   # any release coordinate; no repo_url
-    #       stage_from: s3://my-bucket/plugins/my-s3-plugin-1.0.0.jar
-    #       # Optional pin, verified on staging and install:
-    #       #   aws s3 cp s3://my-bucket/plugins/my-s3-plugin-1.0.0.jar - | sha256sum
-    #       sha256: <hex digest>
+    #       type: s3
+    #       s3_uri: s3://my-bucket/plugins/my-s3-plugin-1.0.0.jar
+    # Read access to the bucket, for s3 plugins:
+    # xnat_plugin_s3_region: us-east-2
+    # xnat_plugin_s3_access_key_id: $(echo -n AKIA... | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # xnat_plugin_s3_secret_access_key: $(echo -n ... | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
 # The staging group contains the staging node that acts as a data diode
 # for air-gapped deployments.
@@ -102,11 +102,6 @@ staging:
     harbor_admin_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     harbor_storage_size: 100Gi
     nexus_root_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    # Only for xnat_plugins with source.stage_from (ADR 0040): read access to the bucket.
-    # xnat_plugin_stage_s3_region: us-east-2
-    # xnat_plugin_stage_s3_access_key_id: $(echo -n AKIA... | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    # xnat_plugin_stage_s3_secret_access_key: $(echo -n ... | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    # xnat_plugin_stage_s3_session_token: ''   # only for temporary credentials
     # nexus_storage_size: 20Gi  # Optional override
     # Accept the Sonatype Nexus CE EULA (https://links.sonatype.com/products/nxrm/ce-eula).
     # If false, you must manually log in to Nexus and accept the EULA during setup.

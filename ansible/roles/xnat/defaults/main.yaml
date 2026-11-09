@@ -87,6 +87,10 @@ xnat_extra_config: {}
 # Maven proxy members from them). Operators add plugins via `xnat_plugins` in
 # all.vars. See scout_common/defaults/main.yaml for the per-plugin shape.
 
+# Whether the chart's installer downloads `type: s3` plugins from S3 itself, as
+# it does on connected clusters (ADR 0040).
+xnat_s3_plugins_direct: '{{ xnat_s3_plugin_sources | length > 0 and not (air_gapped | default(false) | bool) }}'
+
 # --- Dev: side-load an unreleased WAR / plugins (dev/test only) ------------
 # Local paths on the Ansible control node. When either is set, `make install-xnat`
 # stages the artifact(s) into MinIO (a throwaway pod: a busybox sidecar receives
