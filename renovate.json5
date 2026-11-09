@@ -71,6 +71,11 @@
       "matchDepNames": ["k3s-io/k3s"],
       "versioning": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(?<compatibility>\\+k3s)(?<build>\\d+)$"
     },
+    // XNAT hotfixes add a 4th part (1.10.2.1); docker versioning won't cross part counts.
+    {
+      "matchDepNames": ["ghcr.io/nrgxnat/xnat"],
+      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(?:\\.(?<build>\\d+))?$"
+    },
     // dcm4chee archive stack (arc + postgres + slapd) ships as one release
     // "family" (the number after the dash). Lock each image to family 35 so
     // Renovate's `loose` versioning can't bump one image out of step with the
