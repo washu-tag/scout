@@ -18,4 +18,4 @@ spec:
     - port: {{ .Values.service.dicom }}
       targetPort: {{ .Values.service.dicom }}
   selector:
-    {{- include "dcm4chee.selectorLabels" . | nindent 4 }}
+    dcm4chee-component: arc

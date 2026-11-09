@@ -1,0 +1,3 @@
+---
+# Site-installed Helm charts, deployed after the rest of Scout. See README.md.
+pluggable_apps: []

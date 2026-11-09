@@ -100,6 +100,11 @@ that starts with SOPS ciphertext. It supplements `spec.decryption`; it does not
 decrypt data or supply an age key. For the observed controller behavior and the CI
 negative case, see [integration tests](../docs/internal/integration_tests.md#sops-admission-guard).
 
+## Site apps
+A site's own Pluggable Apps live in its site repo, in a Kustomization beside the two site
+roots. The contract is in
+[Install a Pluggable App](../docs/source/customize/install.md#with-gitops).
+
 ## Status
 **Bases + DAG done for the ingest slice + the auth/analytics layer** (the shared
 `Kustomization` DAG plus one per-mode set, acyclic): postgres, minio, hive, temporal
