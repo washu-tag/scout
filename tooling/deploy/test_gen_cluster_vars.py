@@ -3,8 +3,10 @@
 import json
 import re
 from pathlib import Path
+from string import Template
 
 import pytest
+import yaml
 
 from gen_cluster_vars import (
     build,
@@ -86,6 +88,34 @@ def test_output_key_set_equals_required_vars(values, required):
     assert missing == [], "declared but not produced: {}".format(missing)
     assert extra == [], "produced but not declared: {}".format(extra)
     assert set(data) == set(required)
+
+
+@pytest.mark.parametrize(
+    "repository,tag",
+    [
+        ("apache/superset", "dockerize"),
+        (
+            "registry.example.test:5000/scout/apache/superset",
+            "dockerize@sha256:" + "a" * 64,
+        ),
+    ],
+)
+def test_superset_init_image_uses_site_values(values, required, repository, tag):
+    values.update(
+        superset_init_image_repository=repository, superset_init_image_tag=tag
+    )
+    data = build(values, required)
+    resources = HERE.parents[1] / "deploy/base/superset/server/resources.yaml"
+    release = next(
+        obj
+        for obj in yaml.safe_load_all(resources.read_text())
+        if obj and obj.get("kind") == "HelmRelease"
+    )
+    configmap = yaml.safe_load(render_configmap(data, "cluster-vars"))
+    rendered = Template(
+        yaml.safe_dump(release["spec"]["values"]["initImage"])
+    ).substitute(configmap["data"])
+    assert yaml.safe_load(rendered) == {"repository": repository, "tag": tag}
 
 
 def test_rendered_configmap_keys_match_required(values, required, tmp_path):

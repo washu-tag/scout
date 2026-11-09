@@ -105,6 +105,8 @@ scratch_path
 server_hostname
 service_mode
 spark_sql_shuffle_partitions
+superset_init_image_repository
+superset_init_image_tag
 temporal_web_auth
 timezone
 trino_https_port

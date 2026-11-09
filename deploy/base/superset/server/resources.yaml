@@ -126,6 +126,9 @@ spec:
     image:
       repository: ghcr.io/washu-tag/superset
       tag: '5.0.0'
+    initImage:
+      repository: '${superset_init_image_repository}'
+      tag: '${superset_init_image_tag}'
     # Disable chart env Secret so both server and dashboards Job read the
     # externally-seeded fixed-name `superset-env` (see header).
     secretEnv:

@@ -42,6 +42,15 @@ Scout supports air-gapped deployments through a staging node architecture. Ansib
 
 ## Requirements
 
+For a disconnected registry, set `superset_init_image_repository` and
+`superset_init_image_tag` in the Ansible inventory or GitOps `cluster-vars` to the
+mirrored Superset dockerize image. Use a repository without a tag or digest, and a
+tag such as `dockerize@sha256:<verified-digest>`. The chart joins them with a colon.
+These values cover both Deployment init containers and the database-init Helm
+hook. The default image post-rendering path does not rewrite Helm hook resources.
+Both fields are required in GitOps `cluster-vars`; connected sites can use
+`apache/superset` and `dockerize`.
+
 ### Operating System
 
 **Critical:** Production K3s nodes must run **Rocky Linux 9** (or compatible RHEL 9-based distribution).
