@@ -1,3 +1,5 @@
+import { ISO_DATEISH, isoTimestamp } from '../../values';
+
 /** `dx_count` → `Dx count`; a quoted alias like `Patient Count` is left as written. */
 export function fmtHeader(field: string): string {
   const words = field.replace(/_+/g, ' ').trim();
@@ -10,12 +12,14 @@ export function fmtCell(v: unknown): string {
   return JSON.stringify(v);
 }
 
-// Trino returns `timestamp with time zone` as `YYYY-MM-DDTHH:MM:SS+00:00`
-// (everything in the lake is UTC). Trim seconds and TZ offset for the UI.
+// An ISO timestamp, with an offset or read as UTC without one, shows as
+// `YYYY-MM-DD HH:MM` UTC. Anything else, such as a bare date or one the SQL
+// formatted itself, is shown as written.
 export function fmtDate(v: unknown): string {
   if (!v) return '-';
-  const d = new Date(String(v));
-  if (isNaN(d.getTime())) return String(v);
-  const iso = d.toISOString();
+  if (typeof v !== 'string' || !ISO_DATEISH.test(v) || v.length === 10) return String(v);
+  const t = isoTimestamp(v);
+  if (t === undefined) return String(v);
+  const iso = new Date(t).toISOString();
   return `${iso.slice(0, 10)} ${iso.slice(11, 16)}`;
 }

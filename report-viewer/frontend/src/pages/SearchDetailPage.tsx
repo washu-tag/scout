@@ -8,6 +8,7 @@ import {
   getSortedRowModel,
   getPaginationRowModel,
   useReactTable,
+  type SortingFn,
   type SortingState,
   type VisibilityState,
   type PaginationState,
@@ -35,7 +36,8 @@ import { ExplainSqlModal } from './searchDetail/ExplainSqlModal';
 import { ActionsToolbar } from './searchDetail/ActionsToolbar';
 import { ContractIcon, ExpandIcon } from './searchDetail/icons';
 import { fmtCell, fmtDate, fmtHeader } from './searchDetail/format';
-import { columnKind, toNumber } from './searchDetail/columnKind';
+import { columnKind, type ColumnKind } from './searchDetail/columnKind';
+import { toNumber, toTimestamp } from '../values';
 import { ColumnProfileRow } from './searchDetail/ColumnProfileRow';
 import { EvidenceCell } from './searchDetail/EvidenceCell';
 import { hasEvidence } from './searchDetail/evidenceStats';
@@ -95,6 +97,26 @@ const CONFIGURED_FIELDS = new Set(COLUMNS_CONFIG.map((c) => c.field));
 // Used by the page but never shown as a column of their own.
 const INTERNAL_FIELDS = new Set(['primary_report_identifier', ...EVIDENCE_EXPORT]);
 const EXTRA_COLUMN_WIDTH = 110;
+
+type SortKey = (v: unknown) => number | undefined;
+
+const SORT_KEYS: Partial<Record<ColumnKind, SortKey>> = {
+  numeric: toNumber,
+  temporal: toTimestamp,
+};
+
+// Values `key` can't read sort after those it can; empty ones are left to
+// sortUndefined, which keeps them last in both directions.
+function sortBy(key: SortKey): SortingFn<Row> {
+  return (a, b, id) => {
+    const x = key(a.getValue(id));
+    const y = key(b.getValue(id));
+    if (x === undefined || y === undefined) {
+      return x === y ? 0 : x === undefined ? 1 : -1;
+    }
+    return x - y;
+  };
+}
 
 const columnHelper = createColumnHelper<Row>();
 
@@ -307,7 +329,7 @@ export default function SearchDetailPage() {
     const rows = rowsQ.data?.rows ?? [];
     return [
       ...COLUMNS_CONFIG.filter((c) => available.includes(c.field)).map((c) =>
-        columnHelper.accessor((row: Row) => row[c.field], {
+        columnHelper.accessor((row: Row) => row[c.field] ?? undefined, {
           id: c.field,
           header: c.title,
           size: c.width,
@@ -321,30 +343,28 @@ export default function SearchDetailPage() {
               ? (a, b) =>
                   reviewRank(a.original) - reviewRank(b.original) ||
                   evidenceText(a.original).localeCompare(evidenceText(b.original))
-              : 'auto',
+              : c.kind === 'date'
+                ? sortBy(toTimestamp)
+                : 'auto',
+          // Evidence ranks on the whole row, so an empty ev_source still sorts.
+          sortUndefined: c.kind === 'evidence' ? false : 'last',
           meta: { align: c.align, mono: c.mono },
         }),
       ),
       ...available
         .filter((f) => !CONFIGURED_FIELDS.has(f) && !INTERNAL_FIELDS.has(f))
         .map((field) => {
-          const numeric = columnKind(field, rows) === 'numeric';
-          return columnHelper.accessor((row: Row) => row[field], {
+          const kind = columnKind(field, rows);
+          const key = SORT_KEYS[kind];
+          const format = kind === 'temporal' ? fmtDate : fmtCell;
+          return columnHelper.accessor((row: Row) => row[field] ?? undefined, {
             id: field,
             header: fmtHeader(field),
             size: EXTRA_COLUMN_WIDTH,
-            cell: (info) => fmtCell(info.getValue()),
-            sortingFn: numeric
-              ? (a, b, id) => {
-                  const x = toNumber(a.getValue(id));
-                  const y = toNumber(b.getValue(id));
-                  if (x === undefined || y === undefined) {
-                    return x === y ? 0 : x === undefined ? 1 : -1;
-                  }
-                  return x - y;
-                }
-              : 'auto',
-            meta: { align: numeric ? 'right' : undefined },
+            cell: (info) => format(info.getValue()),
+            sortingFn: key ? sortBy(key) : 'auto',
+            sortUndefined: 'last',
+            meta: { align: kind === 'numeric' ? 'right' : undefined },
           });
         }),
     ];

@@ -1,6 +1,8 @@
 // The search SQL projects whatever it likes, so columns are typed by sniffing
 // values rather than from a static list.
 
+import { toNumber, toTimestamp } from '../../values';
+
 export type ColumnKind = 'numeric' | 'categorical' | 'temporal' | 'identifier' | 'none';
 
 // Identifiers: never summarized as a distribution, never a measure.
@@ -15,19 +17,8 @@ export const IDENTIFIER_FIELDS = new Set([
 ]);
 
 const SAMPLE_SIZE = 200;
-const ISO_DATEISH = /^\d{4}-\d{2}-\d{2}([T ]|$)/;
-// Trino DECIMALs arrive as Python Decimal strings ("10.50", "1E-7"); requiring a
-// decimal point or a signed exponent keeps a numeric-looking identifier categorical.
-const DECIMAL_STRING = /^-?\d+(?:\.\d+(?:E[+-]\d+)?|E[+-]\d+)$/;
 
 type Row = Record<string, unknown>;
-
-/** A JSON number or a Trino DECIMAL string as a number; undefined otherwise. */
-export function toNumber(v: unknown): number | undefined {
-  if (typeof v === 'number') return Number.isFinite(v) ? v : undefined;
-  if (typeof v === 'string' && DECIMAL_STRING.test(v)) return Number(v);
-  return undefined;
-}
 
 function sampleValues(field: string, rows: Row[]): unknown[] {
   const out: unknown[] = [];
@@ -53,6 +44,6 @@ export function columnKind(field: string, rows: Row[], isDate = false): ColumnKi
   if (sample.length === 0) return 'none';
 
   if (sample.every((v) => toNumber(v) !== undefined)) return 'numeric';
-  if (sample.every((v) => typeof v === 'string' && ISO_DATEISH.test(v))) return 'temporal';
+  if (sample.every((v) => toTimestamp(v) !== undefined)) return 'temporal';
   return 'categorical';
 }
