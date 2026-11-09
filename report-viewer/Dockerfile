@@ -16,7 +16,7 @@ FROM python:3.12-slim AS base
 RUN apt-get update && apt-get install -y --no-install-recommends --only-upgrade \
         bsdutils libblkid1 liblastlog2-2 libmount1 libsmartcols1 libuuid1 login mount util-linux \
         ca-certificates libssl3t64 openssl openssl-provider-legacy \
-        perl-base libsqlite3-0 gzip libpcre2-8-0 \
+        perl-base libsqlite3-0 gzip libpcre2-8-0 zlib1g \
     && rm -rf /var/lib/apt/lists/*
 
 ENV PYTHONUNBUFFERED=1 \
