@@ -83,15 +83,15 @@
     // together in one change.
     {
       matchDepNames: ['dcm4che/dcm4chee-arc-psql'],
-      allowedVersions: '/^5\\.36\\.\\d+$/',
+      allowedVersions: '/^5\\.35\\.\\d+$/',
     },
     {
       matchDepNames: ['dcm4che/postgres-dcm4chee'],
-      allowedVersions: '/^18\\.\\d+-36$/',
+      allowedVersions: '/^18\\.\\d+-35$/',
     },
     {
       matchDepNames: ['dcm4che/slapd-dcm4chee'],
-      allowedVersions: '/^2\\.6\\.\\d+-36\\.\\d+$/',
+      allowedVersions: '/^2\\.6\\.\\d+-35\\.\\d+$/',
     },
     {
       matchDepNames: ['cass-operator'],
