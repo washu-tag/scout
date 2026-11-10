@@ -1,3 +1,5 @@
+image:
+  tag: '{{ nexus_image_tag }}'
 service:
   type: ClusterIP
 resources: {{ nexus_resources_default | combine(nexus_resources | default({}), recursive=true) | to_json }}

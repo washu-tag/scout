@@ -1,8 +1,9 @@
 # Centralized versions for Scout Ansible roles; auto-loaded via group_vars/all.
 # Renovate-monitored (see renovate.json5); pinned exactly for provenance.
 
+# v1.37.2+ is built with go1.26.10, which rejects the compromised eMudhra chain (CVE-2026-111943).
 # renovate: datasource=github-releases depName=k3s-io/k3s
-k3s_version: v1.37.1+k3s1
+k3s_version: v1.37.2+k3s1
 
 # Helm 3.x until Helm 4's plugin ecosystem matures (helm-diff compat).
 # renovate: datasource=github-releases depName=helm/helm
@@ -17,8 +18,9 @@ eck_operator_version: 3.5.0
 elasticsearch_version: 9.5.4
 
 # Databases & Data Storage - Cassandra
+# v1.21.3+ is built with go1.26.10 and a clean CA bundle (the ACME issuer calls out with credentials).
 # renovate: datasource=helm registryUrl=https://charts.jetstack.io depName=cert-manager
-cert_manager_version: v1.21.2
+cert_manager_version: v1.21.3
 # renovate: datasource=helm registryUrl=https://helm.k8ssandra.io/stable depName=cass-operator
 cass_operator_version: 0.67.2
 # Managed by cass-operator (pulls k8ssandra/cass-management-api).
@@ -54,10 +56,10 @@ minio_version: 7.1.1
 # edition and no longer serves its images.
 minio_image: docker.io/pgsty/silo
 # renovate: datasource=docker depName=pgsty/silo versioning=regex:^RELEASE\.(?<major>\d{4})-(?<minor>\d{2})-(?<patch>\d{2})T\d{2}-\d{2}-\d{2}Z$
-minio_image_tag: RELEASE.2026-09-16T00-00-00Z
+minio_image_tag: RELEASE.2026-10-26T00-00-00Z
 minio_client_image: docker.io/pgsty/mc
 # renovate: datasource=docker depName=pgsty/mc versioning=regex:^RELEASE\.(?<major>\d{4})-(?<minor>\d{2})-(?<patch>\d{2})T\d{2}-\d{2}-\d{2}Z$
-minio_client_image_tag: RELEASE.2026-09-16T00-00-00Z
+minio_client_image_tag: RELEASE.2026-10-26T00-00-00Z
 
 # Orchestration & Workflow
 # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/ depName=temporal
@@ -110,6 +112,9 @@ superset_statsd_exporter_tag: v0.31.0
 # Data Visualization & BI - Grafana
 # renovate: datasource=helm registryUrl=https://grafana-community.github.io/helm-charts depName=grafana
 grafana_helm_chart_version: 13.2.7
+# The chart's default (13.2.3) is built on a Go that trusts the compromised eMudhra chain; 13.2.5 isn't.
+# renovate: datasource=docker depName=grafana/grafana
+grafana_image_tag: 13.2.5-distroless
 
 # Launchpad - catalog discovery sidecar (ADR 0034). The same image the
 # Grafana chart embeds for dashboard ConfigMap discovery.
@@ -119,7 +124,7 @@ launchpad_sidecar_image_tag: 2.11.2
 
 # Notebooks & Interactive Computing
 # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/jupyterhub/helm-chart/refs/heads/gh-pages/ depName=jupyterhub
-jupyter_helm_chart_version: 4.4.2
+jupyter_helm_chart_version: 4.4.5
 
 # AI & ML
 # OWUI image tag = the OWUI chart's appVersion (the bootstrap Job discovers the
@@ -151,6 +156,10 @@ harbor_version: 1.19.2
 # Package Proxy - Nexus Repository Manager
 # renovate: datasource=helm registryUrl=https://stevehipwell.github.io/helm-charts/ depName=nexus3
 nexus_helm_chart_version: 5.26.2
+# The chart's default (3.96.4-ubi) still trusts the compromised eMudhra roots in Java and the OS store.
+# Keep -ubi: the chart appends it only when the tag is unset; the bare tag is the Alpine build.
+# renovate: datasource=docker depName=sonatype/nexus3
+nexus_image_tag: 3.98.1-ubi
 
 # GPU Support
 # renovate: datasource=helm registryUrl=https://nvidia.github.io/gpu-operator depName=gpu-operator
