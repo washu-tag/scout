@@ -416,8 +416,9 @@ export function filterRows(
 // CSV cell with a spreadsheet formula-injection guard (mirrors the server
 // export): wrap in quotes, escape embedded quotes, and prefix a leading
 // =/+/-/@ or control char with a single quote so it isn't evaluated.
+// Arrays, maps and ROWs are JSON, matching the table's fmtCell.
 function csvCell(v: unknown): string {
-  let s = v == null ? '' : String(v);
+  let s = v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v);
   if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   return `"${s.replace(/"/g, '""')}"`;
 }
