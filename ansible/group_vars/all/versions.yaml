@@ -156,7 +156,8 @@ harbor_version: 1.19.2
 # Package Proxy - Nexus Repository Manager
 # renovate: datasource=helm registryUrl=https://stevehipwell.github.io/helm-charts/ depName=nexus3
 nexus_helm_chart_version: 5.26.2
-# The chart's default (3.96.4) still trusts the compromised eMudhra roots in Java and the OS store.
+# The chart's default (3.96.4-ubi) still trusts the compromised eMudhra roots in Java and the OS store.
+# Keep -ubi: the chart appends it only when the tag is unset; the bare tag is the Alpine build.
 # renovate: datasource=docker depName=sonatype/nexus3
 nexus_image_tag: 3.98.1-ubi
 
