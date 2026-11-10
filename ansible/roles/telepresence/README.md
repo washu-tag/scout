@@ -23,7 +23,7 @@ playbook is a no-op.
 | `telepresence_namespace` | `ambassador` | Traffic manager namespace; the CLI's default |
 | `telepresence_helm_release_name` | `traffic-manager` | Helm release name |
 | `telepresence_helm_timeout` | `5m` | Helm wait timeout |
-| `telepresence_helm_values` | `{}` | Extra chart values, passed through unchanged |
+| `telepresence_helm_values` | node agent on, agent injector off | Chart values, passed through unchanged; an override replaces the whole default |
 | `telepresence_allow_protected_workloads` | `false` | Apply the NetworkPolicy allowances below; `false` removes them |
 
 ## Network policies

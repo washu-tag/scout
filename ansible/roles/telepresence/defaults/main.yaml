@@ -9,9 +9,13 @@ telepresence_namespace: ambassador
 telepresence_helm_release_name: traffic-manager
 telepresence_helm_timeout: 5m
 
-# Passed through to the chart as-is (e.g. to restrict the namespaces the traffic
-# manager may intercept in).
-telepresence_helm_values: {}
+# Passed through to the chart as-is. Intercepts use node-hosted traffic agents
+# rather than an injected sidecar; the node agent runs privileged.
+telepresence_helm_values:
+  agentInjector:
+    enabled: false
+  nodeAgent:
+    enabled: true
 
 # Ingress allowances from the traffic manager's namespace to workloads whose own
 # NetworkPolicies would otherwise block intercepts (templates/allow-telepresence.yaml.j2).
