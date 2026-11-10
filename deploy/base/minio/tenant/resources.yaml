@@ -99,9 +99,8 @@ spec:
         - name: '${lake_bucket}'
         - name: '${hl7_raw_bucket}'
         - name: '${scratch_bucket}'
-        # Versioned so a corrupt OPA bundle PUT can roll back (ADR 0021).
+        # The bootstrap Job enables versioning for OPA bundle rollback (ADR 0021).
         - name: '${opa_bundles_bucket}'
-          versioned: true
     ingress:
       console:
         enabled: true
