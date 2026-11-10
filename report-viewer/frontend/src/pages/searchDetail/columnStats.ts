@@ -1,4 +1,4 @@
-import { columnKind, type ColumnKind } from './columnKind';
+import { columnKind, toNumber, type ColumnKind } from './columnKind';
 
 type Row = Record<string, unknown>;
 
@@ -63,7 +63,7 @@ function niceStep(span: number, target: number): number {
 }
 
 function numericProfile(values: unknown[], widthAllows: number): Profile {
-  const nums = values.filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+  const nums = values.map(toNumber).filter((v): v is number => v !== undefined);
   if (nums.length === 0) return { kind: 'none' };
   const sorted = [...nums].sort((a, b) => a - b);
   const min = sorted[0];
