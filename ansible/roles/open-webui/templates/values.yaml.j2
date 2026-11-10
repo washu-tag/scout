@@ -342,6 +342,9 @@ extraEnvVars:
     value: 'http://prometheus-server.{{ prometheus_namespace }}:9090/api/v1/otlp/v1/metrics'
   - name: OTEL_SERVICE_NAME
     value: 'open-webui'
+  # gRPC's bundled roots still trust the compromised eMudhra chain (0.13.0); use the system store.
+  - name: GRPC_DEFAULT_SSL_ROOTS_FILE_PATH
+    value: /etc/ssl/certs/ca-certificates.crt
 {% if open_webui_https_proxy %}
   - name: HTTPS_PROXY
     value: '{{ open_webui_https_proxy }}'
