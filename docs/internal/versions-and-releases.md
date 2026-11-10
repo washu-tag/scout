@@ -49,7 +49,7 @@ The build lane records concrete artifact digests. Legacy derived image tags
 Flux ingest and authentication tests run alongside the Ansible tests in
 Post-Commit Tasks. Publication requires both Flux legs to pass using the run's
 candidate images and config. Publication copies the tested artifacts without
-rebuilding them. The release workflow requires that same CI attempt to succeed.
+rebuilding them. The release workflow requires a successful CI attempt authorizing those exact artifacts.
 This gate covers the core on-prem profile, not disconnected installation or
 optional components.
 
@@ -91,13 +91,15 @@ Partial draft/promotion: re-dispatch Release with the same version.
    the Ansible cutover.
 3. Wait up to three hours for the stamped commit's `ci.yaml` attempt. Validate
    repository, workflow, commit, run and attempt through GitHub's API. Both Flux
-   legs and package publication must succeed in that attempt; skipped jobs or
-   artifacts left by an earlier attempt cannot authorize release.
+   legs and package publication must have successful results for the same
+   artifact generation. The final receipt binds that generation and the exact
+   candidate upload IDs to the successful CI attempt, including retained jobs
+   from a partial rerun.
 4. Use the tooling and chart catalog from the stamped source. Package and sign
-   the fifteen release-version Helm charts for existing Ansible consumers,
+   the release-version Helm charts for existing Ansible consumers,
    reusing an existing chart only after verifying its signature and stamped
    source revision. The producer
-   has already published the seven Scout-versioned image aliases. Promotion
+   has already published the Scout-versioned image aliases. Promotion
    checks those images against the signed haul and records the separately
    packaged chart digests; their bytes are not the charts tested by the Flux proof.
 5. Revalidate evidence, verify all three package artifacts by digest and managed
@@ -171,11 +173,27 @@ backup/rollback limits are described in
 ### Before a draft or release exists
 
 If build, Flux or Ansible tests fail because of a temporary runner or network
-problem, repair that problem and choose **Re-run all jobs** on the original
-**Post-Commit Tasks** run. All required tests and publication jobs must succeed
-in one attempt. **Re-run failed jobs** cannot combine earlier tests with a new
-publication. A rerun can rebuild artifacts; it must test the new candidate
-before publishing that attempt's outputs.
+problem, repair that problem and choose **Re-run failed jobs** on the original
+**Post-Commit Tasks** run. The successful `changes` job retains the frozen plan's
+generation. Each producer names its upload with its actual execution attempt and
+exports the artifact ID to its consumers. Retried consumers use the IDs from
+successful producers, including retained matrix legs. If a producer reruns,
+GitHub also reruns its dependent jobs, so rebuilt artifacts must pass their tests
+again. The final receipt is written only after all CI jobs finish without
+failures and records the successful execution attempt, the plan generation and
+both candidate upload IDs. Branch releases download those exact uploads.
+Receipts are recorded for branch runs, not pull-request checks.
+
+Use **Re-run all jobs** to rebuild already-uploaded artifacts or recover after
+artifact deletion or expiry (candidate artifacts are retained for seven days).
+A full rerun creates a new generation and reruns its dependent tests before
+publication. Downloads do not rely on selecting the newest same-name artifact:
+the artifact client's ID ordering can select an older upload. Missing IDs fail
+instead of falling back to an unfiltered download. Candidate identity and digest
+checks remain mandatory. No missing artifact is replaced by a registry image or
+by an artifact from another generation. Releases stamped before artifact IDs
+were recorded retain their attempt-specific name lookup through the older
+stamped helper; that fallback can be removed when those releases are retired.
 
 The Release workflow waits up to three hours for CI and retries temporary GitHub
 status-read failures within that deadline. Authentication failures and invalid
@@ -269,8 +287,8 @@ completed build. The next producer includes all accumulated changes since the
 verified predecessor. A release still needs a successful build of its exact
 stamped commit; a newer commit's result cannot replace a cancelled release build.
 
-The first build after migrating an unsigned historical manifest rebuilds all
-nine images and fifteen charts, carrying no components from that manifest.
+The first build after migrating an unsigned historical manifest rebuilds every
+image and chart in the CI catalog, carrying no components from that manifest.
 Subsequent builds can carry unchanged digests from a verified signed predecessor.
 
 | Component | Responsibility |
@@ -414,6 +432,8 @@ This section documents all files containing version strings. The Release Workflo
 | `report-viewer/VERSION` | entire file | `latest` |
 | `keycloak-fragment-reconciler/pyproject.toml` | `version` | `0.0.dev0` |
 | `keycloak-fragment-reconciler/VERSION` | entire file | `latest` |
+| `examples/xnat-explore-poc/pyproject.toml` | `version` | `0.0.dev0` |
+| `examples/xnat-explore-poc/VERSION` | entire file | `latest` |
 
 ### Java/Gradle Build Files
 

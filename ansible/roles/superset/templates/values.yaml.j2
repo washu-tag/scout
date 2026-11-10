@@ -41,6 +41,10 @@ ingress:
 postgresql:
   enabled: false
 supersetNode:
+  command:
+    - /bin/sh
+    - -c
+    - . {% raw %}{{ .Values.configMountPath }}{% endraw %}/superset_bootstrap.sh; exec /usr/bin/run-server.sh
   connections:
     db_host: "{{ db_host }}"
     db_port: "{{ db_port }}"
@@ -75,6 +79,11 @@ supersetNode:
         - name: statsd-mapping
           mountPath: /etc/statsd-exporter
           readOnly: true
+supersetWorker:
+  command:
+    - /bin/sh
+    - -c
+    - . {% raw %}{{ .Values.configMountPath }}{% endraw %}/superset_bootstrap.sh; exec celery --app=superset.tasks.celery_app:app worker
 configOverrides:
   branding: |
     APP_NAME = "{{ superset_app_name }}"

@@ -58,6 +58,26 @@ Grafana watches every namespace for ConfigMaps labelled `grafana_dashboard: "1"`
 
 `domain` is the only required value.
 
+On an Ansible-managed site, list it in `inventory.yaml` and run `make install-pluggable-apps` ([Install a Pluggable App](https://washu-scout.readthedocs.io/en/latest/customize/install.html)):
+
+```yaml
+pluggable_apps:
+  - name: example-app
+    namespace: scout-example
+    chart: '{{ scout_repo_dir }}/examples/on-prem-pluggable-app'
+    values:
+      domain: '{{ server_hostname }}'
+```
+
+Or, on a GitOps site, add `flux/pluggable-apps.yaml` where the site defines its two site roots, and copy `flux/pluggable-apps/` to `pluggable-apps/` at the root of the site repo. This chart isn't published, so push it to a registry the site's Flux can reach, and put that URL and the digest `helm push` prints in `example-app.yaml`:
+
+```bash
+helm package examples/on-prem-pluggable-app
+helm push example-pluggable-app-0.0.0-dev.tgz oci://<registry>/charts
+```
+
+Or install it by hand with helm:
+
 ```bash
 helm install example-app examples/on-prem-pluggable-app \
   --namespace scout-example --create-namespace \
@@ -79,6 +99,12 @@ kubectl logs -n scout-core deploy/keycloak-fragment-reconciler
 ```
 
 ## Uninstall
+
+On an Ansible-managed site, set `state: absent` on the entry and run `make install-pluggable-apps`. The release is uninstalled and the `scout-example` namespace is left in place.
+
+On a GitOps site, remove `example-app.yaml` from `pluggable-apps/kustomization.yaml`. Flux uninstalls the release and deletes the `scout-example` namespace.
+
+If you installed it by hand:
 
 ```bash
 helm uninstall example-app --namespace scout-example

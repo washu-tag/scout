@@ -40,7 +40,7 @@ valkey_chart_version: 0.12.0
 
 # OAuth2 Proxy
 # renovate: datasource=helm registryUrl=https://oauth2-proxy.github.io/manifests depName=oauth2-proxy
-oauth2_proxy_chart_version: 10.7.1
+oauth2_proxy_chart_version: 10.7.2
 
 # Keycloak Config CLI
 keycloak_config_cli_image: docker.io/adorsys/keycloak-config-cli
@@ -61,11 +61,15 @@ minio_client_image_tag: RELEASE.2026-09-16T00-00-00Z
 
 # Orchestration & Workflow
 # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/ depName=temporal
-temporal_version: 1.7.0
+temporal_version: 1.8.0
 # admin-tools tag must equal the Temporal server version (this chart's appVersion)
 # so the `temporal` CLI matches; Renovate bumps the pair together (renovate.json5).
 # renovate: datasource=docker depName=temporalio/admin-tools
-temporal_admin_tools_image_tag: 1.32.0
+temporal_admin_tools_image_tag: 1.32.2
+# The chart's default UI lags; 2.57.0+ is built with a Go that rejects the
+# compromised eMudhra intermediates (CVE-2026-111943).
+# renovate: datasource=docker depName=temporalio/ui
+temporal_ui_image_tag: 2.58.1
 
 # Real-Time HL7 Ingestion - Strimzi Kafka (MLLP -> Kafka -> batcher -> MinIO).
 # The listener/batcher image is built in CI (hl7-listener/), not pinned here.
@@ -83,7 +87,7 @@ trino_jmx_exporter_version: 1.4.0
 
 # Analytics & Query Engines - OPA (Trino access control)
 # renovate: datasource=docker depName=openpolicyagent/opa
-opa_image_tag: 1.16.2
+opa_image_tag: 1.21.4
 
 # Identity Provider - Keycloak
 # Renovate customManager also bumps keycloak/VERSION + keycloak/Dockerfile FROM in
@@ -163,8 +167,10 @@ dcm4che_tools_version: 5.35.1
 # together. (A mismatched combo wedged the deploy in PR #400.)
 # renovate: datasource=docker depName=dcm4che/dcm4chee-arc-psql
 dcm4chee_arc_version: 5.35.2
+# dcm4che deleted every PostgreSQL 18 tag for family 35, so this pins the 18.3-35 image by its
+# digest, which Docker Hub still serves. Drop the digest when moving to the next family.
 # renovate: datasource=docker depName=dcm4che/postgres-dcm4chee versioning=loose
-dcm4chee_db_version: 18.3-35
+dcm4chee_db_version: 18.3-35@sha256:8e82e631cb013161dfa8c520da09c3c7a56b4c8d2858748a12626a2992518616
 # renovate: datasource=docker depName=dcm4che/slapd-dcm4chee versioning=loose
 dcm4chee_ldap_version: 2.6.15-35.2
 
@@ -176,8 +182,9 @@ orthanc_version: latest
 # Medical Imaging - XNAT (optional; enable_xnat)
 # GHCR lane (ghcr.io/nrgxnat/xnat, set in the xnat role); Docker Hub xnat-web no longer pulled.
 # Pinned here because the chart's appVersion (1.9.x) is too old for Scout's 1.10 plugins.
+# 1.10.2.1 drops the compromised eMudhra roots from the JDK trust store (CVE-2026-91403).
 # renovate: datasource=docker depName=ghcr.io/nrgxnat/xnat
-xnat_image_tag: 1.10.2
+xnat_image_tag: 1.10.2.1
 # openid SSO plugin (NrgXnat Artifactory); consumed by roles/xnat/defaults coordinates.
 # renovate: datasource=maven registryUrl=https://nrgxnat.jfrog.io/nrgxnat/libs-release depName=au.edu.qcif.xnat.openid:openid-auth-plugin
 xnat_openid_plugin_version: 1.6.0

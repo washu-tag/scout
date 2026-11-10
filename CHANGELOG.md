@@ -1,5 +1,36 @@
 # Changelog
 
+## [5.2.0](https://github.com/washu-tag/scout/compare/v5.1.1...v5.2.0) (2026-11-04)
+
+
+### Features
+
+* **open-webui:** add external LLM API connections with token refresh ([#939](https://github.com/washu-tag/scout/issues/939)) ([719a052](https://github.com/washu-tag/scout/commit/719a052782e49a8d34b9c55919493d6961e4ed51))
+* **report-viewer:** discover search actions other charts publish ([#934](https://github.com/washu-tag/scout/issues/934)) ([4bb63af](https://github.com/washu-tag/scout/commit/4bb63afbb5bbff0ec84b6de76fcba79f206b2c64))
+
+
+### Bug Fixes
+
+* **images:** clear fixable Trivy CVEs blocking release, bump deps we own, suppress upstream-bundled guava and snappy ([7604233](https://github.com/washu-tag/scout/commit/7604233181d60a063d7b24432f2e0f0fceecf940))
+* **images:** clear fixable Trivy CVEs blocking the 5.2.0 release ([#947](https://github.com/washu-tag/scout/issues/947)) ([7604233](https://github.com/washu-tag/scout/commit/7604233181d60a063d7b24432f2e0f0fceecf940))
+* **opa:** bump to 1.21.4 to stop trusting the compromised CA chain (CVE-2026-91403) ([#938](https://github.com/washu-tag/scout/issues/938)) ([996bcb7](https://github.com/washu-tag/scout/commit/996bcb76a68a19a991070548d29188fd253bc99a))
+* **release:** version xnat-explore-poc and catch missing images in ci ([#943](https://github.com/washu-tag/scout/issues/943)) ([5352ffc](https://github.com/washu-tag/scout/commit/5352ffcbecbba4ad232dc275dc94744f20ae2e18))
+* **valkey:** Recreate strategy on its persistent volume, upgraded client-side ([#937](https://github.com/washu-tag/scout/issues/937)) ([8d374bc](https://github.com/washu-tag/scout/commit/8d374bc15691e1dce11ef648f2c4ea943af136d6))
+
+## [5.1.1](https://github.com/washu-tag/scout/compare/v5.1.0...v5.1.1) (2026-10-26)
+
+
+### Bug Fixes
+
+* **ci:** build xnat-explore-poc from the producer plan; patch notebook curl ([#896](https://github.com/washu-tag/scout/issues/896)) ([429197c](https://github.com/washu-tag/scout/commit/429197c8a980e22afb7a9825b07f115c6741ea72))
+* **ci:** remove dead apache2-utils install from e2e and smoke jobs ([#890](https://github.com/washu-tag/scout/issues/890)) ([f71166c](https://github.com/washu-tag/scout/commit/f71166c92c0cbcc7d39aeff3f5c59f12177232f8))
+* **images:** stop trusting the compromised CA chain (CVE-2026-91403) ([#929](https://github.com/washu-tag/scout/issues/929)) ([e73f673](https://github.com/washu-tag/scout/commit/e73f67392f11e3406a1c6be47b0064f5ad796a52))
+* **onprem:** harden bootstrap and optional application provisioning ([#888](https://github.com/washu-tag/scout/issues/888)) ([a020afe](https://github.com/washu-tag/scout/commit/a020afef432cca00bc201d4d9b972299948a8417))
+* **scout-notebook:** bump brotli past GHSA-9v8h-qqgm-4m35 ([#932](https://github.com/washu-tag/scout/issues/932)) ([a9cc5c6](https://github.com/washu-tag/scout/commit/a9cc5c687513638a25b3903f99011a834f27c48b))
+* **scout-notebook:** bump certifi past GHSA-6q48-6c7w-9gw2 ([#918](https://github.com/washu-tag/scout/issues/918)) ([2a0f850](https://github.com/washu-tag/scout/commit/2a0f850a052d23fefe520a5929e8ef700e81d5e0))
+* **superset:** forward shutdown signals to server and worker ([#930](https://github.com/washu-tag/scout/issues/930)) ([7b061c6](https://github.com/washu-tag/scout/commit/7b061c6a030977e7ed68f39e4caa02a90ec7e92c))
+* **xnat:** provide compliant default value for XNAT site id ([#917](https://github.com/washu-tag/scout/issues/917)) ([0db5203](https://github.com/washu-tag/scout/commit/0db52032483c61b0b64b6d85c70191b8d9a17787))
+
 ## [5.1.0](https://github.com/washu-tag/scout/compare/v5.0.0...v5.1.0) (2026-10-14)
 
 

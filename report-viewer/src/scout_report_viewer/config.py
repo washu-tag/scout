@@ -61,6 +61,12 @@ class Settings(BaseSettings):
     # means that action has no token to forward.
     action_tokens_path: str = "/app/action-tokens"
 
+    # Actions other charts publish as labeled ConfigMaps (actions.py). The
+    # namespace is "ALL" or a comma-separated list.
+    action_discovery_enabled: bool = False
+    action_discovery_namespace: str = "ALL"
+    action_discovery_ttl_seconds: PositiveInt = 30
+
     # Header an authenticating proxy forwards the user's access token in (an AWS
     # ALB sends X-Amzn-Oidc-Accesstoken); validated like a Bearer. Empty disables.
     forwarded_token_header: str = ""

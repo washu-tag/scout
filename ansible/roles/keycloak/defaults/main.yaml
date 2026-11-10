@@ -7,7 +7,8 @@
 
 # Keycloak image
 keycloak_image_repository: ghcr.io/washu-tag/keycloak
-keycloak_image_tag: '{{ keycloak_version }}'
+# Matches keycloak/VERSION; the -ca rebuild needs a new tag for IfNotPresent nodes.
+keycloak_image_tag: '{{ keycloak_version }}-ca'
 
 # Air-gapped artifact configuration
 keycloak_artifact_download_timeout: 300

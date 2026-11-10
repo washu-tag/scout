@@ -1,0 +1,7 @@
+---
+- name: Deploy pluggable apps
+  ansible.builtin.include_tasks: app.yaml
+  loop: '{{ pluggable_apps }}'
+  loop_control:
+    loop_var: pluggable_app
+    label: "{{ pluggable_app.name | default('(no name)') }}"

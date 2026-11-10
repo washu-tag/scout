@@ -113,7 +113,7 @@
             restartPolicy: Never
             containers:
               - name: prospective-indexing-setup
-                image: temporalio/admin-tools
+                image: '{{ temporal_admin_tools_image_repository }}:{{ temporal_admin_tools_image_tag }}'
                 securityContext:
                   runAsNonRoot: true
                   runAsUser: 1000

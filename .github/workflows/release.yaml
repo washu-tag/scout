@@ -246,6 +246,9 @@ jobs:
       commit_sha: ${{ steps.source.outputs.sha }}
       ci_run_id: ${{ steps.saved.outputs.run_id || steps.wait.outputs.run_id }}
       ci_run_attempt: ${{ steps.saved.outputs.run_attempt || steps.wait.outputs.run_attempt }}
+      ci_artifact_attempt: ${{ steps.wait.outputs.artifact_attempt || steps.wait.outputs.run_attempt }}
+      ci_candidate_artifact_id: ${{ steps.wait.outputs.candidate_artifact_id }}
+      ci_images_artifact_id: ${{ steps.wait.outputs.images_artifact_id }}
       build_version: ${{ steps.wait.outputs.build_version }}
     steps:
       - name: Checkout
@@ -346,21 +349,23 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /usr/share/swift /opt/ghc
           sudo apt-get clean
           docker system prune -af --volumes
-      - name: Download the selected attempt's candidate
+      - name: Download the selected candidate
         if: github.ref_name != 'main'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           github-token: ${{ github.token }}
           run-id: ${{ needs.wait-for-build.outputs.ci_run_id }}
-          name: flux-candidate-${{ needs.wait-for-build.outputs.ci_run_attempt }}
+          artifact-ids: ${{ needs.wait-for-build.outputs.ci_candidate_artifact_id }}
+          name: ${{ needs.wait-for-build.outputs.ci_candidate_artifact_id == '' && format('flux-candidate-{0}', needs.wait-for-build.outputs.ci_artifact_attempt) || '' }}
           path: candidate
-      - name: Download the selected attempt's canonical images
+      - name: Download the selected canonical images
         if: github.ref_name != 'main'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           github-token: ${{ github.token }}
           run-id: ${{ needs.wait-for-build.outputs.ci_run_id }}
-          name: flux-images-${{ needs.wait-for-build.outputs.ci_run_attempt }}
+          artifact-ids: ${{ needs.wait-for-build.outputs.ci_images_artifact_id }}
+          name: ${{ needs.wait-for-build.outputs.ci_images_artifact_id == '' && format('flux-images-{0}', needs.wait-for-build.outputs.ci_artifact_attempt) || '' }}
           path: candidate/images
       - name: Recheck the successful attempt and publish its tested images
         if: github.ref_name != 'main'
@@ -368,6 +373,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ needs.wait-for-build.outputs.ci_run_id }}
           RUN_ATTEMPT: ${{ needs.wait-for-build.outputs.ci_run_attempt }}
+          SCOUT_ARTIFACT_ATTEMPT: ${{ needs.wait-for-build.outputs.ci_artifact_attempt }}
           TARGET_SHA: ${{ needs.wait-for-build.outputs.commit_sha }}
           REF_NAME: ${{ github.ref_name }}
           RELEASE_VERSION: ${{ inputs.version }}

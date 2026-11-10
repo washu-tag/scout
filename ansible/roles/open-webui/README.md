@@ -20,7 +20,7 @@ The role automatically:
 - Creates PostgreSQL database and Valkey instance for Open WebUI
 - Deploys Ollama and Open WebUI via Helm
 - Pulls configured Ollama models
-- Creates each entry in `scout_models` as a Modelfile-derived variant with extended-context parameters baked in. Default ships three: `gemma4-31b-long` (preload, default + task model), `qwen3.6-35b-long` (cold-load, thinking-mode), and `gpt-oss-120b-long` (cold-load, large/cohort-building)
+- Creates each entry in `scout_models` as a Modelfile-derived variant with extended-context parameters baked in. Default ships one: `gemma4-31b-long` (preload, default + task model)
 - Mints an admin JWT via the in-cluster Service and uses it to seed filter functions, custom Scout Explorer models, and other OWUI resources via the REST API on every deploy (see [Bootstrap & Migration](#bootstrap--migration) and [Post-Deployment Configuration](#post-deployment-configuration))
 
 ### Air-Gapped Deployment
@@ -145,7 +145,6 @@ kubectl logs -n scout-analytics -l app.kubernetes.io/name=open-webui-bootstrap -
 ```yaml
 # inventory.yaml
 
-open_webui_default_model_id: 'qwen3.6-35b-long:latest'
 open_webui_task_model_id: 'gemma4-31b-long:latest'
 
 # Link Sanitizer allowlist (defaults to server_hostname)

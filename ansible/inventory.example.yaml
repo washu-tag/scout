@@ -93,6 +93,13 @@ staging:
     # Accept the Sonatype Nexus CE EULA (https://links.sonatype.com/products/nxrm/ce-eula).
     # If false, you must manually log in to Nexus and accept the EULA during setup.
     accept_nexus_eula: true
+    # Upstream credentials for a Harbor proxy, needed for private images. Read-only,
+    # and limited to the packages this site needs. A proxy with credentials is private,
+    # and the nodes log in to it as robot$scout-pull with harbor_pull_robot_password
+    # (8-128 characters, with an uppercase letter, a lowercase letter and a digit).
+    # harbor_ghcr_proxy_username: <account>
+    # harbor_ghcr_proxy_password: $(echo $GHCR_TOKEN | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # harbor_pull_robot_password: $(echo $ROBOT_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     # Traefik
     tls_cert_path: ''
@@ -741,10 +748,9 @@ k3s_cluster:
         cpu: 4
         memory: 4Gi
     # Scout custom models. Defaults ship gemma4-31b-long (default + task model),
-    # qwen3.6-35b-long (thinking-mode), and gpt-oss-120b-long (large, cold-load),
-    # each with a `ui:` block that produces a Scout Explorer entry in the
-    # OWUI picker. Override here to add bases, change context windows, or
-    # customize per-model UI fields. See ansible/roles/open-webui/defaults/main.yaml
+    # whose `ui:` block produces a Scout Explorer entry in the OWUI picker.
+    # Override here to add bases, change context windows, or customize
+    # per-model UI fields. See ansible/roles/open-webui/defaults/main.yaml
     # for the complete schema.
     #
     # scout_models:
@@ -782,13 +788,15 @@ k3s_cluster:
     # Site-authored custom toolbar buttons - see
     # docs/source/customize/report-viewer-actions.md for the full guide.
     # report_viewer_custom_actions:
-    #   - id: explore-xnat
-    #     title: Explore in XNAT
+    #   - id: my-app
+    #     title: Open in My App
     #     actionType: backend-call
-    #     endpointUrl: http://xnat-explore-poc.<namespace>.svc.cluster.local:8000/invoke
+    #     endpointUrl: http://my-app.<namespace>.svc.cluster.local:8000/invoke
     #     invokeToken: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    #     assertionKey: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     #     requiredRole: report-viewer-admin
+    # Buttons other charts publish (on by default); e.g. to narrow it:
+    # report_viewer_action_discovery:
+    #   namespace: my-app,other-app
 
     #---------------------------------------------------------------------------
     # data-generator
@@ -799,6 +807,19 @@ k3s_cluster:
     # data_generator_secrets:
     #   AZURE_OPENAI_KEY: my_azure_key
     # data_generator_pull_policy: Always
+
+    #---------------------------------------------------------------------------
+    # Pluggable apps
+    #---------------------------------------------------------------------------
+    # Site-installed Helm charts, deployed after the rest of Scout - see
+    # docs/source/customize/install.md and roles/pluggable_apps/README.md.
+    # pluggable_apps:
+    #   - name: example-app
+    #     namespace: scout-example
+    #     chart: oci://ghcr.io/example-org/charts/example-app
+    #     version: 1.2.0
+    #     values:
+    #       domain: '{{ server_hostname }}'
 
     #---------------------------------------------------------------------------
     # Playbooks (Voilà)

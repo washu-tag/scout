@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Copy this attempt's tested Scout candidate without rebuilding its OCI content."""
+"""Copy the tested Scout candidate without rebuilding its OCI content."""
 
 import argparse
 import hashlib
@@ -55,14 +55,16 @@ def load(candidate):
         os.environ["GITHUB_REPOSITORY"],
         os.environ["GITHUB_SHA"],
         int(os.environ["GITHUB_RUN_ID"]),
-        int(os.environ["GITHUB_RUN_ATTEMPT"]),
+        int(os.environ["SCOUT_ARTIFACT_ATTEMPT"]),
         os.environ["VERSION"],
     )
     if any(
         type(index.get(key)) is not type(value) or index.get(key) != value
         for key, value in expected.items()
     ):
-        raise ValueError("candidate belongs to another attempt; rerun all jobs")
+        raise ValueError(
+            "candidate belongs to another artifact generation; rerun all jobs"
+        )
     for row in index["images"] + index["charts"] + [index["manifest"], index["config"]]:
         if not re.fullmatch(r"ghcr.io/washu-tag/[a-z0-9/-]+", row["repository"]):
             raise ValueError("unexpected candidate repository")
@@ -178,7 +180,7 @@ def require_release_attempt(index, branch, version):
     )
     if (
         ci.get("id") != index["runId"]
-        or ci.get("run_attempt") != index["runAttempt"]
+        or ci.get("run_attempt") != int(os.environ["GITHUB_RUN_ATTEMPT"])
         or ci.get("head_sha") != index["revision"]
         or ci.get("head_branch") != branch
         or ci.get("repository", {}).get("full_name") != index["repository"]

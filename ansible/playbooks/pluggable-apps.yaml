@@ -1,0 +1,11 @@
+---
+- name: Deploy pluggable apps
+  hosts: server
+  gather_facts: false
+  pre_tasks:
+    - name: Skip if no pluggable apps are configured
+      ansible.builtin.meta: end_play
+      when: pluggable_apps | default([]) | length == 0
+  environment: '{{ cluster_k8s_environment }}'
+  roles:
+    - role: pluggable_apps

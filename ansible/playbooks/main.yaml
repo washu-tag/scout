@@ -75,3 +75,7 @@
 
 - name: Install Telepresence
   import_playbook: telepresence.yaml
+
+# Last, so an app can rely on every Scout service it calls at startup.
+- name: Install pluggable apps
+  import_playbook: pluggable-apps.yaml
