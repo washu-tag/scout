@@ -5,6 +5,8 @@
 // default). The backend reads identity from the oauth2-proxy headers
 // Traefik injects at the ingress, so no bearer plumbing is needed here.
 
+import { ISO_DATEISH, toTimestamp } from '../values';
+
 export class ApiError extends Error {
   status: number;
   body: unknown;
@@ -345,8 +347,17 @@ export function listPlots(): Promise<PlotMeta[]> {
   return api<PlotMeta[]>('/api/plots');
 }
 
+// `YYYY-MM-DD` of a date as the SQL returned it: an ISO value's own prefix,
+// otherwise the UTC day of a date the SQL formatted (`11/06/2026`).
+function reportDay(raw: unknown): string | null {
+  if (typeof raw !== 'string' || raw === '') return null;
+  if (ISO_DATEISH.test(raw)) return raw.slice(0, 10);
+  const t = toTimestamp(raw);
+  return t === undefined ? null : new Date(t).toISOString().slice(0, 10);
+}
+
 // Filters the in-memory cohort: text = case-insensitive substring, multi =
-// membership, range = inclusive (message_dt compared on its YYYY-MM-DD prefix).
+// membership, range = inclusive (message_dt compared by calendar day).
 export function filterRows(
   rows: Array<Record<string, unknown>>,
   f: FilterState,
@@ -393,9 +404,8 @@ export function filterRows(
       if (ageMax !== null && a > ageMax) return false;
     }
     if (dtMin || dtMax) {
-      const raw = r.message_dt;
-      if (raw == null || raw === '') return false; // no date can't match a range
-      const d = String(raw).slice(0, 10);
+      const d = reportDay(r.message_dt);
+      if (d === null) return false; // no date can't match a range
       if (dtMin && d < dtMin) return false;
       if (dtMax && d > dtMax) return false;
     }

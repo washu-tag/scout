@@ -1,4 +1,5 @@
-import { columnKind, toNumber, type ColumnKind } from './columnKind';
+import { toNumber, toTimestamp } from '../../values';
+import { columnKind, type ColumnKind } from './columnKind';
 
 type Row = Record<string, unknown>;
 
@@ -234,7 +235,7 @@ function pickInterval(first: number, last: number, target: number): Interval {
 function temporalProfile(values: unknown[], widthAllows: number): Profile {
   const times: number[] = [];
   for (const v of values) {
-    const t = typeof v === 'string' || typeof v === 'number' ? new Date(v).getTime() : NaN;
+    const t = typeof v === 'number' ? new Date(v).getTime() : (toTimestamp(v) ?? NaN);
     if (Number.isFinite(t)) times.push(t);
   }
   if (times.length === 0) return { kind: 'none' };

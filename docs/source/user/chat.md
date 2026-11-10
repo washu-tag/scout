@@ -81,7 +81,7 @@ Click a column header to sort. Under each header is a one-line summary of that c
 - **Download CSV** exports your current filters, sort order, and visible columns, not the whole original search. If the Matched on column is visible, the export includes the matched phrases, negated phrases, and diagnosis codes.
 - **Give the table more room** with the four-arrow icon at the right end of the toolbar. Click it again to shrink back.
 
-Any column the AI adds to its SQL appears in the table, the **Columns** list, and the CSV. Report text columns are left out of the table; open a report to read it.
+Any column the AI adds to its SQL appears in the table, the **Columns** list, and the CSV. Report text columns are left out of the table; open a report to read it. Dates show as `YYYY-MM-DD HH:MM` in UTC; ask for the date alone if you don't need the time.
 
 ### Why Each Report Matched
 
