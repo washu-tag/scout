@@ -23,9 +23,8 @@ the Ansible controller holds the inventory's credentials.
 
 ## Decision
 
-**One declaration.** An S3 plugin is an `xnat_plugins` entry (or an override of a
-default such as `xnat_plugin_dqr`) with `source.type: s3` and
-`source.s3_uri: s3://bucket/key.jar`. The bucket's credentials are three
+**One declaration.** An S3 plugin is an `xnat_plugins` entry with `source.type: s3`
+and `source.s3_uri: s3://bucket/key.jar`. The bucket's credentials are three
 vault-encrypted variables: `xnat_plugin_s3_region`, `xnat_plugin_s3_access_key_id`
 and `xnat_plugin_s3_secret_access_key`. All of it goes in `all.vars`, as every
 plugin does, so the staging run sees it. The role picks the route from
