@@ -88,15 +88,19 @@
   loop_control:
     label: '{{ item.registry_name }}'
 
-- name: Check the pull robot password is set when a proxy has upstream credentials
+# The nodes log in to Harbor as the pull robot whenever its password is set (ADR 0041).
+- name: Check the pull robot password
   ansible.builtin.assert:
     that:
       - harbor_pull_robot_password | default('') is match('(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{8,128}$')
     fail_msg: >-
-      A proxy with upstream credentials is private, so set harbor_pull_robot_password for the
-      nodes' pull robot: 8-128 characters, with an uppercase letter, a lowercase letter and a digit.
+      Set harbor_pull_robot_password, the nodes' Harbor login, to 8-128 characters with an
+      uppercase letter, a lowercase letter and a digit. A proxy with upstream credentials is
+      private, so it needs this login.
     quiet: true
-  when: harbor_registry_proxies_final | selectattr('private') | list | length > 0
+  when: >-
+    harbor_pull_robot_password | default('') | length > 0 or
+    harbor_registry_proxies_final | selectattr('private') | list | length > 0
 
 - name: Create registry endpoints
   ansible.builtin.uri:
@@ -206,10 +210,10 @@
   when: item.private and harbor_project_public == 'true'
   changed_when: true
 
-# The nodes log in to Harbor as this robot once a proxy project is private. It only needs the
-# private ones: Harbor lets any login pull from a public project.
 - name: Pull robot for the nodes
-  when: harbor_registry_proxies_final | selectattr('private') | list | length > 0
+  when: harbor_pull_robot_password | default('') | length > 0
+  vars:
+    harbor_pull_robot: "{{ harbor_robots_response.json | selectattr('name', 'equalto', 'robot$' + harbor_pull_robot_name) | first | default({}) }}"
   block:
     - name: Get system robot accounts
       ansible.builtin.uri:
@@ -219,37 +223,6 @@
         password: '{{ harbor_admin_password }}'
         force_basic_auth: true
       register: harbor_robots_response
-
-    - name: List the pull robot's permissions
-      ansible.builtin.set_fact:
-        harbor_pull_robot_permissions: >-
-          {{ harbor_pull_robot_permissions | default([]) + [{
-               'kind': 'project',
-               'namespace': item.project_name,
-               'access': [{'resource': 'repository', 'action': 'pull'}]
-             }] }}
-      loop: "{{ harbor_registry_proxies_final | selectattr('private') | list }}"
-
-    - name: Find the pull robot
-      ansible.builtin.set_fact:
-        harbor_pull_robot: "{{ harbor_robots_response.json | selectattr('name', 'equalto', 'robot$' + harbor_pull_robot_name) | first | default({}) }}"
-
-    # Harbor won't change a robot's projects in place, so recreate it when the private proxies change.
-    - name: Delete the pull robot when its projects differ from the private proxies
-      ansible.builtin.uri:
-        url: '{{ harbor_registry_url }}/api/v2.0/robots/{{ harbor_pull_robot.id }}'
-        follow_redirects: none
-        method: DELETE
-        user: admin
-        password: '{{ harbor_admin_password }}'
-        force_basic_auth: true
-      when:
-        - harbor_pull_robot | length > 0
-        - >-
-          harbor_pull_robot.permissions | map(attribute='namespace') | sort | list !=
-          harbor_pull_robot_permissions | map(attribute='namespace') | sort | list
-      register: harbor_robot_delete_result
-      changed_when: true
 
     - name: Create the pull robot
       ansible.builtin.uri:
@@ -263,12 +236,17 @@
         status_code: [201]
         body:
           name: '{{ harbor_pull_robot_name }}'
-          description: Pull-only login the cluster nodes use for Harbor's proxy projects
+          description: Pull-only login the cluster nodes use for Harbor's private projects
           duration: -1
           level: system
           disable: false
-          permissions: '{{ harbor_pull_robot_permissions }}'
-      when: harbor_pull_robot | length == 0 or harbor_robot_delete_result is changed
+          permissions:
+            - kind: project
+              namespace: '*'
+              access:
+                - resource: repository
+                  action: pull
+      when: harbor_pull_robot | length == 0
       register: harbor_robot_create_result
       no_log: true
       changed_when: true

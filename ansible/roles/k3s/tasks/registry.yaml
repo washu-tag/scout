@@ -58,18 +58,16 @@
               'registry_name': item.registry_name,
               'registry_type': item.registry_type,
               'registry_url': item.registry_url,
-              'project_name': hostvars[groups['staging'][0]]['harbor_' + item.registry_name + '_proxy_project'] | default(item.project_name),
-              'private': hostvars[groups['staging'][0]]['harbor_' + item.registry_name + '_proxy_username'] | default('') | length > 0
+              'project_name': hostvars[groups['staging'][0]]['harbor_' + item.registry_name + '_proxy_project'] | default(item.project_name)
             }]
           }}
       loop: '{{ harbor_registry_proxies }}'
       run_once: true
 
-    # The harbor role makes a proxy project private when it has upstream credentials, and the
-    # nodes then log in as its pull robot.
-    - name: Check whether the nodes need the Harbor pull robot
+    # The harbor role creates the pull robot whenever its password is set (ADR 0041).
+    - name: Check whether the nodes log in to Harbor
       ansible.builtin.set_fact:
-        k3s_harbor_pull_auth: "{{ staging_harbor_proxies | selectattr('private') | list | length > 0 }}"
+        k3s_harbor_pull_auth: "{{ hostvars[groups['staging'][0]].harbor_pull_robot_password | default('') | length > 0 }}"
       run_once: true
 
     - name: Slurp staging self-signed certificate
@@ -114,7 +112,7 @@
           {% endif %}
         mode: "{{ '0600' if k3s_harbor_pull_auth else '0644' }}"
       register: registry_config_task_result
-      no_log: '{{ k3s_harbor_pull_auth }}'
+      no_log: '{{ k3s_harbor_pull_auth | default(false) }}'
 
 - name: Disable public fallback for staging registry mirrors
   when: use_staging_node
