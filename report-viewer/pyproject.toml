@@ -16,7 +16,10 @@ classifiers = [
 ]
 requires-python = ">= 3.11"
 dependencies = [
-    "fastapi<0.163",
+    # Pin below 0.137 - that release added a `_IncludedRouter` wrapper into
+    # `app.routes` which prometheus-fastapi-instrumentator 8.0.0 doesn't
+    # recognize (crashes on `.path` lookup during request routing).
+    "fastapi<0.137",
     "uvicorn[standard]",
     "httpx",
     "psycopg[binary,pool]",
@@ -33,8 +36,7 @@ dependencies = [
     "tzlocal",
     "python-jose[cryptography]>=3.4.0",
     "python-multipart",
-    # fastapi>=0.137 puts `_IncludedRouter` in `app.routes`; older versions crash on it.
-    "prometheus-fastapi-instrumentator>=8.1",
+    "prometheus-fastapi-instrumentator>=7",
     "prometheus-client>=0.20",
     "yoyo-migrations",
     # Parses the action-catalog ConfigMap mounted by the Helm chart (#739).
