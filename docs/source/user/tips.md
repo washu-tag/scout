@@ -127,6 +127,36 @@ Anything a coding agent reads, including query results, is sent to the model pro
 configure. Only use a provider your organization has approved for the data you work with.
 ```
 
+### Longitudinal Questions with a Coding Agent
+
+A coding agent can answer a question about patients over time by writing and running a
+notebook that saves the result as a CSV. Point it at the samples and state the question
+and what one row of the result should be:
+
+```text
+Read ~/Scout/Quickstart.ipynb. Find patients whose first chest CT mentions a pulmonary
+nodule and any chest CT within 18 months after it. Save one row per patient with the
+index date, follow-up date, and days between, as a CSV.
+```
+
+You don't need to list facilities. The agent looks up the facilities you have access to
+and asks which ones your IRB covers for this question. Your access can be broader than
+any one study's approval, so confirm only the facilities that apply. To skip the
+question, name the facilities in your request (for example, "for BJH and SLCH").
+
+Claude Code and Codex load Scout's agent guide (`~/Scout/CLAUDE.md`) in every session.
+It covers query rules, longitudinal patterns, and output conventions. Codex uses it
+unless you already have your own `~/.codex/AGENTS.md`. The agent writes the notebook and
+CSV to `~/analyses/<name>/`, runs the notebook end to end, and reports the row and
+patient counts and the definitions it chose. Check those definitions, then open the
+notebook to review the rows before you use the CSV. Download the CSV from the file
+browser (right-click, **Download**).
+
+The agent is instructed to inspect results only through counts and summaries, and to
+keep rows out of notebook output, and Claude Code is blocked from opening CSV files in
+your home directory. It still runs queries as you and can see anything you can, so treat
+its session the same way as the data it touches.
+
 ### Working with Report Sections
 
 The Delta Lake schema includes parsed report sections:

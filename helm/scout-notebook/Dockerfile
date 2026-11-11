@@ -75,6 +75,9 @@ ENV CODE_SERVER_CONFIG=/etc/code-server/config.yaml
 COPY helm/scout-notebook/tmux.conf /etc/tmux.conf
 COPY helm/scout-notebook/codex-config.toml /etc/codex/config.toml
 COPY helm/scout-notebook/jupyter_server_config.json /usr/local/etc/jupyter/jupyter_server_config.json
+COPY helm/scout-notebook/claude-managed-settings.json /etc/claude-code/managed-settings.json
+# Dangles until the scout-quickstart-samples ConfigMap is mounted at /opt/scout/samples.
+RUN ln -s /opt/scout/samples/CLAUDE.md /etc/claude-code/CLAUDE.md
 USER ${NB_UID}
 
 # Everything else (torch, transformers, ...) is user-installed through the

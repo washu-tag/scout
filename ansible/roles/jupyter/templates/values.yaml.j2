@@ -259,6 +259,16 @@ singleuser:
               chown -h $NB_USER:$NB_GID /home/$NB_USER/Scout
             fi
 
+            # Codex reads global instructions from ~/.codex/AGENTS.md; point it at the
+            # Scout agent guide unless the user already has their own.
+            codex_agents=/home/$NB_USER/.codex/AGENTS.md
+            if [ -f /opt/scout/samples/CLAUDE.md ] && [ ! -e $codex_agents ] && [ ! -L $codex_agents ]; then
+              mkdir -p /home/$NB_USER/.codex
+              chown $NB_USER:$NB_GID /home/$NB_USER/.codex
+              ln -s /opt/scout/samples/CLAUDE.md $codex_agents
+              chown -h $NB_USER:$NB_GID $codex_agents
+            fi
+
             # #496: surface branding into ~/.jupyter/custom via symlink instead
             # of mounting there. A subPath mount under ~/.jupyter makes kubelet
             # create the dir as root on first spawn, blocking ~/.jupyter/lab and

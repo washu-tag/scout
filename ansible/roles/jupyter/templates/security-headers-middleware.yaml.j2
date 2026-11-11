@@ -19,7 +19,7 @@ spec:
       img-src 'self' data: blob: {{ _vscode_resource }};
       font-src 'self' data: {{ _vscode_resource }};
       media-src 'self' blob: {{ _vscode_resource }};
-      connect-src 'self' ws: wss: {{ _vscode_resource }} {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
+      connect-src 'self' wss://{{ server_hostname }} {{ _vscode_resource }} {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
       worker-src 'self' blob:;
       frame-src 'self' blob:;
       form-action 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
