@@ -393,13 +393,23 @@ xnat_plugins_default:
           openid.keycloak.givenNameProperty: given_name
           openid.keycloak.familyNameProperty: family_name
           openid.keycloak.pkceEnabled: 'true'
-          # Validate the ID token rather than trusting what came back from the flow:
-          # check it was issued by our realm, verify its signature against the realm's
-          # published keys, and reject a token of the wrong type presented as an ID token.
+          # Our realm and its published signing keys. The bearer path checks access tokens
+          # against them (issuer, signature, expiry); plugin 2.0.0 and later check the
+          # browser path's ID token against them too.
           openid.keycloak.issuer: '{{ keycloak_realm_url }}'
           openid.keycloak.jwksUri: '{{ keycloak_oidc_certs_url }}'
+          # Reject a token of the wrong type, such as an access token presented as an ID token.
           openid.keycloak.typCheck.enabled: 'true'
           openid.keycloak.idToken.typCheck.expectedTypes: ID
+          # Browser sign-in requires the same audience and access role as the bearer
+          # path. The ID token has no resource_access: the xnat client's role mapper puts
+          # its client roles in `groups` instead. Its audience is always xnat, so set it
+          # here rather than rely on the shared value the bearer path also reads.
+          openid.keycloak.idToken.audCheck.enabled: 'true'
+          openid.keycloak.idToken.audCheck.acceptedAudiences: xnat
+          openid.keycloak.idToken.roleCheck.enabled: 'true'
+          openid.keycloak.idToken.roleCheck.rolePath: groups
+          openid.keycloak.idToken.roleCheck.requiredRoles: xnat-access
           openid.keycloak.usernamePattern: '[preferred_username]'
           openid.keycloak.link: '<a href="/openid-login?providerId=keycloak">Sign in with Scout</a>'
           # Accept a Keycloak access token as Authorization: Bearer, so a script or
