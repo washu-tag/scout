@@ -382,6 +382,11 @@ singleuser:
         configMap:
           name: scout-quickstart-samples
           defaultMode: 0644
+      claude-code-managed:
+        name: claude-code-managed
+        configMap:
+          name: claude-code-managed
+          defaultMode: 0644
       trino-ca:
         name: trino-ca
         secret:
@@ -417,6 +422,10 @@ singleuser:
       scout-samples:
         name: scout-samples
         mountPath: /opt/scout/samples
+        readOnly: true
+      claude-code-managed:
+        name: claude-code-managed
+        mountPath: /etc/claude-code
         readOnly: true
       trino-ca:
         name: trino-ca

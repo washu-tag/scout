@@ -135,6 +135,21 @@
       data: '{{ _jupyter_samples_data }}'
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
+- name: Create ConfigMap with Claude Code managed settings
+  delegate_to: localhost
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: claude-code-managed
+        namespace: '{{ jupyter_namespace }}'
+      data:
+        managed-settings.json: '{{ jupyter_claude_managed_settings | to_nice_json }}'
+        CLAUDE.md: "{{ _jupyter_samples_data['CLAUDE.md'] }}"
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+
 - name: Parse Helm values
   no_log: true
   ansible.builtin.set_fact:

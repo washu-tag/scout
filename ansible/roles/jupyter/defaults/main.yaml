@@ -48,6 +48,14 @@ jupyter_logo_path: '{{ scout_repo_dir }}/launchpad/public/favicon.ico'
 # Quickstart samples directory (mounted into singleuser pods via ConfigMap)
 jupyter_samples_dir: '{{ role_path }}/files/samples'
 
+# Claude Code managed settings, mounted read-only at /etc/claude-code in
+# singleuser pods alongside the samples' CLAUDE.md. Users cannot override them.
+jupyter_claude_managed_settings:
+  permissions:
+    deny:
+      - Read(~/**/*.csv)
+      - Read(~/**/*.tsv)
+
 # Jupyter resources
 jupyter_hub_resources_default:
   requests:
