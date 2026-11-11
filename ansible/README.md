@@ -444,6 +444,21 @@ url: "{{ 's3://bucket/key.jar' | s3_presigned_url(region, access_key_id, secret_
 mirror: "{{ nexus_repo_url }}/{{ 's3://bucket/key.jar' | s3_object_path }}"  # .../bucket/key.jar
 ```
 
+#### `pluggable_app_logins` and friends
+
+`pluggable_app_logins` checks a `pluggable_apps` entry's `registry` or `registries` and
+returns its logins as `[{host, prefixes, username, password, project}]`, where `project`
+is the Harbor project that proxies the login on an air-gapped site. Its errors name
+prefixes, never credentials. The pluggable_apps role uses it with
+`pluggable_app_login_for` (the login covering a chart or image), `pluggable_app_auths`
+(the pull Secret's `.dockerconfigjson`) and `pluggable_app_image_routes` (each prefix's
+Harbor project, for the admission policy). See ADR 0041.
+
+```yaml
+logins: "{{ {'name': app.name, 'chart': app.chart, 'registry': app.registry | default(none), 'registries': app.registries | default(none)} | pluggable_app_logins }}"
+chart_login: "{{ logins | pluggable_app_login_for(app.chart) }}"  # None when no login covers it
+```
+
 ### Creating Custom Filters
 
 1. **Create filter plugin file** in `filter_plugins/`:

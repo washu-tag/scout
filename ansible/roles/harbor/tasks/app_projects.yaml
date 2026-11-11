@@ -1,0 +1,160 @@
+---
+# A private proxy-cache project, and a registry endpoint holding the login, for each of a
+# Pluggable App's registry logins (ADR 0041). The pluggable_apps role includes this with
+# harbor_app_logins from the pluggable_app_logins filter, and with harbor_hostname and
+# harbor_admin_password from the staging group. The calls run on the staging node.
+- name: Proxy a Pluggable App's private images through Harbor
+  delegate_to: "{{ groups['staging'][0] }}"
+  module_defaults:
+    ansible.builtin.uri:
+      validate_certs: true
+      ca_path: '{{ staging_api_ca_path | default(omit, true) }}'
+      follow_redirects: none
+      user: admin
+      password: '{{ harbor_admin_password }}'
+      force_basic_auth: true
+  vars:
+    _harbor_staging_vars: "{{ hostvars[groups['staging'][0]] }}"
+    _harbor_proxies: '{{ _harbor_staging_vars.harbor_registry_proxies | default(harbor_registry_proxies) }}'
+    _harbor_pull_robot: 'robot${{ _harbor_staging_vars.harbor_pull_robot_name | default(harbor_pull_robot_name) }}'
+    _harbor_app_projects: "{{ harbor_app_logins | map(attribute='project') | list }}"
+  block:
+    - name: Get Harbor's system robot accounts
+      ansible.builtin.uri:
+        url: '{{ harbor_registry_url }}/api/v2.0/robots?q=Level%3Dsystem&page_size=100'
+      register: _harbor_robots
+
+    - name: Check the nodes' pull robot can read every project
+      ansible.builtin.assert:
+        that: >-
+          _harbor_robots.json | selectattr('name', 'equalto', _harbor_pull_robot)
+          | map(attribute='permissions') | flatten | selectattr('namespace', 'equalto', '*')
+          | list | length > 0
+        fail_msg: >-
+          Harbor has no {{ _harbor_pull_robot }} robot that can pull from every project, so the
+          nodes couldn't pull these images. Set harbor_pull_robot_password on the staging group,
+          then run make install-staging and make install-k3s.
+        quiet: true
+
+    - name: Create a registry endpoint for each login
+      ansible.builtin.uri:
+        url: '{{ harbor_registry_url }}/api/v2.0/registries'
+        method: POST
+        body_format: json
+        status_code: [201, 409]
+        body:
+          name: '{{ _login.project }}'
+          type: '{{ _upstream.registry_type | default("docker-registry") }}'
+          url: '{{ _upstream.registry_url | default("https://" + _login.host) }}'
+          insecure: false
+          credential:
+            type: basic
+            access_key: '{{ _login.username }}'
+            access_secret: '{{ _login.password }}'
+      vars:
+        _login: '{{ harbor_app_logins[idx] }}'
+        _upstream: "{{ _harbor_proxies | selectattr('public_registry', 'equalto', _login.host) | first | default({}) }}"
+      loop: '{{ range(harbor_app_logins | length) | list }}'
+      loop_control:
+        loop_var: idx
+        label: '{{ _harbor_app_projects[idx] }}'
+      register: _harbor_endpoint_create
+      failed_when: false
+      changed_when: _harbor_endpoint_create.status == 201
+      no_log: true
+
+    - name: Get Harbor's registry endpoints
+      ansible.builtin.uri:
+        url: '{{ harbor_registry_url }}/api/v2.0/registries?page_size=100'
+      register: _harbor_registries
+
+    # Harbor never returns a credential, so set it on every run to pick up a rotated one.
+    - name: Set the login on each endpoint that already existed
+      ansible.builtin.uri:
+        url: '{{ harbor_registry_url }}/api/v2.0/registries/{{ _endpoint_id }}'
+        method: PUT
+        body_format: json
+        body:
+          credential_type: basic
+          access_key: '{{ harbor_app_logins[idx].username }}'
+          access_secret: '{{ harbor_app_logins[idx].password }}'
+      vars:
+        _endpoint_id: >-
+          {{ _harbor_registries.json | selectattr('name', 'equalto', _harbor_app_projects[idx])
+             | map(attribute='id') | first }}
+      loop: '{{ range(harbor_app_logins | length) | list }}'
+      loop_control:
+        loop_var: idx
+        label: '{{ _harbor_app_projects[idx] }}'
+      when: _harbor_endpoint_create.results[idx].status == 409
+      register: _harbor_endpoint_update
+      failed_when: false
+      changed_when: true
+      no_log: true
+
+    # The endpoint tasks hide their output (no_log), so report Harbor's answers here.
+    - name: Check Harbor accepted each login
+      ansible.builtin.assert:
+        that: _answer.status in [200, 201]
+        fail_msg: >-
+          Harbor answered {{ _answer.status }} for the {{ _harbor_app_projects[idx] }} endpoint:
+          {{ _answer.json.errors | default([{'message': _answer.msg | default('')}])
+             | map(attribute='message') | join('; ') }}.
+          A 400 usually means the upstream registry turned the login down.
+        quiet: true
+      vars:
+        _answer: >-
+          {{ _harbor_endpoint_update.results[idx] if _harbor_endpoint_create.results[idx].status == 409
+             else _harbor_endpoint_create.results[idx] }}
+      loop: '{{ range(harbor_app_logins | length) | list }}'
+      loop_control:
+        loop_var: idx
+        label: '{{ _harbor_app_projects[idx] }}'
+
+    - name: Create a private proxy project for each login
+      ansible.builtin.uri:
+        url: '{{ harbor_registry_url }}/api/v2.0/projects'
+        method: POST
+        body_format: json
+        status_code: [201, 409]
+        body:
+          project_name: '{{ item }}'
+          registry_id: "{{ _harbor_registries.json | selectattr('name', 'equalto', item) | map(attribute='id') | first }}"
+          metadata:
+            public: 'false'
+      loop: '{{ _harbor_app_projects }}'
+      register: _harbor_project_create
+      changed_when: _harbor_project_create.status == 201
+
+    - name: Get the proxy projects
+      ansible.builtin.uri:
+        url: '{{ harbor_registry_url }}/api/v2.0/projects/{{ item }}'
+      loop: '{{ _harbor_app_projects }}'
+      register: _harbor_app_project_info
+
+    - name: Check each project proxies its own endpoint
+      ansible.builtin.assert:
+        that: >-
+          item.json.registry_id | default(0) ==
+          _harbor_registries.json | selectattr('name', 'equalto', item.item) | map(attribute='id') | first
+        fail_msg: >-
+          Harbor's {{ item.item }} project doesn't proxy the {{ item.item }} registry endpoint.
+          Delete the project in Harbor, then run make install-pluggable-apps again.
+        quiet: true
+      loop: '{{ _harbor_app_project_info.results }}'
+      loop_control:
+        label: '{{ item.item }}'
+
+    - name: Keep each project private
+      ansible.builtin.uri:
+        url: '{{ harbor_registry_url }}/api/v2.0/projects/{{ item.item }}'
+        method: PUT
+        body_format: json
+        body:
+          metadata:
+            public: 'false'
+      loop: '{{ _harbor_app_project_info.results }}'
+      loop_control:
+        label: '{{ item.item }}'
+      when: item.json.metadata.public | default('false') != 'false'
+      changed_when: true

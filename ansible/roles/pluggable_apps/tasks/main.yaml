@@ -1,4 +1,11 @@
 ---
+# Each app's Harbor project and admission policy are named after it.
+- name: Check pluggable app names are unique
+  ansible.builtin.assert:
+    that: pluggable_apps | map(attribute='name', default='') | unique | length == pluggable_apps | length
+    fail_msg: Each pluggable_apps entry needs a name of its own.
+    quiet: true
+
 - name: Deploy pluggable apps
   ansible.builtin.include_tasks: app.yaml
   loop: '{{ pluggable_apps }}'
