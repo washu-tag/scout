@@ -17,8 +17,12 @@ nothing XNAT is created — and the Keycloak realm omits the `xnat` client and t
 > **Authorization note:** oauth2-proxy admits approved Scout users at the edge,
 > and the openid plugin then requires the `xnat-access` client role, both at
 > browser sign-in and for bearer tokens. A user without it is refused and gets
-> no XNAT account. ADR 0026 records the earlier posture, when the role was not
-> enforced.
+> no XNAT account. The check runs only at sign-in: removing the role doesn't end
+> an XNAT session the user already has, which ends only after
+> `keycloak_token_lifespan` of inactivity (8 hours by default, via `sessionTimeout`
+> in `prefs-override.ini`), and XNAT alias tokens they have already created keep
+> working until they expire. ADR 0026 records the earlier posture, when the role
+> was not enforced.
 
 ## How it deploys
 
