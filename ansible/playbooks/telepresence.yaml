@@ -1,0 +1,11 @@
+---
+- name: Install Telepresence traffic manager
+  hosts: server
+  gather_facts: false
+  pre_tasks:
+    - name: Skip if Telepresence not enabled
+      ansible.builtin.meta: end_play
+      when: not (enable_telepresence | default(false) | bool)
+  environment: '{{ cluster_k8s_environment }}'
+  roles:
+    - role: telepresence
