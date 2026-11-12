@@ -204,6 +204,11 @@ xnat_openid_plugin_version: 1.6.0
 # XNAT Helm chart, OCI artifact on GHCR (Renovate-monitored, ADR 0015).
 # renovate: datasource=docker depName=ghcr.io/nrgxnat/charts/xnat
 xnat_chart_version: 4.0.1
+# The AWS CLI the XNAT chart runs for S3 plugins and the dev side-load. Docker Hub's
+# copy, not the chart's public.ecr.aws default, which Harbor doesn't proxy.
+xnat_awscli_image: docker.io/amazon/aws-cli
+# renovate: datasource=docker depName=amazon/aws-cli
+xnat_awscli_image_tag: 2.40.1
 
 # data-generator Helm chart, OCI artifact on GHCR (Renovate-monitored, ADR 0015).
 # renovate: datasource=docker depName=ghcr.io/washu-tag/charts/data-generator

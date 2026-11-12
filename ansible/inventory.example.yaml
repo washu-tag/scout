@@ -42,7 +42,7 @@ all:
     # the `all` level, NOT under k3s_cluster: the staging Nexus role derives one
     # Maven proxy per distinct coordinate `repo_url` so air-gapped deploys can
     # resolve the artifacts, and the staging host only sees `all` vars. Each entry
-    # names a source (file | url | coordinates | image) and optional config files;
+    # names a source (file | url | coordinates | s3 | image) and optional config files;
     # see ansible/roles/xnat/README.md. For air-gapped + a non-Central repo, set
     # `repo_url` AND re-run `make install-staging` after changing this list.
     # xnat_plugins:
@@ -59,6 +59,19 @@ all:
     #       - mechanism: extraConfig
     #         properties:
     #           my.plugin.setting: "value"
+    #
+    # A jar in a private S3 bucket (ADR 0040), declared the same way connected or
+    # air-gapped; air-gapped, `make install-staging` copies it into Nexus first.
+    # Publish each new build under a new key.
+    #   - name: my-s3-plugin
+    #     target: my-s3-plugin.jar
+    #     source:
+    #       type: s3
+    #       s3_uri: s3://my-bucket/plugins/my-s3-plugin-1.0.0.jar
+    # Read access to the bucket, for s3 plugins:
+    # xnat_plugin_s3_region: us-east-2
+    # xnat_plugin_s3_access_key_id: $(echo -n AKIA... | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # xnat_plugin_s3_secret_access_key: $(echo -n ... | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
 # The staging group contains the staging node that acts as a data diode
 # for air-gapped deployments.
@@ -93,13 +106,16 @@ staging:
     # Accept the Sonatype Nexus CE EULA (https://links.sonatype.com/products/nxrm/ce-eula).
     # If false, you must manually log in to Nexus and accept the EULA during setup.
     accept_nexus_eula: true
-    # Upstream credentials for a Harbor proxy, needed for private images. Read-only,
-    # and limited to the packages this site needs. A proxy with credentials is private,
-    # and the nodes log in to it as robot$scout-pull with harbor_pull_robot_password
-    # (8-128 characters, with an uppercase letter, a lowercase letter and a digit).
-    # harbor_ghcr_proxy_username: <account>
-    # harbor_ghcr_proxy_password: $(echo $GHCR_TOKEN | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # The nodes' Harbor login, robot$scout-pull, which can pull from every project. Private
+    # projects need it: a Pluggable App's with private images (registry/registries), or an
+    # upstream proxy's with credentials. 8-128 characters, with an uppercase letter, a
+    # lowercase letter and a digit.
     # harbor_pull_robot_password: $(echo $ROBOT_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # Upstream credentials for a whole Harbor proxy, such as a Docker Hub account for its
+    # higher pull rate limit. Every pull through that proxy uses them, so a Pluggable App's
+    # login belongs in its own entry instead.
+    # harbor_dockerhub_proxy_username: <account>
+    # harbor_dockerhub_proxy_password: $(echo $DOCKERHUB_TOKEN | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     # Traefik
     tls_cert_path: ''
@@ -818,6 +834,11 @@ k3s_cluster:
     #     namespace: scout-example
     #     chart: oci://ghcr.io/example-org/charts/example-app
     #     version: 1.2.0
+    #     # For a private chart and images on ghcr.io. Air-gapped, also set
+    #     # harbor_pull_robot_password on the staging group.
+    #     registry:
+    #       username: example-bot
+    #       password: '{{ example_app_registry_token }}'
     #     values:
     #       domain: '{{ server_hostname }}'
 

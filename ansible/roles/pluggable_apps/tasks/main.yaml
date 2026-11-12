@@ -1,4 +1,25 @@
 ---
+# Each app's Harbor projects and admission policy are named after it. A later login's
+# project ends in `_<n>`, which a name can't contain, so no two apps share a project.
+- name: Check pluggable app names are unique
+  ansible.builtin.assert:
+    that: pluggable_apps | map(attribute='name', default='') | unique | length == pluggable_apps | length
+    fail_msg: Each pluggable_apps entry needs a name of its own.
+    quiet: true
+
+- name: Check pluggable app names are valid
+  vars:
+    _bad_names: >-
+      {{ pluggable_apps | map(attribute='name', default='')
+         | reject('match', '^[a-z0-9]([-a-z0-9]{0,51}[a-z0-9])?$') | list }}
+  ansible.builtin.assert:
+    that: _bad_names | length == 0
+    fail_msg: >-
+      A pluggable_apps name may contain only lowercase letters, digits and hyphens, must
+      start and end with a letter or digit, and is at most 53 characters, the limit for a
+      Helm release name. Not valid: {{ _bad_names | map('to_json') | join(', ') }}.
+    quiet: true
+
 - name: Deploy pluggable apps
   ansible.builtin.include_tasks: app.yaml
   loop: '{{ pluggable_apps }}'

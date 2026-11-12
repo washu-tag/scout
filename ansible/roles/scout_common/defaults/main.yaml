@@ -339,7 +339,7 @@ enable_xnat: false
 #   name:    str  - init-container name + Secret name suffix
 #   target:  str  - filename written into the plugins dir
 #   source:
-#     type: file | url | coordinates | image
+#     type: file | url | coordinates | s3 | image
 #     # file:        secret: {name, key, from_file}   (from_file = jar path on control node)
 #     # url:         url: https://...
 #     # coordinates: coordinates: <Maven -Dartifact coord>  groupId:artifactId:version[:packaging[:classifier]]
@@ -350,7 +350,12 @@ enable_xnat: false
 #     #              artifacts not on Central (e.g. XNAT plugins published to jfrog).
 #     #              NOTE: release versions only -- the chart rejects a -SNAPSHOT
 #     #              coordinate (resolving one needs maven-metadata.xml); use type: url.
+#     # s3:          s3_uri: s3://bucket/key.jar  (private bucket; xnat_plugin_s3_* below)
+#     #              Connected clusters download it from S3; air-gapped ones from the
+#     #              copy `make install-staging` puts in Nexus (ADR 0040). Never
+#     #              overwrite a released key: publish a new build under a new key.
 #     # image:       repository, tag                       (chart-native plugins: map)
+#     sha256: <hex>  (OPTIONAL; url, coordinates, file) checked by the chart at install
 #   config: list of property files, each:
 #     mechanism: authplugins | file | extraConfig
 #     # authplugins: provider, entry (-> Secret xnat-plugin-<entry>), properties{}
@@ -449,6 +454,26 @@ xnat_coordinate_repo_urls: >-
      | map(attribute='source.repo_url', default='')
      | reject('equalto', '') | unique | list }}
 
+# Sources of `type: s3` plugins (ADR 0040), which the Nexus role copies into
+# xnat_s3_plugin_repo on air-gapped sites. Projects only `source`, for the same
+# lazy-templating reason as above.
+xnat_s3_plugin_sources: >-
+  {{ xnat_plugins_all
+     | map(attribute='source')
+     | selectattr('type', 'equalto', 's3')
+     | list }}
+
+# Read access to the bucket(s) of `type: s3` plugins. Set them vault-encrypted in
+# all.vars: the xnat role (connected) and the staging-run Nexus role (air-gapped)
+# both read them.
+xnat_plugin_s3_region: ''
+xnat_plugin_s3_access_key_id: ''
+xnat_plugin_s3_secret_access_key: ''
+
+# Nexus raw repo holding air-gapped sites' copies of `type: s3` plugins, at
+# <bucket>/<key>.
+xnat_s3_plugin_repo: xnat-plugins
+
 enable_data_generator: false
 
 # Reserve GPU nodes for workloads that either need GPU hardware (Ollama,
@@ -527,6 +552,11 @@ yum_proxy_base_url: >-
 # mavenUrl when air-gapped. Empty when not proxying, like the other *_proxy_url values.
 maven_proxy_url: >-
   {{ ('https://' ~ nexus_host ~ '/repository/scout-maven')
+     if package_proxy_mode == 'nexus'
+     else '' }}
+# Where air-gapped clusters fetch `type: s3` XNAT plugins (ADR 0040).
+xnat_s3_plugin_mirror_url: >-
+  {{ ('https://' ~ nexus_host ~ '/repository/' ~ xnat_s3_plugin_repo)
      if package_proxy_mode == 'nexus'
      else '' }}
 aws_deployment: "{{ deployment_type | trim | lower == 'aws' }}"
