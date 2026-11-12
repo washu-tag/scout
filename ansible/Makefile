@@ -1,7 +1,7 @@
 .PHONY: all deps setup-k3s config-traefik install-helm install-k3s clone-scout install-gpu-op \
     install-postgres install-valkey install-auth install-lake install-trino install-superset install-orchestrator \
     install-extractor install-hl7-listener install-monitor install-jupyter install-launchpad install-voila \
-    install-report-viewer install-staging install-xnat install-data-generator install-telepresence install-pluggable-apps verify-node echo
+    install-report-viewer install-staging install-xnat install-data-generator install-telepresence install-pluggable-apps prepare-ollama-model-storage verify-node echo
 
 # Variables
 VAULT_PASSWORD_ARG  ?= --vault-password-file vault/pwd.sh
@@ -71,6 +71,9 @@ install-lake:
 
 install-chat:
 	$(ANSIBLE_CMD) playbooks/chatbot.yaml
+
+prepare-ollama-model-storage:
+	$(ANSIBLE_CMD) playbooks/prepare-ollama-model-storage.yaml
 
 install-trino:
 	$(ANSIBLE_CMD) playbooks/trino.yaml

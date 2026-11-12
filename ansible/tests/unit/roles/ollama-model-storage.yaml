@@ -1,0 +1,167 @@
+---
+- name: Verify shared Ollama model storage preparation
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Create isolated model storage
+      ansible.builtin.tempfile:
+        state: directory
+      register: model_store
+
+    - name: Verify existing and fresh model stores
+      block:
+        - name: Create the legacy directory layout
+          ansible.builtin.file:
+            path: '{{ model_store.path }}/{{ item }}'
+            state: directory
+            mode: '0755'
+          loop: [blobs, manifests]
+
+        - name: Seed existing model data
+          ansible.builtin.copy:
+            dest: '{{ model_store.path }}/{{ item }}/existing'
+            content: 'preserve this model data'
+            mode: '0644'
+          loop: [blobs, manifests]
+
+        - name: Use a local staging writer
+          ansible.builtin.add_host:
+            name: ollama-storage-test-writer
+            groups: staging
+            ansible_connection: local
+            ansible_python_interpreter: '{{ ansible_playbook_python }}'
+
+        - name: Prepare the legacy store with the production task
+          ansible.builtin.include_role:
+            name: open-webui
+            tasks_from: prepare_model_storage
+          vars:
+            air_gapped: true
+            ollama_nfs_path: '{{ model_store.path }}'
+
+        - name: Inspect the required directories
+          ansible.builtin.stat:
+            path: '{{ model_store.path }}/{{ item }}'
+          loop: [blobs, manifests, manifests-v2]
+          register: directories
+
+        - name: Require a readable layout for read-only Ollama
+          ansible.builtin.assert:
+            quiet: true
+            that:
+              - item.stat.isdir
+              - item.stat.mode == '0755'
+          loop: '{{ directories.results }}'
+          loop_control:
+            label: '{{ item.item }}'
+
+        - name: Seed an existing v2 manifest
+          ansible.builtin.copy:
+            dest: '{{ model_store.path }}/manifests-v2/existing'
+            content: 'preserve this model data'
+            mode: '0644'
+
+        - name: Record existing files before repeated preparation
+          ansible.builtin.stat:
+            path: '{{ model_store.path }}/{{ item }}/existing'
+          loop: [blobs, manifests, manifests-v2]
+          register: before
+
+        - name: Prepare existing and fresh stores
+          ansible.builtin.include_role:
+            name: open-webui
+            tasks_from: prepare_model_storage
+          vars:
+            air_gapped: true
+            ollama_nfs_path: '{{ storage_path }}'
+          loop: ['{{ model_store.path }}', '{{ model_store.path }}/fresh']
+          loop_control:
+            loop_var: storage_path
+
+        - name: Inspect preserved files after repeated preparation
+          ansible.builtin.stat:
+            path: '{{ model_store.path }}/{{ item }}/existing'
+          loop: [blobs, manifests, manifests-v2]
+          register: after
+
+        - name: Require unchanged model data and metadata
+          ansible.builtin.assert:
+            that:
+              - before.results | map(attribute='stat.checksum') | list == after.results | map(attribute='stat.checksum') | list
+              - before.results | map(attribute='stat.inode') | list == after.results | map(attribute='stat.inode') | list
+              - before.results | map(attribute='stat.mtime') | list == after.results | map(attribute='stat.mtime') | list
+
+        - name: Inspect the fresh store
+          ansible.builtin.stat:
+            path: '{{ model_store.path }}/fresh/{{ item }}'
+          loop: [blobs, manifests, manifests-v2]
+          register: fresh
+
+        - name: Require the fresh layout
+          ansible.builtin.assert:
+            quiet: true
+            that: item.stat.isdir
+          loop: '{{ fresh.results }}'
+          loop_control:
+            label: '{{ item.item }}'
+
+        - name: Skip shared storage for online or unconfigured sites
+          ansible.builtin.include_role:
+            name: open-webui
+            tasks_from: prepare_model_storage
+          vars:
+            air_gapped: '{{ storage_case.air_gapped }}'
+            ollama_nfs_path: '{{ storage_case.path }}'
+          loop:
+            - { air_gapped: false, path: '{{ model_store.path }}/online' }
+            - { air_gapped: true, path: '' }
+          loop_control:
+            loop_var: storage_case
+
+        - name: Inspect the online path
+          ansible.builtin.stat:
+            path: '{{ model_store.path }}/online'
+          register: online
+
+        - name: Require online storage to be untouched
+          ansible.builtin.assert:
+            that: not online.stat.exists
+
+        - name: Render the online and shared-storage writer Jobs
+          ansible.builtin.set_fact:
+            pull_job: '{{ lookup("template", "../../../roles/open-webui/templates/pull_models_job.yaml.j2") | from_yaml }}'
+          vars:
+            _pull_air_gapped: '{{ pull_mode }}'
+            _pull_job_name: model-storage-test-
+            _pull_namespace: model-storage-test
+            _pull_label: model-storage-test
+            _pull_ttl: 600
+            _pull_backoff: 1
+            ollama_image_repository: ollama/ollama
+            ollama_image_tag: fixture
+            ollama_nfs_mount_path: /models
+            ollama_nfs_path: '{{ model_store.path }}'
+            ollama_name: ollama
+            chatbot_namespace: model-storage-test
+            ollama_models: []
+            scout_model_create: false
+          loop: [true, false]
+          loop_control:
+            loop_var: pull_mode
+          register: rendered_jobs
+
+        - name: Prevent the writer from pruning directories required by readers
+          ansible.builtin.assert:
+            that:
+              - staging_job.spec.template.spec.containers[0].env | selectattr('name', 'equalto', 'OLLAMA_NOPRUNE') | map(attribute='value') | list == ['true']
+              - online_job.spec.template.spec.containers[0].env | map(attribute='name') | list == ['OLLAMA_HOST']
+              - online_job.spec.template.spec.volumes is undefined
+          vars:
+            staging_job: '{{ rendered_jobs.results[0].ansible_facts.pull_job }}'
+            online_job: '{{ rendered_jobs.results[1].ansible_facts.pull_job }}'
+      always:
+        - name: Remove isolated model storage
+          ansible.builtin.file:
+            path: '{{ model_store.path }}'
+            state: absent

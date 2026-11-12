@@ -1,0 +1,18 @@
+---
+- name: Prepare shared Ollama storage for Helm or GitOps
+  hosts: server
+  gather_facts: false
+  tasks:
+    - name: Require shared storage configuration for this preparation
+      ansible.builtin.assert:
+        that:
+          - enable_chat | default(false) | bool
+          - air_gapped | default(false) | bool
+          - ollama_nfs_path | default('') | length > 0
+        fail_msg: Set enable_chat, air_gapped, and ollama_nfs_path in the site's inventory before preparing shared model storage.
+        quiet: true
+
+    - name: Prepare the model store without deploying applications
+      ansible.builtin.import_role:
+        name: open-webui
+        tasks_from: prepare_model_storage
