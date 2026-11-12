@@ -7,6 +7,8 @@ metadata:
 data:
   policy.rego: |
 {{ .Values.policy.rego | default (.Files.Get "files/main.rego") | indent 4 }}
+  authz.rego: |
+{{ .Files.Get "files/authz.rego" | indent 4 }}
   data.json: |
 {{ .Values.data.json | indent 4 }}
   config.yaml: |

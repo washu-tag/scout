@@ -41,5 +41,5 @@ app: {{ include "scout-opa.fullname" . }}
      files/main.rego still rolls pods at the fixed dev chart version. */}}
 {{- define "scout-opa.policyHash" -}}
 {{- $rego := .Values.policy.rego | default (.Files.Get "files/main.rego") -}}
-{{- printf "%s%s%s%s" $rego .Values.data.json .Values.config.yaml .Values.bundleReader.credsHash | sha256sum | trunc 8 -}}
+{{- printf "%s%s%s%s%s" $rego (.Files.Get "files/authz.rego") .Values.data.json .Values.config.yaml .Values.bundleReader.credsHash | sha256sum | trunc 8 -}}
 {{- end }}
