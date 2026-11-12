@@ -187,6 +187,7 @@ pluginInstaller:
      deploy.yaml). --#}
 {% if xnat_s3_plugins_direct | bool %}
   s3:
+    image: '{{ xnat_awscli_image }}:{{ xnat_awscli_image_tag }}'
     region: '{{ xnat_plugin_s3_region }}'
     existingSecret: xnat-s3-plugin-credentials
 {# --- Dev/test side-load (xnat_dev_war / xnat_dev_plugins): the chart pulls both
@@ -196,7 +197,7 @@ pluginInstaller:
      S3_USER / S3_PASS rather than the AWS names. --#}
 {% elif (xnat_dev_war | length) or (xnat_dev_plugins | length) %}
   s3:
-    image: '{{ xnat_dev_awscli_image }}'
+    image: '{{ xnat_awscli_image }}:{{ xnat_awscli_image_tag }}'
     endpointUrl: '{{ s3_endpoint }}'
     existingSecret: xnat-dev-minio
     secretKeys:
