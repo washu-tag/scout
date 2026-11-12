@@ -269,6 +269,15 @@ singleuser:
               chown -h $NB_USER:$NB_GID $codex_agents
             fi
 
+            starter=/opt/scout/user-starter
+            if [ -f $starter/manifest ]; then
+              while read -r key rel; do
+                if [ -n "$rel" ] && [ ! -e "/home/$NB_USER/$rel" ]; then
+                  install -D -m 0600 "$starter/$key" "/home/$NB_USER/$rel"
+                fi
+              done < $starter/manifest
+            fi
+
             # #496: surface branding into ~/.jupyter/custom via symlink instead
             # of mounting there. A subPath mount under ~/.jupyter makes kubelet
             # create the dir as root on first spawn, blocking ~/.jupyter/lab and
@@ -309,6 +318,9 @@ singleuser:
 {% if jupyter_singleuser_https_proxy %}
     HTTPS_PROXY: '{{ jupyter_singleuser_https_proxy }}'
     NO_PROXY: '{{ jupyter_singleuser_no_proxy }}'
+{% endif %}
+{% if jupyter_extension_manager_mode != 'enabled' %}
+    CODE_EXTENSIONSDIR: '/opt/code-server/extensions'
 {% endif %}
 {% for _name, _value in jupyter_singleuser_environment.items() %}
     {{ _name }}: {{ _value | string | to_json }}
@@ -387,6 +399,26 @@ singleuser:
         configMap:
           name: claude-code-managed
           defaultMode: 0644
+      user-starter:
+        name: user-starter
+        configMap:
+          name: scout-user-starter-files
+          defaultMode: 0644
+      code-server-logout:
+        name: code-server-logout
+        configMap:
+          name: scout-code-server-logout
+          defaultMode: 0644
+      tmux-conf:
+        name: tmux-conf
+        configMap:
+          name: scout-tmux-conf
+          defaultMode: 0644
+{% if jupyter_extension_manager_mode != 'enabled' %}
+      vscode-extensions:
+        name: vscode-extensions
+        emptyDir: {}
+{% endif %}
       trino-ca:
         name: trino-ca
         secret:
@@ -427,6 +459,25 @@ singleuser:
         name: claude-code-managed
         mountPath: /etc/claude-code
         readOnly: true
+      user-starter:
+        name: user-starter
+        mountPath: /opt/scout/user-starter
+        readOnly: true
+      code-server-logout:
+        name: code-server-logout
+        mountPath: /usr/lib/code-server/lib/vscode/extensions/scout-logout
+        readOnly: true
+      tmux-conf:
+        name: tmux-conf
+        mountPath: /etc/tmux.conf
+        subPath: tmux.conf
+        readOnly: true
+{% if jupyter_extension_manager_mode != 'enabled' %}
+      vscode-extensions:
+        name: vscode-extensions
+        mountPath: /opt/code-server/extensions
+        readOnly: true
+{% endif %}
       trino-ca:
         name: trino-ca
         mountPath: /etc/trino-ca

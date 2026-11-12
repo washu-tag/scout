@@ -83,13 +83,21 @@ The **Terminal** option opens a full-window terminal instead. It runs in a tmux
 session that keeps running if you close the tab, so you can reopen it and pick up
 where you left off.
 
+To log out from VS Code, click **Log out** at the right end of the status bar. In the
+Terminal, open the log out link at the right of the tmux status bar (hold Shift while
+clicking if a plain click doesn't open it). Both stop your server and end your Scout
+session, the same as **File > Log Out** in JupyterLab. The link opens in a new tab;
+close the old one afterward.
+
 The Claude Code extension, the Claude Code CLI (`claude`), and the
 [Codex CLI](https://github.com/openai/codex) (`codex`) are preinstalled. Point them at
 an LLM gateway your organization provides. Their settings live in your home directory,
 so they persist across server restarts.
 
-**Claude Code.** Add the gateway URL and your key to `~/.claude/settings.json`. If your
-site already sets the URL, you only need the key:
+**Claude Code.** Your settings live in `~/.claude/settings.json`. If your site provides
+a starter file, Scout creates it the first time your server starts, with the gateway and
+models filled in. Replace `REPLACE_WITH_YOUR_GATEWAY_KEY` with your key and start a new
+`claude` session. Otherwise, create the file with the gateway URL and your key:
 
 ```json
 {
@@ -100,13 +108,10 @@ site already sets the URL, you only need the key:
 }
 ```
 
-**Codex.** Export your key in `~/.bashrc`, then open a new terminal:
-
-```bash
-export LLM_GATEWAY_KEY="your-key"
-```
-
-Add the gateway as a provider in `~/.codex/config.toml`:
+**Codex.** Codex reads the gateway from `~/.codex/config.toml` and your key from
+`~/.codex/auth.json`. If your site provides starter files, both exist the first time
+your server starts: replace `REPLACE_WITH_YOUR_GATEWAY_KEY` in `~/.codex/auth.json` with
+your key. Otherwise, add the gateway as a provider in `~/.codex/config.toml`:
 
 ```toml
 model = "gpt-5.4-mini"
@@ -115,8 +120,16 @@ model_provider = "gateway"
 [model_providers.gateway]
 name = "LLM gateway"
 base_url = "https://llm-gateway.example.org/v1"
-env_key = "LLM_GATEWAY_KEY"
 wire_api = "responses"
+requires_openai_auth = true
+```
+
+and put your key in `~/.codex/auth.json`:
+
+```json
+{
+  "OPENAI_API_KEY": "your-key"
+}
 ```
 
 To use another model the gateway serves, run `codex -m gpt-5.4`, or pick one with

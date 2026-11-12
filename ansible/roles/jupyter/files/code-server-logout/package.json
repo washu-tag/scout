@@ -1,0 +1,24 @@
+{
+  "name": "scout-logout",
+  "displayName": "Scout Log Out",
+  "description": "Stop your notebook server and log out of Scout.",
+  "publisher": "scout",
+  "version": "1.0.0",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "main": "./extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "scout.logout",
+        "title": "Log Out",
+        "category": "Scout",
+        "icon": "$(sign-out)"
+      }
+    ]
+  }
+}

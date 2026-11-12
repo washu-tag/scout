@@ -615,6 +615,29 @@ k3s_cluster:
     # jupyter_singleuser_environment:
     #   ANTHROPIC_BASE_URL: 'https://llm-gateway.example.org/anthropic'
 
+    # Claude Code model allowlist, enforced through managed settings (prefix match).
+    # jupyter_claude_available_models:
+    #   - claude-sonnet-5-direct
+    #   - claude-haiku-4-5-direct
+
+    # Starter files for users' home directories, copied in at pod start only when missing.
+    # jupyter_user_starter_files:
+    #   .claude/settings.json:
+    #     env:
+    #       ANTHROPIC_BASE_URL: 'https://llm-gateway.example.org/anthropic'
+    #       ANTHROPIC_AUTH_TOKEN: 'REPLACE_WITH_YOUR_GATEWAY_KEY'
+    #   .codex/config.toml: |
+    #     model = "gpt-5.4-mini"
+    #     model_provider = "gateway"
+    #
+    #     [model_providers.gateway]
+    #     name = "LLM gateway"
+    #     base_url = "https://llm-gateway.example.org/v1"
+    #     wire_api = "responses"
+    #     requires_openai_auth = true
+    #   .codex/auth.json:
+    #     OPENAI_API_KEY: 'REPLACE_WITH_YOUR_GATEWAY_KEY'
+
     # JupyterLab Extension Manager configuration
     # Controls whether users can install/manage JupyterLab extensions
     # jupyter_extension_manager_mode: 'disabled'  # Options: 'disabled' (Scout default), 'readonly', 'enabled'

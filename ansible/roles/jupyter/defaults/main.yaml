@@ -40,6 +40,7 @@ jupyter_prepuller_continuous: false
 #   'readonly' - Show installed extensions only, no installation allowed
 #   'enabled' - Full extension management (default JupyterLab behavior)
 # Note: In air-gapped environments, users cannot install extensions anyway due to lack of PyPI access
+# Any mode other than 'enabled' also blocks VS Code extension installs; built-in extensions still load.
 jupyter_extension_manager_mode: 'disabled'
 
 # Branding
@@ -55,6 +56,15 @@ jupyter_claude_managed_settings:
     deny:
       - Read(~/**/*.csv)
       - Read(~/**/*.tsv)
+
+# Claude Code model allowlist, merged into the managed settings as availableModels.
+# Entries match by prefix. Empty leaves model choice unrestricted.
+jupyter_claude_available_models: []
+
+# Starter files for each user's home directory, keyed by path relative to home. Each is
+# copied in at pod start only when the user has no file at that path; users own the copy,
+# so later changes reach new users only. Dicts and lists are written as JSON, strings as-is.
+jupyter_user_starter_files: {}
 
 # Jupyter resources
 jupyter_hub_resources_default:

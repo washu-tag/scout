@@ -588,6 +588,38 @@ jupyter_hub_resources:
 # air-gapped requirements.
 jupyter_singleuser_environment:
   ANTHROPIC_BASE_URL: 'https://llm-gateway.example.org/anthropic'
+
+# Optional Claude Code model allowlist, written to the managed settings as
+# availableModels, which users cannot override. Entries match by prefix. This limits
+# Claude Code only; restrict models on the gateway to cover every client.
+jupyter_claude_available_models:
+  - claude-opus-5-5-direct
+  - claude-sonnet-5-direct
+  - claude-haiku-4-5-direct
+
+# Optional starter files for each user's home directory, keyed by path relative to home.
+# Each is copied in at pod start only when the user has no file at that path, so users
+# own it after that: changes here reach new users only. Dicts and lists are written as
+# JSON, strings as-is. Users replace the key placeholders with their own keys.
+jupyter_user_starter_files:
+  .claude/settings.json:
+    env:
+      ANTHROPIC_BASE_URL: 'https://llm-gateway.example.org/anthropic'
+      ANTHROPIC_AUTH_TOKEN: 'REPLACE_WITH_YOUR_GATEWAY_KEY'
+      ANTHROPIC_DEFAULT_OPUS_MODEL: 'claude-opus-5-5-direct'
+      ANTHROPIC_DEFAULT_SONNET_MODEL: 'claude-sonnet-5-direct'
+      ANTHROPIC_DEFAULT_HAIKU_MODEL: 'claude-haiku-4-5-direct'
+  .codex/config.toml: |
+    model = "gpt-5.4-mini"
+    model_provider = "gateway"
+
+    [model_providers.gateway]
+    name = "LLM gateway"
+    base_url = "https://llm-gateway.example.org/v1"
+    wire_api = "responses"
+    requires_openai_auth = true
+  .codex/auth.json:
+    OPENAI_API_KEY: 'REPLACE_WITH_YOUR_GATEWAY_KEY'
 ```
 
 #### Other Services
@@ -969,7 +1001,7 @@ Set this to the staging node's IP (`/32`) or subnet CIDR to allow notebook pods 
 
 #### JupyterLab Extension Manager
 
-Control whether users can install and manage JupyterLab extensions:
+Control whether users can install and manage JupyterLab and VS Code extensions:
 
 ```yaml
 # Extension Manager configuration
@@ -981,6 +1013,8 @@ jupyter_extension_manager_mode: 'disabled'  # Options: 'disabled', 'readonly', '
 - **`disabled`** (Scout default, recommended): Completely hides the Extension Manager icon from JupyterLab. Users cannot see or access extension installation UI. This is the recommended setting for air-gapped and production environments where extension installation is not desired.
 - **`readonly`**: Shows the Extension Manager UI with a list of installed extensions. Users can enable or disable extensions that are already installed in the image, but cannot install new ones from PyPI.
 - **`enabled`**: Full extension management capabilities. Users can search for, install, and manage extensions from PyPI. Only recommended for development environments with internet access and where users need to customize their JupyterLab environment.
+
+The same setting covers VS Code. In `disabled` and `readonly`, VS Code loads only the extensions built into the image (Claude Code, Python, Jupyter); installing from the marketplace or from a `.vsix` file fails, and extensions a user installed earlier stop loading. In `enabled`, users can install VS Code extensions into their home directory, including by uploading a `.vsix` file.
 
 :::{note}
 In air-gapped environments, users cannot install extensions anyway due to lack of PyPI access. The `disabled` mode provides a cleaner user experience by hiding the non-functional Extension Manager UI.
