@@ -616,10 +616,8 @@ jupyter_user_starter_files:
     [model_providers.gateway]
     name = "LLM gateway"
     base_url = "https://llm-gateway.example.org/v1"
+    env_key = "LLM_GATEWAY_KEY"
     wire_api = "responses"
-    requires_openai_auth = true
-  .codex/auth.json:
-    OPENAI_API_KEY: 'REPLACE_WITH_YOUR_GATEWAY_KEY'
 ```
 
 #### Other Services

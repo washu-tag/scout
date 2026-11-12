@@ -463,9 +463,15 @@ singleuser:
         name: user-starter
         mountPath: /opt/scout/user-starter
         readOnly: true
-      code-server-logout:
+      code-server-logout-package:
         name: code-server-logout
-        mountPath: /usr/lib/code-server/lib/vscode/extensions/scout-logout
+        mountPath: /usr/lib/code-server/lib/vscode/extensions/scout-logout/package.json
+        subPath: package.json
+        readOnly: true
+      code-server-logout-main:
+        name: code-server-logout
+        mountPath: /usr/lib/code-server/lib/vscode/extensions/scout-logout/extension.js
+        subPath: extension.js
         readOnly: true
       tmux-conf:
         name: tmux-conf

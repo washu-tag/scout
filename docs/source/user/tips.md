@@ -108,10 +108,10 @@ models filled in. Replace `REPLACE_WITH_YOUR_GATEWAY_KEY` with your key and star
 }
 ```
 
-**Codex.** Codex reads the gateway from `~/.codex/config.toml` and your key from
-`~/.codex/auth.json`. If your site provides starter files, both exist the first time
-your server starts: replace `REPLACE_WITH_YOUR_GATEWAY_KEY` in `~/.codex/auth.json` with
-your key. Otherwise, add the gateway as a provider in `~/.codex/config.toml`:
+**Codex.** Codex reads the gateway from `~/.codex/config.toml` and your key from the
+environment variable named by `env_key` in that file. If your site provides a starter
+file, it exists the first time your server starts; otherwise, add the gateway as a
+provider in `~/.codex/config.toml`:
 
 ```toml
 model = "gpt-5.4-mini"
@@ -120,16 +120,14 @@ model_provider = "gateway"
 [model_providers.gateway]
 name = "LLM gateway"
 base_url = "https://llm-gateway.example.org/v1"
+env_key = "LLM_GATEWAY_KEY"
 wire_api = "responses"
-requires_openai_auth = true
 ```
 
-and put your key in `~/.codex/auth.json`:
+Then export your key under that name in `~/.bashrc` and open a new terminal:
 
-```json
-{
-  "OPENAI_API_KEY": "your-key"
-}
+```bash
+export LLM_GATEWAY_KEY="your-key"
 ```
 
 To use another model the gateway serves, run `codex -m gpt-5.4`, or pick one with

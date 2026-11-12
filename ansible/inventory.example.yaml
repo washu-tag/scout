@@ -633,10 +633,8 @@ k3s_cluster:
     #     [model_providers.gateway]
     #     name = "LLM gateway"
     #     base_url = "https://llm-gateway.example.org/v1"
+    #     env_key = "LLM_GATEWAY_KEY"
     #     wire_api = "responses"
-    #     requires_openai_auth = true
-    #   .codex/auth.json:
-    #     OPENAI_API_KEY: 'REPLACE_WITH_YOUR_GATEWAY_KEY'
 
     # JupyterLab Extension Manager configuration
     # Controls whether users can install/manage JupyterLab extensions
