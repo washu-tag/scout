@@ -124,6 +124,18 @@ config:
         layoutPolicy: PERMISSIVE
         contentDisposition: ATTACHMENT
 {% endfor %}
+{% if (enable_xnat | default(false) | bool) and xnat_s3_plugin_sources | length > 0 %}
+    - name: {{ xnat_s3_plugin_repo }}
+      format: raw
+      type: hosted
+      online: true
+      storage:
+        blobStoreName: default
+        strictContentTypeValidation: false
+        writePolicy: ALLOW_ONCE
+      raw:
+        contentDisposition: ATTACHMENT
+{% endif %}
 {% if nexus_maven_group is defined and nexus_maven_group %}
     - name: {{ nexus_maven_group.name }}
       format: maven

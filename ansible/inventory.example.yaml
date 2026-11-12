@@ -42,7 +42,7 @@ all:
     # the `all` level, NOT under k3s_cluster: the staging Nexus role derives one
     # Maven proxy per distinct coordinate `repo_url` so air-gapped deploys can
     # resolve the artifacts, and the staging host only sees `all` vars. Each entry
-    # names a source (file | url | coordinates | image) and optional config files;
+    # names a source (file | url | coordinates | s3 | image) and optional config files;
     # see ansible/roles/xnat/README.md. For air-gapped + a non-Central repo, set
     # `repo_url` AND re-run `make install-staging` after changing this list.
     # xnat_plugins:
@@ -59,6 +59,19 @@ all:
     #       - mechanism: extraConfig
     #         properties:
     #           my.plugin.setting: "value"
+    #
+    # A jar in a private S3 bucket (ADR 0040), declared the same way connected or
+    # air-gapped; air-gapped, `make install-staging` copies it into Nexus first.
+    # Publish each new build under a new key.
+    #   - name: my-s3-plugin
+    #     target: my-s3-plugin.jar
+    #     source:
+    #       type: s3
+    #       s3_uri: s3://my-bucket/plugins/my-s3-plugin-1.0.0.jar
+    # Read access to the bucket, for s3 plugins:
+    # xnat_plugin_s3_region: us-east-2
+    # xnat_plugin_s3_access_key_id: $(echo -n AKIA... | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # xnat_plugin_s3_secret_access_key: $(echo -n ... | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
 # The staging group contains the staging node that acts as a data diode
 # for air-gapped deployments.
