@@ -23,14 +23,15 @@ test('new users get iframeSandbox settings enabled', async ({ page }) => {
 
   await signInToScout(page, `https://chat.${hostname}/`, { username, password });
 
-  // Poll for the JWT the OAuth callback stores: OWUI 0.13 keeps its socket.io WebSocket
-  // in flight, so the page never reaches networkidle after sign-in.
+  // Poll for the JWT the OAuth callback stores (0.13's socket.io never lets networkidle settle).
+  // A poll mid-redirect loses its page context; treat it as not yet (expect.poll fails on a throw).
   let token: string | null = null;
   await expect
-    .poll(async () => (token = await page.evaluate(() => localStorage.getItem('token'))), {
-      message: 'OWUI JWT missing from localStorage',
-      timeout: 30000,
-    })
+    .poll(
+      async () =>
+        (token = await page.evaluate(() => localStorage.getItem('token')).catch(() => null)),
+      { message: 'OWUI JWT missing from localStorage', timeout: 30000 },
+    )
     .toBeTruthy();
 
   await expect
