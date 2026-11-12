@@ -177,7 +177,7 @@
       data: "{{ _jupyter_starter_data | default({}) | combine({'manifest': (_jupyter_starter_manifest | default([]) + ['']) | join('\n')}) }}"
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
-- name: Create ConfigMaps with the VS Code and terminal log out controls
+- name: Create ConfigMaps for VS Code and the terminal
   delegate_to: localhost
   kubernetes.core.k8s:
     state: present
@@ -197,6 +197,9 @@
     - name: scout-tmux-conf
       data:
         tmux.conf: "{{ lookup('file', 'tmux.conf') }}"
+    - name: scout-code-server-extensions
+      data:
+        extensions.json: '[]'
   loop_control:
     label: '{{ item.name }}'
 

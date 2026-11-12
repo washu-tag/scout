@@ -417,7 +417,9 @@ singleuser:
 {% if jupyter_extension_manager_mode != 'enabled' %}
       vscode-extensions:
         name: vscode-extensions
-        emptyDir: {}
+        configMap:
+          name: scout-code-server-extensions
+          defaultMode: 0644
 {% endif %}
       trino-ca:
         name: trino-ca

@@ -1,22 +1,43 @@
 const vscode = require('vscode');
 
+function logoutUrl() {
+  const base = process.env.JUPYTERHUB_PUBLIC_URL || process.env.JUPYTERHUB_PUBLIC_HUB_URL;
+  return base ? vscode.Uri.parse(new URL('logout', base).toString()) : null;
+}
+
+async function logout(url) {
+  const choice = await vscode.window.showWarningMessage(
+    'Log out of Scout?',
+    { modal: true, detail: 'This stops your server and any running notebooks or terminals.' },
+    'Log out',
+  );
+  if (choice !== 'Log out') {
+    return;
+  }
+  const opened = await vscode.env.openExternal(url);
+  if (opened) {
+    vscode.window.showInformationMessage(
+      'Logging out in a new tab. Once it finishes, you can close this tab.',
+    );
+  } else {
+    vscode.window.showErrorMessage(`Could not open the log out page. Go to ${url} to log out.`);
+  }
+}
+
 function activate(context) {
-  const hubUrl = process.env.JUPYTERHUB_PUBLIC_HUB_URL;
-  const logoutUrl = hubUrl ? vscode.Uri.parse(new URL('logout', hubUrl).toString()) : null;
+  const url = logoutUrl();
 
   context.subscriptions.push(
     vscode.commands.registerCommand('scout.logout', () => {
-      if (!logoutUrl) {
-        vscode.window.showErrorMessage(
-          'Scout log out is unavailable: JUPYTERHUB_PUBLIC_HUB_URL is not set.',
-        );
+      if (!url) {
+        vscode.window.showErrorMessage('Scout log out is unavailable: no JupyterHub URL is set.');
         return;
       }
-      vscode.env.openExternal(logoutUrl);
+      return logout(url);
     }),
   );
 
-  if (logoutUrl) {
+  if (url) {
     const item = vscode.window.createStatusBarItem(
       'scout.logout',
       vscode.StatusBarAlignment.Right,
