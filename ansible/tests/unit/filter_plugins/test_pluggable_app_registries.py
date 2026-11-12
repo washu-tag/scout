@@ -56,8 +56,17 @@ class TestLogins:
                 registries=[login("ghcr.io/a"), login("ghcr.io/b"), login("quay.io/c")]
             )
         )
-        assert [l["project"] for l in logins] == ["app-app", "app-app-2", "app-app-3"]
+        assert [l["project"] for l in logins] == ["app-app", "app-app_2", "app-app_3"]
         assert [l["host"] for l in logins] == ["ghcr.io", "ghcr.io", "quay.io"]
+
+    def test_later_projects_differ_from_other_apps_first(self):
+        two = pluggable_app_logins(
+            entry(registries=[login("ghcr.io/a"), login("quay.io/b")])
+        )
+        other = pluggable_app_logins(
+            entry(name="app-2", registries=[login("ghcr.io/c")])
+        )
+        assert two[1]["project"] != other[0]["project"]
 
     def test_local_chart_with_registries(self):
         logins = pluggable_app_logins(
@@ -141,7 +150,7 @@ class TestLoginFor:
             ("oci://ghcr.io/vendor/charts/app", "app-app"),
             ("ghcr.io/vendor/app:1.0", "app-app"),
             ("ghcr.io/vendor", "app-app"),
-            ("quay.io/anyone/thing@sha256:abc", "app-app-2"),
+            ("quay.io/anyone/thing@sha256:abc", "app-app_2"),
             ("ghcr.io/vendor-labs/app:1.0", None),
             ("ghcr.io/other/app", None),
             ("docker.io/vendor/app", None),
@@ -185,5 +194,5 @@ class TestImageRoutes:
         assert pluggable_app_image_routes(logins, "harbor.example.org") == {
             "ghcr.io/vendor/": "harbor.example.org/app-app/vendor/",
             "ghcr.io/vendor2/sub/": "harbor.example.org/app-app/vendor2/sub/",
-            "quay.io/": "harbor.example.org/app-app-2/",
+            "quay.io/": "harbor.example.org/app-app_2/",
         }

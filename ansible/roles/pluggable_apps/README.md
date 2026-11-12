@@ -22,7 +22,7 @@ An entry's `registry` or `registries` logins reach only its own pods, through a
   `<name>-registry`, with an `auths` entry per prefix, and the policy adds it to every new
   pod's `imagePullSecrets`.
 - **Air-gapped:** `roles/harbor/tasks/app_projects.yaml` gives each login a Harbor registry
-  endpoint and a private proxy project, `app-<name>` (then `app-<name>-2`, ...), and the
+  endpoint and a private proxy project, `app-<name>` (then `app-<name>_2`, ...), and the
   policy rewrites matching images to that project. The nodes pull it as Harbor's pull robot,
   which exists once the staging group sets `harbor_pull_robot_password` and `make
   install-staging` and `make install-k3s` have run. The role checks for the robot first.

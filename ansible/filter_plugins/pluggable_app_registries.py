@@ -100,8 +100,10 @@ def pluggable_app_logins(entry):
                 "prefixes": prefixes,
                 "username": str(login["username"]),
                 "password": str(login["password"]),
+                # An app name can't contain "_", so a later login's project can't
+                # be another app's first.
                 "project": (
-                    "app-%s" % app if index == 0 else "app-%s-%d" % (app, index + 1)
+                    "app-%s" % app if index == 0 else "app-%s_%d" % (app, index + 1)
                 ),
             }
         )

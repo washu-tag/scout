@@ -39,7 +39,7 @@ Secrets and database in place.
 
 | Field | Required | Notes |
 | --- | --- | --- |
-| `name` | yes | Helm release name. |
+| `name` | yes | Helm release name, unique among the entries. Lowercase letters, digits and hyphens, starting and ending with a letter or digit, at most 53 characters. |
 | `namespace` | yes | Created if missing. |
 | `chart` | unless `state: absent` | An `oci://` reference or a local chart directory. |
 | `version` | for `oci://` charts | The chart version to install. |
@@ -98,7 +98,7 @@ Only the app's pods use the logins. Before the install, Scout creates an admissi
   `<name>-registry`, in the app's namespace. The policy adds it to each pod's
   `imagePullSecrets`, so each image is pulled with the login that covers it.
 - **On an air-gapped site,** Scout gives each login a private proxy project in the staging
-  node's Harbor, `app-<name>` (then `app-<name>-2` and so on), holding the login. Harbor
+  node's Harbor, `app-<name>` (then `app-<name>_2` and so on), holding the login. Harbor
   checks the login against the registry and rejects one it can't use. The policy points the
   images at that project: `ghcr.io/example-org/app:1.0` becomes
   `<harbor host>/app-<name>/example-org/app:1.0`. The token stays in Harbor, and the nodes
