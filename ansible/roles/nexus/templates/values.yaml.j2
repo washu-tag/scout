@@ -19,6 +19,10 @@ ingress:
     - "{{ nexus_hostname }}"
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
+# Nexus 3.98+ runs Groovy scripts only with this, and the chart's config Job runs
+# one to set the cleanup policy.
+properties:
+  - nexus.scripts.allowExecution=true
 config:
   enabled: true
   anonymous:
