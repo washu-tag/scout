@@ -195,6 +195,18 @@
         "**Image-pin reminder:** `nexus_image_tag` overrides the chart's appVersion, so a chart bump alone keeps the pinned image. Keep the `-ubi` suffix: the chart appends it only when the tag is unset, and the bare tag is the Alpine build. Drop the pin once the chart's default catches up."
       ]
     },
+    {
+      "matchDepNames": ["harbor", "goharbor/harbor-core"],
+      "groupName": "Harbor chart + images",
+      "prBodyNotes": [
+        "**Image-pin reminder:** `harbor_image_tag` sets every Harbor image's tag, so a chart bump alone keeps the pinned images. Keep it on the chart's Harbor minor (chart 1.19.x runs Harbor 2.15.x), or drop the pin once the chart's default catches up."
+      ]
+    },
+    // harbor_image_tag must stay on the chart's Harbor minor; move this with the chart.
+    {
+      "matchDepNames": ["goharbor/harbor-core"],
+      "allowedVersions": "/^v2\\.15\\./"
+    },
     // A new Postgres major is a database major upgrade, which needs planning;
     // keep Renovate on the running major. To move majors, change
     // postgres_image_tag and this regex together.

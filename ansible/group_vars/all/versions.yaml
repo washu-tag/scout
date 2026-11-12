@@ -151,7 +151,11 @@ alloy_helm_chart_version: 1.12.1
 
 # Container Registry
 # renovate: datasource=helm registryUrl=https://helm.goharbor.io depName=harbor
-harbor_version: 1.19.2
+harbor_version: 1.19.4
+# Every Harbor image runs this tag: chart 1.19.4 ships 2.15.4, which still trusts the compromised
+# eMudhra roots; 2.15.5 is fixed. Drop the pin once the chart's default catches up.
+# renovate: datasource=docker depName=goharbor/harbor-core
+harbor_image_tag: v2.15.5
 
 # Package Proxy - Nexus Repository Manager
 # renovate: datasource=helm registryUrl=https://stevehipwell.github.io/helm-charts/ depName=nexus3
