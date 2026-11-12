@@ -15,6 +15,7 @@ spec:
     # - frame-src: report viewer, plus the login redirect chain the chat tool
     #   follows in a hidden frame to renew a session
     # - script/style: allows inline (required by Open WebUI frontend)
+    # - frame-ancestors: only the launchpad shell
     contentSecurityPolicy: >-
       default-src 'self';
       script-src 'self' 'unsafe-inline' 'unsafe-eval';
@@ -24,4 +25,4 @@ spec:
       connect-src 'self' ws: wss: {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
       frame-src 'self' https://report-viewer.{{ server_hostname }} {{ keycloak_base_url }};
       form-action 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
-      frame-ancestors 'none'
+      frame-ancestors https://{{ server_hostname }}

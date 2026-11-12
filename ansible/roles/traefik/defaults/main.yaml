@@ -17,7 +17,7 @@ traefik_helm_job_timeout: 300
 # rather than a round number, and not 0s, which is the CVE-2024-28869 shape.
 traefik_read_timeout: 1h
 
-traefik_embeddable_frame_ancestors: 'https://chat.{{ server_hostname }}'
+traefik_embeddable_frame_ancestors: 'https://chat.{{ server_hostname }} https://{{ server_hostname }}'
 # Inventory requirements depend on tls_mode:
 #
 # tls_mode: file

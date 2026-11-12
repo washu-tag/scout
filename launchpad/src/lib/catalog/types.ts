@@ -65,6 +65,10 @@ export interface Catalog {
   diagnostics: Diagnostic[];
 }
 
+// Where a chip leads: a Scout service on its own subdomain, a launchpad page,
+// or an outside URL.
+export type ChipKind = 'service' | 'page' | 'external';
+
 // The client-serializable render model: names instead of components, hrefs
 // instead of link descriptors, already audience-filtered and laid out.
 export interface RenderChip {
@@ -77,6 +81,7 @@ export interface RenderChip {
   icon: string;
   iconData?: string;
   tone: ToneName;
+  kind: ChipKind;
   href: string;
   newTab: boolean;
 }

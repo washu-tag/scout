@@ -68,7 +68,7 @@ basics on an older launchpad.
 | `icon`           | no       | `app`     | A name from the [icon registry](#icons-and-tones).                                                                                               |
 | `iconData`       | no       | —         | `data:image/(png\|jpeg\|svg+xml);base64,…`, max 16 KiB. Wins over `icon`.                                                                        |
 | `tone`           | no       | `indigo`  | One of `indigo emerald amber violet rose cyan red orange slate`.                                                                                 |
-| `newTab`         | no       | `true`    | Open the destination in a new tab.                                                                                                               |
+| `newTab`         | no       | `true`    | Open a `url` destination in a new tab. Other destinations open inside the launchpad — see [links](#links).                                       |
 | `group`          | no       | `more`    | Which section the chip renders in.                                                                                                               |
 | `weight`         | no       | `100`     | Lower renders first; ties break by title, then id.                                                                                               |
 | `audience`       | no       | `user`    | `user` (any authenticated user) or `admin`. This is display filtering only — your service must still enforce its own access.                     |
@@ -98,6 +98,14 @@ an unauthenticated UI). Only `http(s)` URLs, rooted paths, and DNS-label subdoma
 validate; anything else (e.g. `javascript:`) rejects the whole chip. A rooted path
 means exactly one leading slash — protocol-relative `//host` values, which the browser
 would resolve off-site, are rejected too.
+
+Every chip also appears in the launchpad's navigation rail. A subdomain destination
+opens inside the launchpad, framed next to the rail, so your service must allow the
+launchpad to frame it. On-prem, the `security-headers` middleware from
+[service authentication](service-authentication.md) does that. A path destination is a
+launchpad page and renders with the rail. A `url` destination opens on its own,
+following `newTab`. Sites whose edge does not allow framing set `embedApps: false` on
+the launchpad chart; subdomain destinations then open on their own too.
 
 ## Groups: Defining a section
 

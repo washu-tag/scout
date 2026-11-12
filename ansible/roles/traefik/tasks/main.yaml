@@ -121,6 +121,8 @@
         headers:
           stsSeconds: 31536000
           stsIncludeSubdomains: true
+          # frame-ancestors admits only the launchpad, which frames Scout services.
+          # Browsers ignore X-Frame-Options when frame-ancestors is present.
           frameDeny: true
           contentTypeNosniff: true
           contentSecurityPolicy: >-
@@ -131,7 +133,8 @@
             font-src 'self' data:;
             connect-src 'self' ws: wss: {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
             form-action 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
-            frame-ancestors 'none'
+            frame-src 'self' https://*.{{ server_hostname }};
+            frame-ancestors https://{{ server_hostname }}
           customResponseHeaders:
             Permissions-Policy: 'camera=(), microphone=(), geolocation=(), payment=()'
             Cross-Origin-Opener-Policy: 'same-origin'
@@ -170,8 +173,8 @@
             Server: ''
 
 # Same-origin framing: for services whose own UI frames itself in an iframe
-# (e.g. XNAT). Identical to security-headers but allows same-origin framing —
-# frame-ancestors 'self' + X-Frame-Options SAMEORIGIN instead of 'none'/DENY.
+# (e.g. XNAT). Identical to security-headers but also allows same-origin
+# framing: frame-ancestors 'self' + X-Frame-Options SAMEORIGIN.
 - name: Apply same-origin security headers middleware
   kubernetes.core.k8s:
     state: present
@@ -196,7 +199,7 @@
             font-src 'self' data:;
             connect-src 'self' ws: wss: {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
             form-action 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
-            frame-ancestors 'self'
+            frame-ancestors 'self' https://{{ server_hostname }}
           customResponseHeaders:
             Permissions-Policy: 'camera=(), microphone=(), geolocation=(), payment=()'
             Cross-Origin-Opener-Policy: 'same-origin'
@@ -229,8 +232,8 @@
 # since report-viewer's openResult.ts always sets rel="noopener
 # noreferrer" on the anchor it opens this with.
 #
-# Otherwise identical to security-headers-sameorigin above: frame-ancestors
-# 'self' + X-Frame-Options SAMEORIGIN instead of 'none'/DENY.
+# Otherwise identical to security-headers-sameorigin above, except that the
+# launchpad cannot frame it.
 - name: Apply same-origin, popup-friendly security headers middleware
   kubernetes.core.k8s:
     state: present

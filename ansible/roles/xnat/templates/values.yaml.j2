@@ -64,8 +64,8 @@ ingress:
     # same-origin security-headers variant. The openid plugin's /openid-login is
     # an app-level callback behind this middleware, not an open path.
     # NB: XNAT's own UI frames same-origin pages, so it uses the -sameorigin
-    # headers (frame-ancestors 'self') rather than the global 'none'/DENY, which
-    # would trip "violates frame-ancestors 'none'" in the browser.
+    # headers (frame-ancestors 'self' plus the launchpad) rather than the global
+    # launchpad-only policy, which would trip "violates frame-ancestors".
     traefik.ingress.kubernetes.io/router.middlewares: >-
       kube-system-oauth2-proxy-error@kubernetescrd,
       kube-system-oauth2-proxy-auth@kubernetescrd,

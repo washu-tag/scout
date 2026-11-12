@@ -3,6 +3,7 @@ import { defaultColumns } from './schema';
 import type {
   Catalog,
   Chip,
+  ChipKind,
   ChipLink,
   Diagnostic,
   Group,
@@ -29,6 +30,11 @@ export function resolveHref(link: ChipLink, origin: Origin): string {
     return `${origin.protocol}://${link.subdomain}.${origin.host}${link.path ?? ''}`;
   }
   return link.path ?? '/';
+}
+
+export function chipKind(link: ChipLink): ChipKind {
+  if (link.url) return 'external';
+  return link.subdomain ? 'service' : 'page';
 }
 
 function byWeightTitleId(a: { weight: number; title: string; id: string }, b: typeof a): number {
@@ -134,6 +140,7 @@ export function assemble(catalog: Catalog, options: AssembleOptions): RenderMode
           icon: chip.icon,
           iconData: chip.iconData,
           tone: chip.tone,
+          kind: chipKind(chip.link),
           href: resolveHref(chip.link, origin),
           newTab: chip.newTab,
         })),

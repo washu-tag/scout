@@ -84,6 +84,8 @@ spec:
             - name: SCOUT_DOCS_URL
               value: {{ .Values.docsUrl | quote }}
             {{- end }}
+            - name: LAUNCHPAD_EMBED_APPS
+              value: {{ .Values.embedApps | quote }}
             {{- with .Values.env }}
             {{- toYaml . | nindent 12 }}
             {{- end }}

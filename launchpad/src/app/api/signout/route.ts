@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-// Hands the client the oauth2-proxy (ingress) sign-out URL so the dropdown can
+// Hands the client the oauth2-proxy (ingress) sign-out URL so the account menu can
 // redirect there after next-auth has cleared its own session.
 //
 // Deliberately NOT under /api/auth: a route there shadows next-auth's own

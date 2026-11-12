@@ -1,14 +1,9 @@
-import { headers } from 'next/headers';
 import { getServerSession } from 'next-auth';
-import HomeClient from './HomeClient';
+import { headers } from 'next/headers';
 import { assemble, type Origin } from '@/lib/catalog/assemble';
 import { loadCatalog } from '@/lib/catalog/load';
+import type { RenderModel } from '@/lib/catalog/types';
 import { authOptions } from '@/lib/auth';
-import { getDocsUrl } from '@/lib/docsUrl';
-
-// Force dynamic rendering: the catalog, the session, and the request host are
-// all read at request time.
-export const dynamic = 'force-dynamic';
 
 // Subdomain chip links resolve against the request's own host — what Traefik
 // forwards is what the browser sees (ADR 0034). The configured NextAuth URL
@@ -30,23 +25,20 @@ async function requestOrigin(): Promise<Origin> {
   }
 }
 
-export default async function Home() {
+// The catalog as this request's viewer sees it: audience-filtered, links
+// resolved against the request host.
+export async function requestModel(): Promise<RenderModel> {
   const origin = await requestOrigin();
   // Dev-only override, mirroring the client-side NEXT_PUBLIC_DEV_ADMIN gate.
   const devAdmin =
     process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEV_ADMIN === 'true';
   const session = await getServerSession(authOptions);
   const isAdmin = devAdmin || session?.user?.isAdmin === true;
+  return assemble(await loadCatalog(), { origin, isAdmin });
+}
 
-  const catalog = await loadCatalog();
-  const model = assemble(catalog, { origin, isAdmin });
-
-  return (
-    <HomeClient
-      model={model}
-      scoutEnv={process.env.SCOUT_ENV}
-      deployerName={process.env.DEPLOYER_NAME}
-      docsUrl={getDocsUrl()}
-    />
-  );
+// Off where the edge does not let the launchpad frame Scout services; chips
+// for services then open the service itself.
+export function embedApps(): boolean {
+  return process.env.LAUNCHPAD_EMBED_APPS !== 'false';
 }

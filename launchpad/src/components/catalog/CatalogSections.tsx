@@ -3,6 +3,7 @@
 import React from 'react';
 import { HiArrowRight, HiOutlineDocumentText, HiOutlineExclamation } from 'react-icons/hi';
 import { DEFAULT_ICON, ICONS } from '@/lib/catalog/icons';
+import { ChipAnchor } from '@/components/shell/ChipAnchor';
 import { TONES } from '@/lib/catalog/tones';
 import type { RenderChip, RenderGroup, RenderModel } from '@/lib/catalog/types';
 
@@ -22,7 +23,7 @@ const TILE_COLS: Record<number, string> = {
   4: 'grid-cols-4',
 };
 
-function ChipIcon({ chip, className }: { chip: RenderChip; className: string }) {
+export function ChipIcon({ chip, className }: { chip: RenderChip; className: string }) {
   if (chip.iconData) {
     // Data URIs render via <img> only — never inlined into the DOM — so
     // embedded SVG stays inert (ADR 0034).
@@ -33,17 +34,12 @@ function ChipIcon({ chip, className }: { chip: RenderChip; className: string }) 
   return <Icon className={className} />;
 }
 
-function linkTarget(chip: RenderChip) {
-  return chip.newTab ? { target: '_blank', rel: 'noopener noreferrer' } : {};
-}
-
 // Large card — the Core Services idiom.
 const ChipCard = ({ chip }: { chip: RenderChip }) => {
   const tone = TONES[chip.tone];
   return (
-    <a
-      href={chip.href}
-      {...linkTarget(chip)}
+    <ChipAnchor
+      chip={chip}
       className={`group block p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl transition-all duration-200 no-underline hover:shadow-lg hover:-translate-y-0.5 ${tone.hoverBorder} ${tone.hoverShadow}`}
     >
       <div className="flex items-center gap-3 mb-4">
@@ -65,7 +61,7 @@ const ChipCard = ({ chip }: { chip: RenderChip }) => {
         <span className="group-hover:translate-x-0.5 transition-transform duration-200">Open</span>
         <HiArrowRight className="transform group-hover:translate-x-1 transition-transform duration-200 ease-out" />
       </div>
-    </a>
+    </ChipAnchor>
   );
 };
 
@@ -75,9 +71,8 @@ const ChipCard = ({ chip }: { chip: RenderChip }) => {
 const ChipCompact = ({ chip, arrow }: { chip: RenderChip; arrow: boolean }) => {
   const tone = TONES[chip.tone];
   return (
-    <a
-      href={chip.href}
-      {...linkTarget(chip)}
+    <ChipAnchor
+      chip={chip}
       className={`group flex items-center gap-3 p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 no-underline ${tone.hoverBorder} ${tone.hoverShadow}`}
     >
       <div
@@ -100,7 +95,7 @@ const ChipCompact = ({ chip, arrow }: { chip: RenderChip; arrow: boolean }) => {
           className={`text-base ${tone.cta} group-hover:translate-x-1 transition-transform duration-200 flex-shrink-0`}
         />
       )}
-    </a>
+    </ChipAnchor>
   );
 };
 
