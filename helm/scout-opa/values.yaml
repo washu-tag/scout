@@ -23,6 +23,7 @@ resources:
 # files/main.rego (authoritative Trino policy, ADR 0020).
 policy:
   rego: ''
+  authz: ''
 data:
   json: '{}'
 config:

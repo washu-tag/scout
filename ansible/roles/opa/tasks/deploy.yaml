@@ -126,6 +126,7 @@
           memory: '{{ opa_memory_limit }}'
       policy:
         rego: "{{ lookup('file', opa_policy_path) }}"
+        authz: "{{ lookup('file', scout_repo_dir + '/helm/scout-opa/files/authz.rego') }}"
       data:
         json: '{{ opa_data_json }}'
       config:
