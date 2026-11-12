@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { assemble, type Origin } from './assemble';
 import { CATALOG_API_VERSION, CATALOG_KIND, validateDocument } from './schema';
-import { chipTarget, embeddedChip, shellSections } from './shell';
+import { chipForUrl, chipTarget, embeddedChip, frameUrl, shellSections } from './shell';
 import type { Catalog } from './types';
 
 const ORIGIN: Origin = { protocol: 'https', host: 'scout.example.edu' };
@@ -112,6 +112,82 @@ describe('chipTarget', () => {
       internal: false,
       newTab: true,
     });
+  });
+});
+
+describe('frameUrl', () => {
+  const chat = shellSections(assemble(CATALOG, { origin: ORIGIN, isAdmin: false }))[0].chips[0];
+
+  it('opens a deep link on the chip origin', () => {
+    assert.strictEqual(
+      frameUrl(chat, '/c/123?x=1#m'),
+      'https://chat.scout.example.edu/c/123?x=1#m',
+    );
+  });
+
+  it('falls back to the chip destination for anything off its origin', () => {
+    for (const path of [
+      null,
+      '',
+      'c/123',
+      '//evil.example/x',
+      'https://evil.example/x',
+      '/\\evil.example',
+    ]) {
+      assert.strictEqual(frameUrl(chat, path), chat.href, String(path));
+    }
+  });
+});
+
+describe('chipForUrl', () => {
+  const sections = shellSections(
+    assemble(
+      catalogFrom({
+        chips: [
+          {
+            id: 'orchestrator',
+            title: 'Orchestrator',
+            link: { subdomain: 'temporal', path: '/auth/sso' },
+          },
+          {
+            id: 'rads',
+            title: 'RADS',
+            link: { subdomain: 'playbooks', path: '/voila/render/rads.ipynb' },
+            weight: 10,
+          },
+          {
+            id: 'followup',
+            title: 'Follow-up',
+            link: { subdomain: 'playbooks', path: '/voila/render/followup.ipynb' },
+            weight: 20,
+          },
+          { id: 'guide', title: 'Guide', link: { url: 'https://docs.example.edu' } },
+        ],
+      }),
+      { origin: ORIGIN, isAdmin: false },
+    ),
+  );
+  const find = (url: string) => chipForUrl(sections, new URL(url), true)?.id;
+
+  it('picks the chip whose path prefixes the URL, else the first on the host', () => {
+    assert.strictEqual(
+      find('https://playbooks.scout.example.edu/voila/render/followup.ipynb?x=1'),
+      'followup',
+    );
+    assert.strictEqual(find('https://playbooks.scout.example.edu/voila/tree'), 'rads');
+    assert.strictEqual(
+      find('https://temporal.scout.example.edu/namespaces/default/workflows'),
+      'orchestrator',
+    );
+  });
+
+  it('finds nothing off the catalog hosts, or with embedding off', () => {
+    assert.strictEqual(find('https://report-viewer.scout.example.edu/'), undefined);
+    assert.strictEqual(find('https://docs.example.edu/'), undefined);
+    assert.strictEqual(
+      chipForUrl(sections, new URL('https://temporal.scout.example.edu/'), false),
+      undefined,
+    );
   });
 });
 

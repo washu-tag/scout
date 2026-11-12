@@ -45,6 +45,43 @@ export function chipTarget(chip: RenderChip, embedApps: boolean): ChipTarget {
   return { href: chip.href, internal: false, newTab: chip.newTab };
 }
 
+// A deep link's path (with query) on the chip's own origin. Anything that would
+// leave that origin falls back to the chip's destination.
+export function frameUrl(chip: RenderChip, path: string | null): string {
+  if (!path || !path.startsWith('/') || path.startsWith('//')) return chip.href;
+  try {
+    const base = new URL(chip.href);
+    const url = new URL(path, base);
+    return url.origin === base.origin ? url.href : chip.href;
+  } catch {
+    return chip.href;
+  }
+}
+
+// The framed app that owns a Scout service URL: among the chips on its host, the
+// one whose own path is the longest prefix of the URL's path, else the first.
+export function chipForUrl(
+  sections: ShellSection[],
+  url: URL,
+  embedApps: boolean,
+): RenderChip | undefined {
+  if (!embedApps) return undefined;
+  const candidates = sections
+    .flatMap((section) => section.chips)
+    .filter((chip) => chip.kind === 'service' && new URL(chip.href).host === url.host);
+  let best: RenderChip | undefined;
+  let bestLength = -1;
+  for (const chip of candidates) {
+    const prefix = new URL(chip.href).pathname.replace(/\/$/, '');
+    const matches = url.pathname === prefix || url.pathname.startsWith(`${prefix}/`);
+    if (matches && prefix.length > bestLength) {
+      best = chip;
+      bestLength = prefix.length;
+    }
+  }
+  return best ?? candidates[0];
+}
+
 export function embeddedChip(
   sections: ShellSection[],
   id: string,

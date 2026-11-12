@@ -8,7 +8,7 @@ import { authOptions } from '@/lib/auth';
 // Subdomain chip links resolve against the request's own host — what Traefik
 // forwards is what the browser sees (ADR 0034). The configured NextAuth URL
 // is only the header-less fallback.
-async function requestOrigin(): Promise<Origin> {
+export async function requestOrigin(): Promise<Origin> {
   const requestHeaders = await headers();
   const host = requestHeaders.get('x-forwarded-host') ?? requestHeaders.get('host');
   const forwardedProto = requestHeaders.get('x-forwarded-proto');

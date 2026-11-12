@@ -2,14 +2,14 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { FaBook, FaMoon, FaSignOutAlt, FaSun } from 'react-icons/fa';
 import { HiOutlineExternalLink } from 'react-icons/hi';
 import { ChipIcon } from '@/components/catalog/CatalogSections';
 import { ChipAnchor, EmbedAppsContext } from '@/components/shell/ChipAnchor';
 import { DEFAULT_ICON, ICONS } from '@/lib/catalog/icons';
-import { chipTarget, embeddedChip, type ShellSection } from '@/lib/catalog/shell';
+import { chipTarget, embeddedChip, frameUrl, type ShellSection } from '@/lib/catalog/shell';
 import { TONES, type ToneName } from '@/lib/catalog/tones';
 import type { RenderChip } from '@/lib/catalog/types';
 
@@ -98,11 +98,26 @@ export default function ShellClient({
     : null;
   const active = appId ? embeddedChip(sections, appId, embedApps) : undefined;
 
+  // A deep link (/app/<id>?path=...) opens the app at that page; its fragment
+  // rides on the launchpad URL.
+  const deepPath = useSearchParams().get('path');
+  const activeSrc =
+    active && deepPath
+      ? frameUrl(active, deepPath + (typeof window === 'undefined' ? '' : window.location.hash))
+      : active?.href;
+
   // Every app opened this visit keeps its frame, so switching back resumes it.
-  const [opened, setOpened] = useState<RenderChip[]>(active ? [active] : []);
+  const [opened, setOpened] = useState<{ chip: RenderChip; src: string }[]>(
+    active && activeSrc ? [{ chip: active, src: activeSrc }] : [],
+  );
   const [loaded, setLoaded] = useState<string[]>([]);
-  if (active && !opened.some((chip) => chip.id === active.id)) {
-    setOpened([...opened, active]);
+  if (active && activeSrc) {
+    const frame = opened.find((entry) => entry.chip.id === active.id);
+    if (!frame) {
+      setOpened([...opened, { chip: active, src: activeSrc }]);
+    } else if (deepPath && frame.src !== activeSrc) {
+      setOpened(opened.map((entry) => (entry === frame ? { ...entry, src: activeSrc } : entry)));
+    }
   }
 
   const skipAuth =
@@ -429,10 +444,10 @@ export default function ShellClient({
         </div>
 
         <main className="relative flex-1 overflow-hidden">
-          {opened.map((chip) => (
+          {opened.map(({ chip, src }) => (
             <iframe
               key={chip.id}
-              src={chip.href}
+              src={src}
               title={chip.title}
               allow="clipboard-read; clipboard-write; fullscreen"
               aria-hidden={chip.id !== active?.id}

@@ -107,6 +107,11 @@ launchpad page and renders with the rail. A `url` destination opens on its own,
 following `newTab`. Sites whose edge does not allow framing set `embedApps: false` on
 the launchpad chart; subdomain destinations then open on their own too.
 
+Links into your service that arrive from outside Scout, such as a bookmark or a link
+someone shared, open inside the launchpad at the same page. On-prem, the edge sends
+them to the launchpad, which frames the chip on that subdomain whose path matches
+best. A subdomain with no chip opens on its own.
+
 ## Groups: Defining a section
 
 Chips are grouped on the page into sections called Groups. A chip references a group id;
