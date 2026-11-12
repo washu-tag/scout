@@ -48,6 +48,18 @@
             size: '{{ harbor_storage_size }}'
       chartmuseum:
         enabled: false # Cannot proxy Helm charts
+      # Every image the chart can run, so a site that turns on nginx or metrics gets the same build.
+      nginx: { image: { tag: '{{ harbor_image_tag }}' } }
+      portal: { image: { tag: '{{ harbor_image_tag }}' } }
+      core: { image: { tag: '{{ harbor_image_tag }}' } }
+      jobservice: { image: { tag: '{{ harbor_image_tag }}' } }
+      registry:
+        registry: { image: { tag: '{{ harbor_image_tag }}' } }
+        controller: { image: { tag: '{{ harbor_image_tag }}' } }
+      trivy: { image: { tag: '{{ harbor_image_tag }}' } }
+      database: { internal: { image: { tag: '{{ harbor_image_tag }}' } } }
+      redis: { internal: { image: { tag: '{{ harbor_image_tag }}' } } }
+      exporter: { image: { tag: '{{ harbor_image_tag }}' } }
 
 - name: Wait for Harbor to be ready
   ansible.builtin.uri:
