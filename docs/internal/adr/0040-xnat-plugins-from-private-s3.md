@@ -60,9 +60,9 @@ key were overwritten, a connected site would install the new object on its next 
 start, while an air-gapped site would keep the copy it made first. A bad copy is
 replaced by deleting it in Nexus and running `make install-staging` again.
 
-**No checksum pinning.** S3 plugins don't take `sha256`. The chart's `source: s3`
-doesn't check one, and Scout pins none of its other plugins either. Integrity rests
-on TLS and on the bucket's access control.
+**No checksum pinning.** S3 plugins don't take `sha256`, and the role rejects one.
+The chart's `source: s3` doesn't check it, and Scout pins none of its other plugins
+either. Integrity rests on TLS and on the bucket's access control.
 
 ### GitOps (ADR 0031)
 

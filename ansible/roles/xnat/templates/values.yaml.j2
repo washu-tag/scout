@@ -160,7 +160,7 @@ plugins:
       name: xnat-plugin-{{ p.name }}-jar
       key: {{ p.source.secret.key | default('plugin.jar') }}
 {% endif %}
-{% if p.source.sha256 | default('') and p.source.type != 's3' %}
+{% if p.source.sha256 | default('') %}
     sha256: '{{ p.source.sha256 }}'
 {% endif %}
 {% endif %}

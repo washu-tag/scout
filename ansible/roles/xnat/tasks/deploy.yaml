@@ -98,6 +98,19 @@
       need package_proxy_mode: nexus.
     quiet: true
 
+- name: Reject a sha256 on s3 plugins
+  vars:
+    _s3_with_sha256: >-
+      {{ xnat_plugins_all | selectattr('source.type', 'equalto', 's3')
+         | selectattr('source.sha256', 'defined') | map(attribute='name') | list }}
+  ansible.builtin.assert:
+    that:
+      - _s3_with_sha256 | length == 0
+    fail_msg: >
+      type: s3 plugins don't take sha256, because the chart's S3 install doesn't
+      check one (ADR 0040). Remove it from {{ _s3_with_sha256 | join(', ') }}.
+    quiet: true
+
 - name: Validate s3 plugins on connected clusters
   when: xnat_s3_plugins_direct | bool
   ansible.builtin.assert:
