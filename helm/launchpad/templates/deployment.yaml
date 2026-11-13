@@ -131,6 +131,13 @@ spec:
               path: /healthz
               port: 8080
             initialDelaySeconds: 5
+          # /healthz answers 200 only after the first sync, so the pod takes
+          # traffic once the discovered chips are on disk.
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 5
           resources:
             {{- toYaml .Values.catalog.discovery.resources | nindent 12 }}
           volumeMounts:
