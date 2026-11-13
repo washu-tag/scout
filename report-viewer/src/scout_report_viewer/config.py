@@ -80,6 +80,12 @@ class Settings(BaseSettings):
     # is truncated and the SPA shows a "showing first N" banner.
     max_cohort_rows: int = 50000
 
+    # Query-result cache (cache.py). Empty URL or a TTL of 0 turns it off.
+    valkey_url: str = ""
+    valkey_password: str = ""
+    valkey_timeout_seconds: float = 0.5
+    cache_ttl_seconds: int = 4 * 3600
+
     @model_validator(mode="after")
     def _issuer_required_with_jwks(self) -> "Settings":
         if self.oidc_jwks_url and not self.oidc_issuer:

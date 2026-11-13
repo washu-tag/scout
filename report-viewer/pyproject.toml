@@ -42,6 +42,8 @@ dependencies = [
     # Server-side render check for a saved spec, before persisting it.
     # >=1.9 defaults to Vega-Lite v6, matching the frontend and stamped schema.
     "vl-convert-python>=1.9.0",
+    # Query-result cache in Valkey (asyncio client, Redis protocol).
+    "redis>=5",
 ]
 
 [project.optional-dependencies]
