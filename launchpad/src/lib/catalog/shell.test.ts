@@ -7,6 +7,7 @@ import {
   chipTarget,
   embeddedChip,
   frameUrl,
+  isChipOrigin,
   shellLocation,
   shellSections,
 } from './shell';
@@ -163,6 +164,13 @@ describe('shellLocation', () => {
     assert.strictEqual(frameUrl(chat, address.searchParams.get('path')! + address.hash), href);
   });
 
+  it('takes the path from a subdomain of the chip host', () => {
+    assert.strictEqual(
+      shellLocation(chat, 'https://alice.chat.scout.example.edu/user/alice/lab'),
+      '/app/chat?path=%2Fuser%2Falice%2Flab',
+    );
+  });
+
   it('ignores anything that is not a location on the chip origin', () => {
     for (const href of [
       undefined,
@@ -171,8 +179,28 @@ describe('shellLocation', () => {
       'https://evil.example/c/123',
       'https://jupyter.scout.example.edu/lab',
       'http://chat.scout.example.edu/c/123',
+      'https://chat.scout.example.edu.evil.example/c/123',
+      'https://xchat.scout.example.edu/c/123',
+      'https://chat.scout.example.edu:8443/c/123',
     ]) {
       assert.strictEqual(shellLocation(chat, href), null, String(href));
+    }
+  });
+});
+
+describe('isChipOrigin', () => {
+  const chat = shellSections(assemble(CATALOG, { origin: ORIGIN, isAdmin: false }))[0].chips[0];
+
+  it('accepts the chip origin and its subdomains only', () => {
+    assert.strictEqual(isChipOrigin(chat, 'https://chat.scout.example.edu'), true);
+    assert.strictEqual(isChipOrigin(chat, 'https://alice.chat.scout.example.edu'), true);
+    for (const origin of [
+      'null',
+      '',
+      'https://scout.example.edu',
+      'https://xchat.scout.example.edu',
+    ]) {
+      assert.strictEqual(isChipOrigin(chat, origin), false, origin);
     }
   });
 });

@@ -13,6 +13,7 @@ import {
   chipTarget,
   embeddedChip,
   frameUrl,
+  isChipOrigin,
   shellLocation,
   type ShellSection,
 } from '@/lib/catalog/shell';
@@ -31,6 +32,7 @@ const ACCOUNT_MENU = '@account';
 const SESSION_CHECK_MS = 60_000;
 const RECOVERY_KEY = 'scout-shell-session-recovery';
 const RECOVERY_BACKOFF_MS = 60_000;
+const LEAVING_TTL_MS = 30_000;
 
 const MENU =
   'fixed left-[76px] z-30 w-64 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-900';
@@ -115,6 +117,9 @@ export default function ShellClient({
   // The page each framed app last reported, so the address bar can follow it.
   const [locations, setLocations] = useState<Record<string, string>>({});
   const frames = useRef(new Map<string, HTMLIFrameElement>());
+  // Where a frame said it is navigating; used if the frame then loads a page that
+  // can't report itself.
+  const leaving = useRef(new Map<string, { address: string; at: number }>());
 
   // Every app opened this visit keeps its frame, so switching back resumes it.
   const [opened, setOpened] = useState<{ chip: RenderChip; src: string }[]>(
@@ -185,19 +190,26 @@ export default function ShellClient({
     if (activeTitle) document.title = `${activeTitle} · Scout`;
   }, [activeTitle]);
 
-  // Apps report their own address with a `scout:location` message. Only the
-  // app's own frame, from the chip's origin, is believed; content an app nests
-  // inside its frame has a different source and is ignored.
+  // Apps report their own address with a `scout:location` message, and where a
+  // navigation is headed with `scout:leaving`. Only the app's own frame, from the
+  // chip's origin, is believed; content an app nests inside its frame has a
+  // different source and is ignored.
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
-      if (event.data?.type !== 'scout:location') return;
+      const type = event.data?.type;
+      if (type !== 'scout:location' && type !== 'scout:leaving') return;
       for (const [id, frame] of frames.current) {
         if (frame.contentWindow !== event.source) continue;
         const chip = embeddedChip(sections, id, embedApps);
-        if (!chip || event.origin !== new URL(chip.href).origin) return;
+        if (!chip || !isChipOrigin(chip, event.origin)) return;
         const address = shellLocation(chip, event.data.href);
         if (!address) return;
-        setLocations((current) => ({ ...current, [id]: address }));
+        if (type === 'scout:leaving') {
+          leaving.current.set(id, { address, at: Date.now() });
+        } else {
+          leaving.current.delete(id);
+          setLocations((current) => ({ ...current, [id]: address }));
+        }
         return;
       }
     };
@@ -488,6 +500,11 @@ export default function ShellClient({
               allow="clipboard-read; clipboard-write; fullscreen"
               aria-hidden={chip.id !== active?.id}
               onLoad={() => {
+                const next = leaving.current.get(chip.id);
+                leaving.current.delete(chip.id);
+                if (next && Date.now() - next.at < LEAVING_TTL_MS) {
+                  setLocations((current) => ({ ...current, [chip.id]: next.address }));
+                }
                 setLoaded((ids) => (ids.includes(chip.id) ? ids : [...ids, chip.id]));
                 checkSession();
               }}

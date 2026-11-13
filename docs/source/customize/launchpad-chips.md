@@ -125,7 +125,8 @@ window.parent.postMessage(
 
 Name the launchpad's origin rather than `'*'`, and send nothing else. The launchpad
 accepts the message only from your chip's frame and only for an address on your
-chip's origin, so content nested inside your page cannot move it.
+chip's host or one of its subdomains, so content nested inside your page cannot move
+it.
 
 ## Groups: Defining a section
 

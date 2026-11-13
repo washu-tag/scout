@@ -58,8 +58,26 @@ export function frameUrl(chip: RenderChip, path: string | null): string {
   }
 }
 
+// The chip's origin or one of its subdomains: JupyterHub serves each user's
+// server at <user>.<hub host>.
+export function isChipOrigin(chip: RenderChip, origin: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(origin);
+  } catch {
+    return false;
+  }
+  const home = new URL(chip.href);
+  return (
+    url.protocol === home.protocol &&
+    url.port === home.port &&
+    (url.hostname === home.hostname || url.hostname.endsWith(`.${home.hostname}`))
+  );
+}
+
 // The launchpad address for a location a framed app reports, or null when the
-// location is off the chip's origin.
+// location is off the chip's origin. Only the path travels: reopening it on the
+// chip's own host, JupyterHub redirects to the user's server.
 export function shellLocation(chip: RenderChip, href: unknown): string | null {
   if (typeof href !== 'string') return null;
   let url: URL;
@@ -69,7 +87,7 @@ export function shellLocation(chip: RenderChip, href: unknown): string | null {
     return null;
   }
   const home = new URL(chip.href);
-  if (url.origin !== home.origin) return null;
+  if (!isChipOrigin(chip, url.origin)) return null;
   if (url.href === home.href) return shellPath(chip.id);
   return `${shellPath(chip.id)}?path=${encodeURIComponent(url.pathname + url.search)}${url.hash}`;
 }

@@ -1,0 +1,14 @@
+{% include 'frame-location.js.j2' %}
+
+// JupyterLab loads this file as a prebuilt extension's module-federation entry.
+// The script above does the work, so the one plugin it exposes does nothing.
+(window._JUPYTERLAB = window._JUPYTERLAB || {})['scout-frame-location'] = {
+  init: function () {},
+  get: function () {
+    return Promise.resolve(function () {
+      return {
+        default: { id: 'scout-frame-location:plugin', autoStart: true, activate: function () {} },
+      };
+    });
+  },
+};

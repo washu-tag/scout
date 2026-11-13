@@ -154,6 +154,40 @@ extraResources:
                     port:
                       name: http
 {% endfor %}
+  # loader.js is the launchpad frame-location script at a fixed URL with no
+  # Cache-Control, so browsers would keep running an old copy for days.
+  - apiVersion: traefik.io/v1alpha1
+    kind: Middleware
+    metadata:
+      name: open-webui-no-cache
+      namespace: {{ chatbot_namespace }}
+    spec:
+      headers:
+        customResponseHeaders:
+          Cache-Control: no-cache
+  - apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      name: {{ open_webui_helm_release_name }}-loader
+      namespace: {{ chatbot_namespace }}
+      annotations:
+        traefik.ingress.kubernetes.io/router.middlewares: >-
+          kube-system-oauth2-proxy-auth@kubernetescrd,
+          {{ chatbot_namespace }}-open-webui-no-cache@kubernetescrd,
+          kube-system-security-headers@kubernetescrd
+    spec:
+      ingressClassName: traefik
+      rules:
+        - host: chat.{{ server_hostname }}
+          http:
+            paths:
+              - path: /static/loader.js
+                pathType: Exact
+                backend:
+                  service:
+                    name: {{ open_webui_helm_release_name }}
+                    port:
+                      name: http
 
 persistence:
   enabled: true
