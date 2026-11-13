@@ -14,7 +14,8 @@ export default function Brand({ crumbs }: { crumbs: ReactNode[] }) {
         aria-label="Scout home"
         className="flex items-center gap-2.5 rounded-md hover:opacity-80 transition-opacity"
       >
-        <img src="/scout.svg" alt="Scout" className="h-8 w-8 block" />
+        <img src="/scout.svg" alt="Scout" className="h-8 w-8 block dark:hidden" />
+        <img src="/scout-dark.svg" alt="Scout" className="h-8 w-8 hidden dark:block" />
         <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 tracking-tight">
           Scout
         </span>

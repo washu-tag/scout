@@ -63,7 +63,7 @@ html.login-pf body,
   margin: 24px auto 16px;
   border-radius: 19px;
   background: url('../img/scout.png') no-repeat center / contain;
-  box-shadow: 0 8px 24px rgba(67, 56, 202, 0.28);
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.14);
 }
 
 /* Page title ("Scout Terms of Use" etc.) */

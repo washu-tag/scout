@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Scout">
+  <rect x="1.5" y="1.5" width="117" height="117" rx="25" fill="#1A1B40" stroke="#2E2C6E" stroke-width="3"/>
+  <g transform="translate(14 12) scale(0.78)">
+    <path fill="#FBBF24" d="M10 106C19 104 24 95 24 82V73C24 64 32 58 45 57V89C45 101 35 106 10 106Z"/>
+    <path fill="#34D399" d="M35 106C45 104 50 93 50 77V55C50 44 59 37 74 35V85C74 99 62 106 35 106Z"/>
+    <path fill="#818CF8" d="M62 106C73 104 78 91 78 71V35C78 22 88 13 105 11V80C105 97 92 106 62 106Z"/>
+  </g>
+</svg>
