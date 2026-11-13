@@ -91,12 +91,6 @@ the Flux files themselves (keycloak-operator's `targetNamespace`), and both are 
 of the site Kustomization rather than its children: with `wait`, a parent that applies a
 child that dependsOn it deadlocks.
 
-Sites managing their own chat HelmRelease with read-only shared Ollama storage
-must prepare the model directory layout before reconciling an upgrade or a new
-model store. See the [shared-storage preparation entry point](../ansible/roles/open-webui/README.md#shared-storage-before-helm-or-gitops-upgrades).
-This remains a storage-writer prerequisite until chat is included in the base;
-the application bootstrap Job runs too late to supply it.
-
 A site that keeps SOPS-encrypted Secrets in git must install the shipped
 `bootstrap/sops-guard/` base before any site Kustomization can apply a Secret:
 `kubectl apply -k <verified-config-directory>/bootstrap/sops-guard`. The source copy

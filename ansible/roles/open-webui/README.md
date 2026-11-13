@@ -34,40 +34,19 @@ In air-gapped environments (`air_gapped: true`), both model pulling and Scout mo
 **Required for air-gapped:**
 - `ollama_nfs_path`: Shared NFS path accessible by both staging and cluster
 
-### Shared storage before Helm or GitOps upgrades
+### Read-only model storage
 
 The model store must contain `blobs`, `manifests`, and `manifests-v2` before
 Ollama starts with a read-only mount. Ollama 0.40.16 tries to create
 `manifests-v2` even when listing older models. If it is missing, `/api/tags`
 returns HTTP 500 and the NFS-aware liveness check restarts the server.
 
-`make install-chat` prepares these directories before installing the application
-chart. For a main-chart-only Helm upgrade or an on-prem GitOps reconciliation,
-run the same preparation first, using the site's inventory:
-
-```bash
-cd ansible
-make prepare-ollama-model-storage
-```
-
-This target requires `enable_chat: true`, `air_gapped: true`, and
-`ollama_nfs_path`. It uses the existing staging host as the storage writer,
-falling back to the selected server when no staging group exists. It creates
-missing directories without changing model files, pulling models, deploying
-applications, or running Open WebUI bootstrap. Repeated runs are safe.
-
-GitOps operators must complete this storage prerequisite before reconciling an
-Ollama upgrade or replacing its model store. A site that provisions storage
-without Ansible must create the same three directories on its storage writer.
-Keep the production model mount read-only; do not depend on the asynchronous
-model-pull Job to prepare it. Shared-storage writers must also set
-`OLLAMA_NOPRUNE=true`: startup pruning can remove the empty `manifests-v2`
-directory and break read-only readers again. Scout's staging pull Job sets this
-alongside the production server. Unused model layers are retained until explicit
-storage maintenance.
-
-The upstream GitOps base does not yet include chat,
-so this target is a storage prerequisite, not a Flux reconciliation hook.
+`make install-chat` creates the three directories on the storage writer before
+installing the application chart. Keep the production model mount read-only;
+the asynchronous model-pull Job runs too late to prepare it. Both the production
+server and staging pull Job set `OLLAMA_NOPRUNE=true`, because writer startup
+pruning can remove the empty `manifests-v2` directory. Unused model layers remain
+until explicit storage maintenance.
 
 **Timing — staging pull Job vs production pod start:**
 
