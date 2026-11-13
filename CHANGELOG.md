@@ -1,5 +1,35 @@
 # Changelog
 
+## [5.3.0](https://github.com/washu-tag/scout/compare/v5.2.0...v5.3.0) (2026-11-13)
+
+
+### Features
+
+* **ansible:** Add install telepresence ansible playbook ([#935](https://github.com/washu-tag/scout/issues/935)) ([99cdd46](https://github.com/washu-tag/scout/commit/99cdd4622e7e8cc52713025a2afbbc79a2f51d63))
+* **pluggable-apps:** give an app's registry logins only to its own pods ([#983](https://github.com/washu-tag/scout/issues/983)) ([79cd0b5](https://github.com/washu-tag/scout/commit/79cd0b5cadd67fc2787274635aff2b78bf3b2289))
+* **pluggable-apps:** install site apps with Ansible or GitOps ([#945](https://github.com/washu-tag/scout/issues/945)) ([d67bfcb](https://github.com/washu-tag/scout/commit/d67bfcb6679eb50d11a2f8024479f9c8b694e14d))
+* **report-viewer:** allow date columns to be formatted in the report viewer ([#969](https://github.com/washu-tag/scout/issues/969)) ([373b286](https://github.com/washu-tag/scout/commit/373b286c2fb2171d89ca812c54ea97fac765abd9))
+* **report-viewer:** show extra SQL columns in the search viewer ([#953](https://github.com/washu-tag/scout/issues/953)) ([5e3da23](https://github.com/washu-tag/scout/commit/5e3da239a9f22f2ad045a01e46829669a161801e))
+* **xnat:** install XNAT plugins from private S3 ([#957](https://github.com/washu-tag/scout/issues/957)) ([957579d](https://github.com/washu-tag/scout/commit/957579dbdc6927295747c8396bb0bfb48610f89f))
+* **xnat:** require xnat-access at XNAT browser sign-in ([#980](https://github.com/washu-tag/scout/issues/980)) ([971d0ab](https://github.com/washu-tag/scout/commit/971d0abb8b2f1cf44dcf4489be210adb1497b048))
+
+
+### Bug Fixes
+
+* **apps:** wait for Open WebUI and XNAT readiness ([#990](https://github.com/washu-tag/scout/issues/990)) ([35121f2](https://github.com/washu-tag/scout/commit/35121f2ad22ba7fbaf84bdb878fee104e36cc752))
+* **chat:** move Open WebUI and Ollama to builds that reject the compromised CA chain ([#981](https://github.com/washu-tag/scout/issues/981)) ([83e96ba](https://github.com/washu-tag/scout/commit/83e96ba66c5bb39858ad61c1f506da954698e685))
+* **ci:** preserve artifacts across failed-job reruns ([#906](https://github.com/washu-tag/scout/issues/906)) ([2f3885a](https://github.com/washu-tag/scout/commit/2f3885aaab8129edb3e943afcba20574bb50d429))
+* clear the remaining compromised-CA trust in Scout images and on-prem pins ([#971](https://github.com/washu-tag/scout/issues/971)) ([7040815](https://github.com/washu-tag/scout/commit/70408154f395846a8b176c380d7ab1239f3c0164))
+* **dcm4chee:** pin the db image by digest ([#954](https://github.com/washu-tag/scout/issues/954)) ([5a7e132](https://github.com/washu-tag/scout/commit/5a7e132fb8ff0a234739e7ddf22e7bb751a15269))
+* **dcm4chee:** route the DICOM LoadBalancer only to the arc pod ([#956](https://github.com/washu-tag/scout/issues/956)) ([77707c1](https://github.com/washu-tag/scout/commit/77707c101c0ad43e16773e98a2cd36d559d66c1e))
+* **deps:** update dependency fastapi to &lt;0.163 ([#962](https://github.com/washu-tag/scout/issues/962)) ([b0e361a](https://github.com/washu-tag/scout/commit/b0e361ab9e9a8b2f6652232794337fe0304f39b7))
+* **harbor:** move Harbor to 2.15.5, which rejects the compromised CA chain ([22874ee](https://github.com/washu-tag/scout/commit/22874ee18fb7c36f625fc7b42b2b3d604a293a57))
+* **harbor:** prevent Helm-only rollback after database migrations ([#989](https://github.com/washu-tag/scout/issues/989)) ([c5b583a](https://github.com/washu-tag/scout/commit/c5b583ac429f047d178c920f47f8b1d09bff7037))
+* **minio:** stop the operator racing the IAM bootstrap Job ([#949](https://github.com/washu-tag/scout/issues/949)) ([050ed59](https://github.com/washu-tag/scout/commit/050ed596aa38006270a0640120604e945f2ffe9c))
+* move Temporal, oauth2-proxy and XNAT to builds that reject the compromised CA chain ([#968](https://github.com/washu-tag/scout/issues/968)) ([e50fa37](https://github.com/washu-tag/scout/commit/e50fa37f74a8b702b8e0d43348bb1f4dcaefec8e))
+* **nexus:** let Nexus 3.98 run the chart's config scripts ([#988](https://github.com/washu-tag/scout/issues/988)) ([bdb1ab7](https://github.com/washu-tag/scout/commit/bdb1ab780d87ec9aa4f30fda96392e7f11473d29))
+* **ollama:** prepare read-only shared model storage ([#984](https://github.com/washu-tag/scout/issues/984)) ([10384f1](https://github.com/washu-tag/scout/commit/10384f1eb2ababb29227e7aedcdbc3521217b757))
+
 ## [5.2.0](https://github.com/washu-tag/scout/compare/v5.1.1...v5.2.0) (2026-11-04)
 
 
