@@ -5,6 +5,7 @@ import { CATALOG_API_VERSION, CATALOG_KIND, validateDocument } from './schema';
 import {
   chipForUrl,
   chipTarget,
+  deepPath,
   embeddedChip,
   frameUrl,
   isChipOrigin,
@@ -153,21 +154,26 @@ describe('shellLocation', () => {
   it('maps a location on the chip origin to its launchpad address', () => {
     assert.strictEqual(
       shellLocation(chat, 'https://chat.scout.example.edu/c/123?x=1#m'),
-      '/app/chat?path=%2Fc%2F123%3Fx%3D1#m',
+      '/app/chat/c/123?x=1#m',
     );
     assert.strictEqual(shellLocation(chat, 'https://chat.scout.example.edu/'), '/app/chat');
   });
 
-  it('round-trips through frameUrl', () => {
-    const href = 'https://chat.scout.example.edu/c/123?x=1&y=a%20b#m';
-    const address = new URL(shellLocation(chat, href)!, 'https://scout.example.edu');
-    assert.strictEqual(frameUrl(chat, address.searchParams.get('path')! + address.hash), href);
+  it('round-trips through deepPath and frameUrl', () => {
+    for (const href of [
+      'https://chat.scout.example.edu/c/123?x=1&y=a%20b#m',
+      'https://chat.scout.example.edu/browser/lake/bronze/',
+      'https://chat.scout.example.edu/?models=none',
+    ]) {
+      const address = new URL(shellLocation(chat, href)!, 'https://scout.example.edu');
+      assert.strictEqual(frameUrl(chat, deepPath('chat', address)), href, href);
+    }
   });
 
   it('takes the path from a subdomain of the chip host', () => {
     assert.strictEqual(
       shellLocation(chat, 'https://alice.chat.scout.example.edu/user/alice/lab'),
-      '/app/chat?path=%2Fuser%2Falice%2Flab',
+      '/app/chat/user/alice/lab',
     );
   });
 
@@ -184,6 +190,22 @@ describe('shellLocation', () => {
       'https://chat.scout.example.edu:8443/c/123',
     ]) {
       assert.strictEqual(shellLocation(chat, href), null, String(href));
+    }
+  });
+});
+
+describe('deepPath', () => {
+  const at = (href: string) => deepPath('chat', new URL(href, 'https://scout.example.edu'));
+
+  it('reads the app page out of the launchpad address', () => {
+    assert.strictEqual(at('/app/chat/c/123?x=1#m'), '/c/123?x=1#m');
+    assert.strictEqual(at('/app/chat/'), '/');
+    assert.strictEqual(at('/app/chat?models=none'), '/?models=none');
+  });
+
+  it('is null for the start page and for other apps', () => {
+    for (const href of ['/app/chat', '/app/chatty/c/123', '/app/analytics/c/123', '/']) {
+      assert.strictEqual(at(href), null, href);
     }
   });
 });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { embedApps, requestModel, requestOrigin } from '@/lib/catalog/request';
-import { chipForUrl, shellPath, shellSections } from '@/lib/catalog/shell';
+import { chipForUrl, shellLocation, shellPath, shellSections } from '@/lib/catalog/shell';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,10 +24,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ sub:
 
   const chip = chipForUrl(shellSections(await requestModel()), target, embedApps());
   if (chip) {
-    const deepPath = encodeURIComponent(target.pathname + target.search);
     return new NextResponse(null, {
       status: 307,
-      headers: { Location: `${shellPath(chip.id)}?path=${deepPath}` },
+      headers: { Location: shellLocation(chip, target.href) ?? shellPath(chip.id) },
     });
   }
 

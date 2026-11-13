@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { FaBook, FaMoon, FaSignOutAlt, FaSun } from 'react-icons/fa';
 import { HiOutlineExternalLink } from 'react-icons/hi';
@@ -11,6 +11,7 @@ import { ChipAnchor, EmbedAppsContext } from '@/components/shell/ChipAnchor';
 import { DEFAULT_ICON, ICONS } from '@/lib/catalog/icons';
 import {
   chipTarget,
+  deepPath,
   embeddedChip,
   frameUrl,
   isChipOrigin,
@@ -106,13 +107,11 @@ export default function ShellClient({
     : null;
   const active = appId ? embeddedChip(sections, appId, embedApps) : undefined;
 
-  // A deep link (/app/<id>?path=...) opens the app at that page; its fragment
-  // rides on the launchpad URL.
-  const deepPath = useSearchParams().get('path');
-  const activeSrc =
-    active && deepPath
-      ? frameUrl(active, deepPath + (typeof window === 'undefined' ? '' : window.location.hash))
-      : active?.href;
+  // A deep link (/app/<id>/<path>) opens the app at that page. Read from the
+  // browser's URL, which during a rail click may still be the previous app's.
+  const deep =
+    active && typeof window !== 'undefined' ? deepPath(active.id, window.location) : null;
+  const activeSrc = active && deep ? frameUrl(active, deep) : active?.href;
 
   // The page each framed app last reported, so the address bar can follow it.
   const [locations, setLocations] = useState<Record<string, string>>({});
@@ -287,7 +286,7 @@ export default function ShellClient({
   const openSection = rest.find((section) => section.id === menu?.id);
   const isCurrent = (chip: RenderChip) => {
     const target = chipTarget(chip, embedApps);
-    return target.internal && target.href === pathname;
+    return target.internal && (pathname === target.href || pathname.startsWith(`${target.href}/`));
   };
 
   const railChip = (chip: RenderChip) => {

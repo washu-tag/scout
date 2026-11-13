@@ -75,6 +75,19 @@ export function isChipOrigin(chip: RenderChip, origin: string): boolean {
   );
 }
 
+// The page inside the app that a launchpad address /app/<id>/<path>?<query>#<hash>
+// names, or null for the app's start page or another app's address.
+export function deepPath(
+  id: string,
+  location: { pathname: string; search: string; hash: string },
+): string | null {
+  const prefix = shellPath(id);
+  const { pathname, search, hash } = location;
+  if (pathname !== prefix && !pathname.startsWith(`${prefix}/`)) return null;
+  const rest = pathname.slice(prefix.length);
+  return rest || search || hash ? `${rest || '/'}${search}${hash}` : null;
+}
+
 // The launchpad address for a location a framed app reports, or null when the
 // location is off the chip's origin. Only the path travels: reopening it on the
 // chip's own host, JupyterHub redirects to the user's server.
@@ -89,7 +102,7 @@ export function shellLocation(chip: RenderChip, href: unknown): string | null {
   const home = new URL(chip.href);
   if (!isChipOrigin(chip, url.origin)) return null;
   if (url.href === home.href) return shellPath(chip.id);
-  return `${shellPath(chip.id)}?path=${encodeURIComponent(url.pathname + url.search)}${url.hash}`;
+  return `${shellPath(chip.id)}${url.pathname}${url.search}${url.hash}`;
 }
 
 // The framed app that owns a Scout service URL: among the chips on its host, the
