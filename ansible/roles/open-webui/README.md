@@ -34,6 +34,20 @@ In air-gapped environments (`air_gapped: true`), both model pulling and Scout mo
 **Required for air-gapped:**
 - `ollama_nfs_path`: Shared NFS path accessible by both staging and cluster
 
+### Read-only model storage
+
+The model store must contain `blobs`, `manifests`, and `manifests-v2` before
+Ollama starts with a read-only mount. Ollama 0.40.16 tries to create
+`manifests-v2` even when listing older models. If it is missing, `/api/tags`
+returns HTTP 500 and the NFS-aware liveness check restarts the server.
+
+`make install-chat` creates the three directories on the storage writer before
+installing the application chart. Keep the production model mount read-only;
+the asynchronous model-pull Job runs too late to prepare it. Both the production
+server and staging pull Job set `OLLAMA_NOPRUNE=true`, because writer startup
+pruning can remove the empty `manifests-v2` directory. Unused model layers remain
+until explicit storage maintenance.
+
 **Timing — staging pull Job vs production pod start:**
 
 The Ollama pod's `lifecycle.postStart` hook preloads `preload: true` models into memory on every pod start. If the staging cluster's pull Job hasn't finished writing models to NFS by the time the air-gapped production Ollama pod first starts, those models won't appear in `ollama list` yet and the hook will skip them — the next user request triggers a cold start, or restart the Ollama pod after the pull Job completes to trigger preload.
