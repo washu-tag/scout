@@ -5,7 +5,7 @@ Flux Kustomizations under ``deploy/`` use this ConfigMap with
 StrictPostBuildSubstitutions. Generated data contains every key in
 ``deploy/required-vars.txt``; native defaults also support older ConfigMaps.
 Reads a site's flat values source and emits the ConfigMap, computing
-derived keys and connected-site defaults the way the Ansible roles do so both
+derived keys and optional defaults the way the Ansible roles do so both
 lanes stay byte-identical.
 
 ``--values`` is a JSON object mirroring the Ansible variable shape (mostly flat;

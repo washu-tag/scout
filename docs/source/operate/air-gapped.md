@@ -42,15 +42,17 @@ Scout supports air-gapped deployments through a staging node architecture. Ansib
 
 ## Requirements
 
-For a disconnected registry, set `superset_init_image_repository` and
-`superset_init_image_tag` in the Ansible inventory or GitOps `cluster-vars` to the
-mirrored Superset dockerize image. Use a repository without a tag or digest, and a
-tag such as `dockerize@sha256:<verified-digest>`. The chart joins them with a colon.
-These values cover both Deployment init containers and the database-init Helm
-hook. The default image post-rendering path does not rewrite Helm hook resources.
-Both deployment paths default to `apache/superset` and `dockerize` for connected
-sites. The GitOps generator emits these keys even for older site values files;
-existing `cluster-vars` ConfigMaps without them use the same defaults.
+To pin Superset's dockerize init image, or to pull it from a registry the K3s
+mirrors don't cover, set `superset_init_image_repository` and
+`superset_init_image_tag` in the Ansible inventory or GitOps `cluster-vars`. Use a
+repository without a tag or digest, and a tag such as
+`dockerize@sha256:<verified-digest>`; the chart joins them with a colon. These
+optional values apply to Deployment init containers and the database-init Helm
+hook. Staging-node installations already route the default Docker Hub image
+through Harbor's K3s registry mirror, including hook pods. Both deployment paths
+default to `apache/superset` and `dockerize`. The GitOps generator emits these keys
+even for older site values files; existing `cluster-vars` ConfigMaps without them
+use the same defaults.
 
 ### Operating System
 
