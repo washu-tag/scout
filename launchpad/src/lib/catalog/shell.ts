@@ -129,6 +129,11 @@ export function chipForUrl(
   return best ?? candidates[0];
 }
 
+// The most recently used app ids, newest last, at most `max`.
+export function recentApps(recent: string[], id: string, max: number): string[] {
+  return [...recent.filter((other) => other !== id), id].slice(-max);
+}
+
 export function embeddedChip(
   sections: ShellSection[],
   id: string,

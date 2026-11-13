@@ -13,6 +13,9 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
+// Rendered per request so every page's scripts carry the content security policy's nonce.
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Scout Launchpad',
   description:

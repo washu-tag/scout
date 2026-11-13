@@ -9,6 +9,7 @@ import {
   embeddedChip,
   frameUrl,
   isChipOrigin,
+  recentApps,
   shellLocation,
   shellSections,
 } from './shell';
@@ -207,6 +208,14 @@ describe('deepPath', () => {
     for (const href of ['/app/chat', '/app/chatty/c/123', '/app/analytics/c/123', '/']) {
       assert.strictEqual(at(href), null, href);
     }
+  });
+});
+
+describe('recentApps', () => {
+  it('moves the app to the end and keeps only the most recent', () => {
+    assert.deepStrictEqual(recentApps(['a', 'b', 'c'], 'd', 3), ['b', 'c', 'd']);
+    assert.deepStrictEqual(recentApps(['a', 'b', 'c'], 'a', 3), ['b', 'c', 'a']);
+    assert.deepStrictEqual(recentApps([], 'a', 3), ['a']);
   });
 });
 

@@ -33,6 +33,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ sub:
   // A script navigation from this page is same-site, so the edge lets it through
   // instead of sending it back here.
   const href = target.href;
-  const html = `<!doctype html><meta charset="utf-8"><title>Opening…</title><script>location.replace(${JSON.stringify(href).replace(/</g, '\\u003c')} + location.hash)</script><a href="${escapeHtml(href)}">Continue</a>`;
-  return new NextResponse(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+  const html = `<!doctype html><meta charset="utf-8"><title>Opening…</title><script nonce="${nonce}">location.replace(${JSON.stringify(href).replace(/</g, '\\u003c')} + location.hash)</script><a href="${escapeHtml(href)}">Continue</a>`;
+  return new NextResponse(html, {
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Content-Security-Policy': `default-src 'none'; script-src 'nonce-${nonce}'; base-uri 'none'; frame-ancestors 'none'`,
+    },
+  });
 }

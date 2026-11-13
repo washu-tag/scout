@@ -15,6 +15,7 @@ import {
   embeddedChip,
   frameUrl,
   isChipOrigin,
+  recentApps,
   shellLocation,
   type ShellSection,
 } from '@/lib/catalog/shell';
@@ -34,6 +35,7 @@ const SESSION_CHECK_MS = 60_000;
 const RECOVERY_KEY = 'scout-shell-session-recovery';
 const RECOVERY_BACKOFF_MS = 60_000;
 const LEAVING_TTL_MS = 30_000;
+const MAX_OPEN_APPS = 3;
 
 const MENU =
   'fixed left-[76px] z-30 w-64 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-900';
@@ -107,12 +109,6 @@ export default function ShellClient({
     : null;
   const active = appId ? embeddedChip(sections, appId, embedApps) : undefined;
 
-  // A deep link (/app/<id>/<path>) opens the app at that page. Read from the
-  // browser's URL, which during a rail click may still be the previous app's.
-  const deep =
-    active && typeof window !== 'undefined' ? deepPath(active.id, window.location) : null;
-  const activeSrc = active && deep ? frameUrl(active, deep) : active?.href;
-
   // The page each framed app last reported, so the address bar can follow it.
   const [locations, setLocations] = useState<Record<string, string>>({});
   const frames = useRef(new Map<string, HTMLIFrameElement>());
@@ -120,13 +116,35 @@ export default function ShellClient({
   // can't report itself.
   const leaving = useRef(new Map<string, { address: string; at: number }>());
 
-  // Every app opened this visit keeps its frame, so switching back resumes it.
+  // A deep link (/app/<id>/<path>) opens the app at that page. Read from the
+  // browser's URL, which during a rail click may still be the previous app's. An
+  // app that was unloaded reopens at the page it last reported.
+  const remembered = active ? locations[active.id] : undefined;
+  const deep =
+    active && typeof window !== 'undefined'
+      ? (deepPath(active.id, window.location) ??
+        (remembered ? deepPath(active.id, new URL(remembered, window.location.origin)) : null))
+      : null;
+  const activeSrc = active && deep ? frameUrl(active, deep) : active?.href;
+
+  // The most recently used apps keep their frames, so switching back resumes them;
+  // older ones are unloaded to bound memory. Frames are only appended or removed,
+  // never moved, since moving an iframe reloads it.
   const [opened, setOpened] = useState<{ chip: RenderChip; src: string }[]>(
     active && activeSrc ? [{ chip: active, src: activeSrc }] : [],
   );
+  const [recent, setRecent] = useState<string[]>(active ? [active.id] : []);
   const [loaded, setLoaded] = useState<string[]>([]);
-  if (active && activeSrc && !opened.some((entry) => entry.chip.id === active.id)) {
-    setOpened([...opened, { chip: active, src: activeSrc }]);
+  if (active && activeSrc && recent[recent.length - 1] !== active.id) {
+    const keep = recentApps(recent, active.id, MAX_OPEN_APPS);
+    const kept = opened.filter((entry) => keep.includes(entry.chip.id));
+    setRecent(keep);
+    setOpened(
+      kept.some((entry) => entry.chip.id === active.id)
+        ? kept
+        : [...kept, { chip: active, src: activeSrc }],
+    );
+    setLoaded((ids) => ids.filter((id) => keep.includes(id)));
   }
 
   const skipAuth =

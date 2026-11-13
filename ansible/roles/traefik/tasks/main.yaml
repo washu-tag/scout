@@ -125,6 +125,7 @@
           # Browsers ignore X-Frame-Options when frame-ancestors is present.
           frameDeny: true
           contentTypeNosniff: true
+          referrerPolicy: strict-origin-when-cross-origin
           contentSecurityPolicy: >-
             default-src 'self';
             script-src 'self' 'unsafe-inline' 'unsafe-eval';
@@ -135,6 +136,30 @@
             form-action 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
             frame-src 'self' https://*.{{ server_hostname }};
             frame-ancestors https://{{ server_hostname }}
+          customResponseHeaders:
+            Permissions-Policy: 'camera=(), microphone=(), geolocation=(), payment=()'
+            Cross-Origin-Opener-Policy: 'same-origin'
+            X-Powered-By: ''
+            Server: ''
+
+# The global headers without a Content-Security-Policy, for an app that sends its
+# own: the launchpad sets a per-request nonce policy that a fixed header would replace.
+- name: Apply security headers middleware for apps that set their own CSP
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: traefik.io/v1alpha1
+      kind: Middleware
+      metadata:
+        name: security-headers-app-csp
+        namespace: '{{ traefik_namespace }}'
+      spec:
+        headers:
+          stsSeconds: 31536000
+          stsIncludeSubdomains: true
+          frameDeny: true
+          contentTypeNosniff: true
+          referrerPolicy: strict-origin-when-cross-origin
           customResponseHeaders:
             Permissions-Policy: 'camera=(), microphone=(), geolocation=(), payment=()'
             Cross-Origin-Opener-Policy: 'same-origin'
@@ -157,6 +182,7 @@
           stsIncludeSubdomains: true
           frameDeny: false
           contentTypeNosniff: true
+          referrerPolicy: strict-origin-when-cross-origin
           contentSecurityPolicy: >-
             default-src 'self';
             script-src 'self' 'unsafe-inline' 'unsafe-eval';
@@ -191,6 +217,7 @@
           frameDeny: false
           customFrameOptionsValue: SAMEORIGIN
           contentTypeNosniff: true
+          referrerPolicy: strict-origin-when-cross-origin
           contentSecurityPolicy: >-
             default-src 'self';
             script-src 'self' 'unsafe-inline' 'unsafe-eval';
@@ -250,6 +277,7 @@
           frameDeny: false
           customFrameOptionsValue: SAMEORIGIN
           contentTypeNosniff: true
+          referrerPolicy: strict-origin-when-cross-origin
           contentSecurityPolicy: >-
             default-src 'self';
             script-src 'self' 'unsafe-inline' 'unsafe-eval';
