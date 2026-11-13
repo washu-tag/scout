@@ -95,6 +95,13 @@ Configuration:
 - `external_url`: Optional Tailscale hostname or DNS name (overrides inventory_hostname)
 - `harbor_admin_password`: Admin password (vault-encrypted in inventory)
 
+The Harbor role disables Helm's atomic failure handling because database
+migrations cannot be downgraded automatically. Failed installs and upgrades remain
+in place for operator recovery. Before upgrading, back up Harbor's database,
+persistent data and release configuration. If an upgrade fails, stop Harbor and
+restore the pre-upgrade backup with the previous chart and images; a Helm rollback
+alone is unsupported. See [Harbor's Helm upgrade guide](https://goharbor.io/docs/2.15.0/administration/upgrade/helm-upgrade/).
+
 Used by: Staging node deployment when `use_staging_node: true`
 
 ### nexus

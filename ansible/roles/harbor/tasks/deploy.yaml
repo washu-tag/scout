@@ -27,6 +27,8 @@
     helm_repo_name: harbor
     helm_repo_url: https://helm.goharbor.io
     helm_chart_timeout: 15m
+    # Database migrations cannot be reversed by Helm rollback.
+    helm_chart_atomic: false
     helm_chart_values:
       expose:
         type: ingress
