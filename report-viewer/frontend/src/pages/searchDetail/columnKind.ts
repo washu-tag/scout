@@ -1,6 +1,8 @@
 // The search SQL projects whatever it likes, so columns are typed by sniffing
 // values rather than from a static list.
 
+import { toNumber, toTimestamp } from '../../values';
+
 export type ColumnKind = 'numeric' | 'categorical' | 'temporal' | 'identifier' | 'none';
 
 // Identifiers: never summarized as a distribution, never a measure.
@@ -15,7 +17,6 @@ export const IDENTIFIER_FIELDS = new Set([
 ]);
 
 const SAMPLE_SIZE = 200;
-const ISO_DATEISH = /^\d{4}-\d{2}-\d{2}([T ]|$)/;
 
 type Row = Record<string, unknown>;
 
@@ -42,9 +43,7 @@ export function columnKind(field: string, rows: Row[], isDate = false): ColumnKi
   if (isDate) return 'temporal';
   if (sample.length === 0) return 'none';
 
-  // Trino numerics arrive as JSON numbers, so a numeric-looking identifier
-  // stays a string and lands as categorical.
-  if (sample.every((v) => typeof v === 'number')) return 'numeric';
-  if (sample.every((v) => typeof v === 'string' && ISO_DATEISH.test(v))) return 'temporal';
+  if (sample.every((v) => toNumber(v) !== undefined)) return 'numeric';
+  if (sample.every((v) => toTimestamp(v) !== undefined)) return 'temporal';
   return 'categorical';
 }

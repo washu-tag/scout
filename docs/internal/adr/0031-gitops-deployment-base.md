@@ -536,7 +536,8 @@ generates the Secret, and CI renders the templates through Flux's own
 build path with fixture and adversarial values. Build-stage errors are
 never masked, and kustomize-controller keeps Secret-sourced values out of
 apply errors only from v1.9.6 (Flux 2.9.6), so on-prem sites run Flux 2.9.6
-or later.
+or later. (Amended 2026-11: the floor is now 2.10.0, whose controllers are built
+with a Go that rejects the compromised eMudhra chain; CVE-2026-111943.)
 
 **Bill of materials (BOM).** The BOM is the list of every third-party
 image a Scout deployment pulls. It feeds the release manifest (ADR 0030),

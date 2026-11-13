@@ -71,6 +71,11 @@
       "matchDepNames": ["k3s-io/k3s"],
       "versioning": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(?<compatibility>\\+k3s)(?<build>\\d+)$"
     },
+    // XNAT hotfixes add a 4th part (1.10.2.1); docker versioning won't cross part counts.
+    {
+      "matchDepNames": ["ghcr.io/nrgxnat/xnat"],
+      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(?:\\.(?<build>\\d+))?$"
+    },
     // dcm4chee archive stack (arc + postgres + slapd) ships as one release
     // "family" (the number after the dash). Lock each image to family 35 so
     // Renovate's `loose` versioning can't bump one image out of step with the
@@ -176,6 +181,32 @@
         "**Version-coupling reminder:** `open_webui_image_tag` must equal the Open WebUI chart's appVersion (the deployed server), which the open-webui-bootstrap Job reuses for ORM/bcrypt lockstep. When the chart bumps, set the image tag to the chart's new appVersion."
       ]
     },
+    {
+      "matchDepNames": ["grafana", "grafana/grafana"],
+      "groupName": "Grafana chart + image",
+      "prBodyNotes": [
+        "**Image-pin reminder:** `grafana_image_tag` overrides the chart's appVersion, so a chart bump alone keeps the pinned image. Keep the tag at or above the chart's appVersion (with its `-distroless` suffix), or drop the pin once the chart's default catches up."
+      ]
+    },
+    {
+      "matchDepNames": ["nexus3", "sonatype/nexus3"],
+      "groupName": "Nexus chart + image",
+      "prBodyNotes": [
+        "**Image-pin reminder:** `nexus_image_tag` overrides the chart's appVersion, so a chart bump alone keeps the pinned image. Keep the `-ubi` suffix: the chart appends it only when the tag is unset, and the bare tag is the Alpine build. Drop the pin once the chart's default catches up."
+      ]
+    },
+    {
+      "matchDepNames": ["harbor", "goharbor/harbor-core"],
+      "groupName": "Harbor chart + images",
+      "prBodyNotes": [
+        "**Image-pin reminder:** `harbor_image_tag` sets every Harbor image's tag, so a chart bump alone keeps the pinned images. Keep it on the chart's Harbor minor (chart 1.19.x runs Harbor 2.15.x), or drop the pin once the chart's default catches up."
+      ]
+    },
+    // harbor_image_tag must stay on the chart's Harbor minor; move this with the chart.
+    {
+      "matchDepNames": ["goharbor/harbor-core"],
+      "allowedVersions": "/^v2\\.15\\./"
+    },
     // A new Postgres major is a database major upgrade, which needs planning;
     // keep Renovate on the running major. To move majors, change
     // postgres_image_tag and this regex together.
@@ -239,8 +270,8 @@
     {
       "customType": "regex",
       "managerFilePatterns": ["keycloak/VERSION"],
-      // An optional -<suffix> (e.g. -ca) tags a rebuild of the same upstream version.
-      "matchStrings": ["^(?<currentValue>\\d[\\d\\.]*)(?:-[a-z]+)?\\s*$"],
+      // An optional -<suffix> (e.g. -ca, -ca.2) tags a rebuild of the same upstream version.
+      "matchStrings": ["^(?<currentValue>\\d[\\d\\.]*)(?:-[a-z][a-z0-9.]*)?\\s*$"],
       "datasourceTemplate": "docker",
       "depNameTemplate": "quay.io/keycloak/keycloak"
     },
@@ -277,8 +308,8 @@
     {
       "customType": "regex",
       "managerFilePatterns": ["helm/superset/VERSION"],
-      // An optional -<suffix> (e.g. -ca) tags a rebuild of the same upstream version.
-      "matchStrings": ["^(?<currentValue>\\d[\\d\\.]*)(?:-[a-z]+)?\\s*$"],
+      // An optional -<suffix> (e.g. -ca, -ca.2) tags a rebuild of the same upstream version.
+      "matchStrings": ["^(?<currentValue>\\d[\\d\\.]*)(?:-[a-z][a-z0-9.]*)?\\s*$"],
       "datasourceTemplate": "docker",
       "depNameTemplate": "apache/superset"
     },

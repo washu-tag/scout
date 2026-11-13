@@ -1,3 +1,8 @@
 ---
 # Site-installed Helm charts, deployed after the rest of Scout. See README.md.
 pluggable_apps: []
+
+_pluggable_apps_staging_vars: "{{ hostvars[groups['staging'][0]] }}"
+_pluggable_apps_harbor_hostname: >-
+  {{ _pluggable_apps_staging_vars.harbor_subdomain | default('harbor') }}.{{
+  _pluggable_apps_staging_vars.external_url | default(groups['staging'][0]) }}

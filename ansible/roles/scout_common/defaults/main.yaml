@@ -315,6 +315,7 @@ keycloak_subdomain: keycloak
 enable_chat: false
 enable_playbooks: false
 enable_hl7_listener: false
+enable_telepresence: false
 
 # When false, nothing XNAT is created (no namespace/deploy; the Keycloak realm
 # omits the xnat client + xnat-access role). keycloak_xnat_client_secret is only
@@ -338,7 +339,7 @@ enable_xnat: false
 #   name:    str  - init-container name + Secret name suffix
 #   target:  str  - filename written into the plugins dir
 #   source:
-#     type: file | url | coordinates | image
+#     type: file | url | coordinates | s3 | image
 #     # file:        secret: {name, key, from_file}   (from_file = jar path on control node)
 #     # url:         url: https://...
 #     # coordinates: coordinates: <Maven -Dartifact coord>  groupId:artifactId:version[:packaging[:classifier]]
@@ -349,7 +350,12 @@ enable_xnat: false
 #     #              artifacts not on Central (e.g. XNAT plugins published to jfrog).
 #     #              NOTE: release versions only -- the chart rejects a -SNAPSHOT
 #     #              coordinate (resolving one needs maven-metadata.xml); use type: url.
+#     # s3:          s3_uri: s3://bucket/key.jar  (private bucket; xnat_plugin_s3_* below)
+#     #              Connected clusters download it from S3; air-gapped ones from the
+#     #              copy `make install-staging` puts in Nexus (ADR 0040). Never
+#     #              overwrite a released key: publish a new build under a new key.
 #     # image:       repository, tag                       (chart-native plugins: map)
+#     sha256: <hex>  (OPTIONAL; url, coordinates, file) checked by the chart at install
 #   config: list of property files, each:
 #     mechanism: authplugins | file | extraConfig
 #     # authplugins: provider, entry (-> Secret xnat-plugin-<entry>), properties{}
@@ -392,13 +398,23 @@ xnat_plugins_default:
           openid.keycloak.givenNameProperty: given_name
           openid.keycloak.familyNameProperty: family_name
           openid.keycloak.pkceEnabled: 'true'
-          # Validate the ID token rather than trusting what came back from the flow:
-          # check it was issued by our realm, verify its signature against the realm's
-          # published keys, and reject a token of the wrong type presented as an ID token.
+          # Our realm and its published signing keys. The bearer path checks access tokens
+          # against them (issuer, signature, expiry); plugin 2.0.0 and later check the
+          # browser path's ID token against them too.
           openid.keycloak.issuer: '{{ keycloak_realm_url }}'
           openid.keycloak.jwksUri: '{{ keycloak_oidc_certs_url }}'
+          # Reject a token of the wrong type, such as an access token presented as an ID token.
           openid.keycloak.typCheck.enabled: 'true'
           openid.keycloak.idToken.typCheck.expectedTypes: ID
+          # Browser sign-in requires the same audience and access role as the bearer
+          # path. The ID token has no resource_access: the xnat client's role mapper puts
+          # its client roles in `groups` instead. Its audience is always xnat, so set it
+          # here rather than rely on the shared value the bearer path also reads.
+          openid.keycloak.idToken.audCheck.enabled: 'true'
+          openid.keycloak.idToken.audCheck.acceptedAudiences: xnat
+          openid.keycloak.idToken.roleCheck.enabled: 'true'
+          openid.keycloak.idToken.roleCheck.rolePath: groups
+          openid.keycloak.idToken.roleCheck.requiredRoles: xnat-access
           openid.keycloak.usernamePattern: '[preferred_username]'
           openid.keycloak.link: '<a href="/openid-login?providerId=keycloak">Sign in with Scout</a>'
           # Accept a Keycloak access token as Authorization: Bearer, so a script or
@@ -437,6 +453,26 @@ xnat_coordinate_repo_urls: >-
      | selectattr('source.type', 'equalto', 'coordinates')
      | map(attribute='source.repo_url', default='')
      | reject('equalto', '') | unique | list }}
+
+# Sources of `type: s3` plugins (ADR 0040), which the Nexus role copies into
+# xnat_s3_plugin_repo on air-gapped sites. Projects only `source`, for the same
+# lazy-templating reason as above.
+xnat_s3_plugin_sources: >-
+  {{ xnat_plugins_all
+     | map(attribute='source')
+     | selectattr('type', 'equalto', 's3')
+     | list }}
+
+# Read access to the bucket(s) of `type: s3` plugins. Set them vault-encrypted in
+# all.vars: the xnat role (connected) and the staging-run Nexus role (air-gapped)
+# both read them.
+xnat_plugin_s3_region: ''
+xnat_plugin_s3_access_key_id: ''
+xnat_plugin_s3_secret_access_key: ''
+
+# Nexus raw repo holding air-gapped sites' copies of `type: s3` plugins, at
+# <bucket>/<key>.
+xnat_s3_plugin_repo: xnat-plugins
 
 enable_data_generator: false
 
@@ -516,6 +552,11 @@ yum_proxy_base_url: >-
 # mavenUrl when air-gapped. Empty when not proxying, like the other *_proxy_url values.
 maven_proxy_url: >-
   {{ ('https://' ~ nexus_host ~ '/repository/scout-maven')
+     if package_proxy_mode == 'nexus'
+     else '' }}
+# Where air-gapped clusters fetch `type: s3` XNAT plugins (ADR 0040).
+xnat_s3_plugin_mirror_url: >-
+  {{ ('https://' ~ nexus_host ~ '/repository/' ~ xnat_s3_plugin_repo)
      if package_proxy_mode == 'nexus'
      else '' }}
 aws_deployment: "{{ deployment_type | trim | lower == 'aws' }}"

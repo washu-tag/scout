@@ -1,8 +1,9 @@
 # Centralized versions for Scout Ansible roles; auto-loaded via group_vars/all.
 # Renovate-monitored (see renovate.json5); pinned exactly for provenance.
 
+# v1.37.2+ is built with go1.26.10, which rejects the compromised eMudhra chain (CVE-2026-111943).
 # renovate: datasource=github-releases depName=k3s-io/k3s
-k3s_version: v1.37.1+k3s1
+k3s_version: v1.37.2+k3s1
 
 # Helm 3.x until Helm 4's plugin ecosystem matures (helm-diff compat).
 # renovate: datasource=github-releases depName=helm/helm
@@ -17,8 +18,9 @@ eck_operator_version: 3.5.0
 elasticsearch_version: 9.5.4
 
 # Databases & Data Storage - Cassandra
+# v1.21.3+ is built with go1.26.10 and a clean CA bundle (the ACME issuer calls out with credentials).
 # renovate: datasource=helm registryUrl=https://charts.jetstack.io depName=cert-manager
-cert_manager_version: v1.21.2
+cert_manager_version: v1.21.3
 # renovate: datasource=helm registryUrl=https://helm.k8ssandra.io/stable depName=cass-operator
 cass_operator_version: 0.67.2
 # Managed by cass-operator (pulls k8ssandra/cass-management-api).
@@ -40,7 +42,7 @@ valkey_chart_version: 0.12.0
 
 # OAuth2 Proxy
 # renovate: datasource=helm registryUrl=https://oauth2-proxy.github.io/manifests depName=oauth2-proxy
-oauth2_proxy_chart_version: 10.7.1
+oauth2_proxy_chart_version: 10.7.2
 
 # Keycloak Config CLI
 keycloak_config_cli_image: docker.io/adorsys/keycloak-config-cli
@@ -54,18 +56,22 @@ minio_version: 7.1.1
 # edition and no longer serves its images.
 minio_image: docker.io/pgsty/silo
 # renovate: datasource=docker depName=pgsty/silo versioning=regex:^RELEASE\.(?<major>\d{4})-(?<minor>\d{2})-(?<patch>\d{2})T\d{2}-\d{2}-\d{2}Z$
-minio_image_tag: RELEASE.2026-09-16T00-00-00Z
+minio_image_tag: RELEASE.2026-10-26T00-00-00Z
 minio_client_image: docker.io/pgsty/mc
 # renovate: datasource=docker depName=pgsty/mc versioning=regex:^RELEASE\.(?<major>\d{4})-(?<minor>\d{2})-(?<patch>\d{2})T\d{2}-\d{2}-\d{2}Z$
-minio_client_image_tag: RELEASE.2026-09-16T00-00-00Z
+minio_client_image_tag: RELEASE.2026-10-26T00-00-00Z
 
 # Orchestration & Workflow
 # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/ depName=temporal
-temporal_version: 1.7.0
+temporal_version: 1.8.0
 # admin-tools tag must equal the Temporal server version (this chart's appVersion)
 # so the `temporal` CLI matches; Renovate bumps the pair together (renovate.json5).
 # renovate: datasource=docker depName=temporalio/admin-tools
-temporal_admin_tools_image_tag: 1.32.0
+temporal_admin_tools_image_tag: 1.32.2
+# The chart's default UI lags; 2.57.0+ is built with a Go that rejects the
+# compromised eMudhra intermediates (CVE-2026-111943).
+# renovate: datasource=docker depName=temporalio/ui
+temporal_ui_image_tag: 2.58.1
 
 # Real-Time HL7 Ingestion - Strimzi Kafka (MLLP -> Kafka -> batcher -> MinIO).
 # The listener/batcher image is built in CI (hl7-listener/), not pinned here.
@@ -106,6 +112,9 @@ superset_statsd_exporter_tag: v0.31.0
 # Data Visualization & BI - Grafana
 # renovate: datasource=helm registryUrl=https://grafana-community.github.io/helm-charts depName=grafana
 grafana_helm_chart_version: 13.2.7
+# The chart's default (13.2.3) is built on a Go that trusts the compromised eMudhra chain; 13.2.5 isn't.
+# renovate: datasource=docker depName=grafana/grafana
+grafana_image_tag: 13.2.5-distroless
 
 # Launchpad - catalog discovery sidecar (ADR 0034). The same image the
 # Grafana chart embeds for dashboard ConfigMap discovery.
@@ -115,17 +124,17 @@ launchpad_sidecar_image_tag: 2.11.2
 
 # Notebooks & Interactive Computing
 # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/jupyterhub/helm-chart/refs/heads/gh-pages/ depName=jupyterhub
-jupyter_helm_chart_version: 4.4.2
+jupyter_helm_chart_version: 4.4.5
 
 # AI & ML
 # OWUI image tag = the OWUI chart's appVersion (the bootstrap Job discovers the
 # running Pod); open_webui_image_tag pins it for the haul, Renovate bumps the pair.
 # renovate: datasource=helm registryUrl=https://helm.openwebui.com/ depName=open-webui
-open_webui_helm_chart_version: 16.6.0
+open_webui_helm_chart_version: 18.0.0
 # renovate: datasource=docker depName=ghcr.io/open-webui/open-webui
-open_webui_image_tag: 0.11.4
+open_webui_image_tag: 0.13.0
 # renovate: datasource=docker depName=ollama/ollama
-ollama_image_tag: 0.35.1
+ollama_image_tag: 0.40.16
 
 # Monitoring & Observability - Prometheus
 # Deployed chart is prometheus-community/prometheus (NOT kube-prometheus-stack);
@@ -142,11 +151,19 @@ alloy_helm_chart_version: 1.12.1
 
 # Container Registry
 # renovate: datasource=helm registryUrl=https://helm.goharbor.io depName=harbor
-harbor_version: 1.19.2
+harbor_version: 1.19.4
+# Every Harbor image runs this tag: chart 1.19.4 ships 2.15.4, which still trusts the compromised
+# eMudhra roots; 2.15.5 is fixed. Drop the pin once the chart's default catches up.
+# renovate: datasource=docker depName=goharbor/harbor-core
+harbor_image_tag: v2.15.5
 
 # Package Proxy - Nexus Repository Manager
 # renovate: datasource=helm registryUrl=https://stevehipwell.github.io/helm-charts/ depName=nexus3
 nexus_helm_chart_version: 5.26.2
+# The chart's default (3.96.4-ubi) still trusts the compromised eMudhra roots in Java and the OS store.
+# Keep -ubi: the chart appends it only when the tag is unset; the bare tag is the Alpine build.
+# renovate: datasource=docker depName=sonatype/nexus3
+nexus_image_tag: 3.98.1-ubi
 
 # GPU Support
 # renovate: datasource=helm registryUrl=https://nvidia.github.io/gpu-operator depName=gpu-operator
@@ -178,18 +195,29 @@ orthanc_version: latest
 # Medical Imaging - XNAT (optional; enable_xnat)
 # GHCR lane (ghcr.io/nrgxnat/xnat, set in the xnat role); Docker Hub xnat-web no longer pulled.
 # Pinned here because the chart's appVersion (1.9.x) is too old for Scout's 1.10 plugins.
+# 1.10.2.1 drops the compromised eMudhra roots from the JDK trust store (CVE-2026-91403).
 # renovate: datasource=docker depName=ghcr.io/nrgxnat/xnat
-xnat_image_tag: 1.10.2
+xnat_image_tag: 1.10.2.1
 # openid SSO plugin (NrgXnat Artifactory); consumed by roles/xnat/defaults coordinates.
 # renovate: datasource=maven registryUrl=https://nrgxnat.jfrog.io/nrgxnat/libs-release depName=au.edu.qcif.xnat.openid:openid-auth-plugin
 xnat_openid_plugin_version: 1.6.0
 # XNAT Helm chart, OCI artifact on GHCR (Renovate-monitored, ADR 0015).
 # renovate: datasource=docker depName=ghcr.io/nrgxnat/charts/xnat
 xnat_chart_version: 4.0.1
+# The AWS CLI the XNAT chart runs for S3 plugins and the dev side-load. Docker Hub's
+# copy, not the chart's public.ecr.aws default, which Harbor doesn't proxy.
+xnat_awscli_image: docker.io/amazon/aws-cli
+# renovate: datasource=docker depName=amazon/aws-cli
+xnat_awscli_image_tag: 2.40.1
 
 # data-generator Helm chart, OCI artifact on GHCR (Renovate-monitored, ADR 0015).
 # renovate: datasource=docker depName=ghcr.io/washu-tag/charts/data-generator
 data_generator_chart_version: 1.0.0
+
+# Telepresence traffic manager Helm chart, OCI artifact on GHCR (Renovate-monitored, ADR 0015).
+# Developers' telepresence CLI should match this version.
+# renovate: datasource=docker depName=ghcr.io/telepresenceio/telepresence-oss
+telepresence_chart_version: 2.32.3
 # Built + published by this repo's CI (ADR 0030 phase 0); NOT Renovate-tracked (self-ref).
 # On-prem Ansible pin only; the GitOps lane owns the real version (OCIRepository, ADR 0031).
 hl7_transformer_chart_version: 0.0.0

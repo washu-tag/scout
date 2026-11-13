@@ -41,7 +41,7 @@ spec:
       image:
         repository: docker.io/pgsty/silo
         # renovate: datasource=docker depName=pgsty/silo versioning=regex:^RELEASE\.(?<major>\d{4})-(?<minor>\d{2})-(?<patch>\d{2})T\d{2}-\d{2}-\d{2}Z$
-        tag: RELEASE.2026-09-16T00-00-00Z
+        tag: RELEASE.2026-10-26T00-00-00Z
       configSecret:
         name: minio-scout-env-configuration
         existingSecret: true
@@ -261,7 +261,7 @@ spec:
           # Pinned in versions.yaml (minio_client_image[_tag], Renovate-tracked). Literal
           # mirror, upstream image not stamped; keep in lockstep.
           # renovate: datasource=docker depName=pgsty/mc versioning=regex:^RELEASE\.(?<major>\d{4})-(?<minor>\d{2})-(?<patch>\d{2})T\d{2}-\d{2}-\d{2}Z$
-          image: docker.io/pgsty/mc:RELEASE.2026-09-16T00-00-00Z
+          image: docker.io/pgsty/mc:RELEASE.2026-10-26T00-00-00Z
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000

@@ -509,6 +509,16 @@ def push_models(token):
             http_or_raise("POST", "/api/v1/models/create", m, token)
             print(f'  {m["id"]}: created')
 
+        # Since OWUI 0.12.4 the update payload's access_grants are ignored, so
+        # re-assert them through the dedicated endpoint, as push_tools does.
+        if "access_grants" in m:
+            http_or_raise(
+                "POST",
+                "/api/v1/models/model/access/update",
+                {"id": m["id"], "access_grants": m["access_grants"]},
+                token,
+            )
+
 
 def refresh_connections():
     print(

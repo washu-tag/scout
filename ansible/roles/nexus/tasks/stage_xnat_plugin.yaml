@@ -1,0 +1,63 @@
+---
+# One `type: s3` plugin: download it and PUT it at _nexus_url, unless it is
+# already there.
+- name: Look for {{ _plugin_source.s3_uri }} in Nexus
+  ansible.builtin.uri:
+    url: '{{ _nexus_url }}'
+    method: HEAD
+    status_code: [200, 404]
+  register: _xnat_plugin_in_nexus
+
+- name: Copy {{ _plugin_source.s3_uri }} into Nexus
+  when: _xnat_plugin_in_nexus.status == 404
+  block:
+    - name: Create a download directory
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: xnat-plugin
+      register: _xnat_plugin_tmp
+
+    # no_log: the presigned URL is a credential. ca_path omitted: S3 chains to the
+    # system trust store, not the staging CA the role's module_defaults set. dest
+    # must not exist yet, or uri sends If-Modified-Since and S3 answers 304.
+    - name: Download {{ _plugin_source.s3_uri }}
+      no_log: true
+      ansible.builtin.uri:
+        url: >-
+          {{ _plugin_source.s3_uri | s3_presigned_url(xnat_plugin_s3_region,
+             xnat_plugin_s3_access_key_id, xnat_plugin_s3_secret_access_key) }}
+        dest: '{{ _xnat_plugin_tmp.path }}/plugin.jar'
+        ca_path: '{{ omit }}'
+      register: _xnat_plugin_download
+      failed_when: false
+
+    - name: Fail if the download failed
+      when: _xnat_plugin_download.status != 200
+      ansible.builtin.fail:
+        msg: >-
+          Downloading {{ _plugin_source.s3_uri }} failed with HTTP status
+          {{ _xnat_plugin_download.status }}.
+          {{ 'Check that xnat_plugin_s3_region is the region of the bucket.'
+             if _xnat_plugin_download.status in [301, 400] else
+             'Check that the key exists and the xnat_plugin_s3_* credentials can read it.'
+             if _xnat_plugin_download.status in [403, 404] else
+             'Check that the staging node can reach S3.' }}
+
+    - name: Upload {{ _plugin_source.s3_uri }} to Nexus
+      ansible.builtin.uri:
+        url: '{{ _nexus_url }}'
+        method: PUT
+        src: '{{ _xnat_plugin_tmp.path }}/plugin.jar'
+        remote_src: true
+        headers:
+          Content-Type: application/java-archive
+        user: admin
+        password: '{{ nexus_root_password }}'
+        force_basic_auth: true
+        status_code: 201
+  always:
+    - name: Remove the download directory
+      when: _xnat_plugin_tmp.path is defined
+      ansible.builtin.file:
+        path: '{{ _xnat_plugin_tmp.path }}'
+        state: absent

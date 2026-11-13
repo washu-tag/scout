@@ -1,10 +1,14 @@
 FROM quay.io/jupyter/scipy-notebook:python-3.13.18
 
 USER root
+# TeX Live ships its own CA file (tlmgr's LWP downloads) that still holds emSign ECC Root CA - G3;
+# point it at the system bundle.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends --only-upgrade openssl libssl3t64 \
-        curl libcurl4t64 libcurl3t64-gnutls ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+        curl libcurl4t64 libcurl3t64-gnutls ca-certificates apt libapt-pkg7.0 \
+    && rm -rf /var/lib/apt/lists/* \
+    && f=/usr/share/texlive/tlpkg/installer/curl/curl-ca-bundle.crt \
+    && { [ ! -e "$f" ] || ln -sf /etc/ssl/certs/ca-certificates.crt "$f"; }
 USER ${NB_UID}
 
 # Platform packages + Jupyter extensions via mamba. Everything else

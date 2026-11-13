@@ -1019,7 +1019,15 @@ xnat_admin_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vau
 Outbound emails will be sent from the `xnat_admin_email` value. This must be overriden with a real address; the 
 default placeholder `admin@{{ server_hostname }}` may not exist.
 
-Plugins beyond the bundled openid plugin are **additive**: entries in `xnat_plugins` are installed *in addition to* the role's `xnat_plugins_default` (which carries the required openid plugin), so you never repeat or risk dropping it. Each entry names a source (`file`, `url`, `coordinates`, or `image`) and optional config files — see the `xnat` role README.
+Plugins beyond the bundled openid plugin are **additive**: entries in `xnat_plugins` are installed *in addition to* the role's `xnat_plugins_default` (which carries the required openid plugin), so you never repeat or risk dropping it. Each entry names a source (`file`, `url`, `coordinates`, `s3`, or `image`) and optional config files — see the `xnat` role README.
+
+A plugin published to a private S3 bucket uses `type: s3` with `s3_uri: s3://bucket/key.jar`, and needs read access to the bucket. The entry is the same on connected and air-gapped sites: a connected cluster downloads the jar from S3, and an air-gapped one installs a copy that `make install-staging` puts in Nexus, so run that first. Publish each new build under a new key; an air-gapped site keeps the first copy it made.
+
+```yaml
+xnat_plugin_s3_region: us-east-2
+xnat_plugin_s3_access_key_id: $(echo -n AKIA... | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+xnat_plugin_s3_secret_access_key: $(echo -n ... | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+```
 
 The remaining XNAT variables have sane defaults and only need to be set to override them:
 
