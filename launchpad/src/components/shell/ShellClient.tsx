@@ -350,14 +350,14 @@ export default function ShellClient({
               onClick={() => setMenu(null)}
               className="mb-2 flex flex-col items-center gap-1 rounded-md no-underline hover:opacity-80 transition-opacity"
             >
-              <div
-                className={`p-0.5 rounded-md bg-gradient-to-br from-indigo-500 to-indigo-700 ${
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/scout.svg"
+                alt=""
+                className={`h-9 w-9 block rounded-[8px] ${
                   pathname === '/' ? 'ring-2 ring-indigo-300 dark:ring-indigo-500/60' : ''
                 }`}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/scout.png" alt="" className="h-8 w-8 rounded bg-white p-0.5 block" />
-              </div>
+              />
               <span className="max-w-16 truncate text-[10px] leading-tight text-slate-400 dark:text-slate-500">
                 {environment}
               </span>
