@@ -5,10 +5,9 @@
 (window._JUPYTERLAB = window._JUPYTERLAB || {})['scout-frame-location'] = {
   init: function () {},
   get: function () {
+    // JupyterLab reads a module without __esModule as the plugin itself.
     return Promise.resolve(function () {
-      return {
-        default: { id: 'scout-frame-location:plugin', autoStart: true, activate: function () {} },
-      };
+      return { id: 'scout-frame-location:plugin', autoStart: true, activate: function () {} };
     });
   },
 };
