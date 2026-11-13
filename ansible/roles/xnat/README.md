@@ -223,14 +223,11 @@ Grafana. The chart's bundled bokysan/postfix subchart is disabled
 
 See `defaults/main.yaml`. Commonly set in inventory: `enable_xnat`,
 `keycloak_xnat_client_secret`, `xnat_postgres_password`, `xnat_admin_password`,
-`xnat_site_id`, `xnat_admin_email`, `xnat_smtp_host`, `xnat_plugins`,
-`xnat_probe_http_path`. Chart and image versions are pinned in
-`group_vars/all/versions.yaml`.
+`xnat_site_id`, `xnat_admin_email`, `xnat_smtp_host`, `xnat_plugins`.
+Chart and image versions are pinned in `group_vars/all/versions.yaml`.
 
 Startup and readiness use the unauthenticated `/xapi/siteConfig/buildInfo`
-endpoint; liveness checks the TCP listener. For a custom image or context prefix,
-set `xnat_probe_http_path` in inventory to the path served directly by the Pod,
-such as `/xnat/xapi/siteConfig/buildInfo`, rather than an Ingress rewrite path.
+endpoint; liveness checks the TCP listener.
 
 `keycloak_xnat_client_secret`, `xnat_postgres_password`, and
 `xnat_admin_password` are **required** when `enable_xnat` is true; the role

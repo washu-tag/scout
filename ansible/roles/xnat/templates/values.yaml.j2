@@ -89,7 +89,6 @@ volumes:
 # Bump the startup probe so Hibernate's first-boot DDL (3-5 min) completes
 # before the pod is killed. Pairs with the helm --wait timeout.
 probes:
-  httpPath: {{ xnat_probe_http_path | to_json }}
   startup:
     failureThreshold: {{ xnat_startup_failure_threshold }}
 

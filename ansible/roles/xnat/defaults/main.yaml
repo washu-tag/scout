@@ -73,8 +73,7 @@ xnat_postgres_password: ''
 xnat_postgres_db: xnat
 xnat_postgres_user: xnat
 
-# --- Health probes --------------------------------------------------------
-xnat_probe_http_path: /xapi/siteConfig/buildInfo
+# --- Startup probe --------------------------------------------------------
 # 60 * 10s = 10 min budget for Hibernate's first-boot DDL (3-5 min). Pairs with
 # the 20m helm --wait timeout below.
 xnat_startup_failure_threshold: 60
