@@ -39,9 +39,11 @@ export default function HomeClient({ model, scoutEnv, deployerName, docsUrl }: H
     return (
       <div className="min-h-screen w-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block p-1 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 mb-4 shadow-md">
-            <img src="/scout.png" alt="Scout" className="h-14 rounded-xl bg-white p-2" />
-          </div>
+          <img
+            src="/scout.svg"
+            alt="Scout"
+            className="mx-auto mb-4 h-16 w-16 block shadow-md rounded-2xl"
+          />
           <div className="flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400">
             <div
               className="w-1.5 h-1.5 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce"
