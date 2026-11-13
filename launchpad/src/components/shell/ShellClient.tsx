@@ -351,13 +351,9 @@ export default function ShellClient({
               className="mb-2 flex flex-col items-center gap-1 rounded-md no-underline hover:opacity-80 transition-opacity"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/scout.svg"
-                alt=""
-                className={`h-9 w-9 block rounded-[8px] ${
-                  pathname === '/' ? 'ring-2 ring-indigo-300 dark:ring-indigo-500/60' : ''
-                }`}
-              />
+              <img src="/scout.svg" alt="" className="h-9 w-9 block dark:hidden" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/scout-dark.svg" alt="" className="h-9 w-9 hidden dark:block" />
               <span className="max-w-16 truncate text-[10px] leading-tight text-slate-400 dark:text-slate-500">
                 {environment}
               </span>
