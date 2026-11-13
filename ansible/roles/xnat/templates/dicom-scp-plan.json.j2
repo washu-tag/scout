@@ -1,0 +1,22 @@
+{#- Requests that make XNAT's receivers match xnat_dicom_scp_receivers, given the
+    current list (_xnat_scp_current). A receiver is identified by AE title + port. #}
+{%- set plan = [] -%}
+{%- for r in xnat_dicom_scp_receivers -%}
+{%-   set want = (r.settings | default({})) | combine({'aeTitle': r.ae_title, 'port': r.port | int, 'enabled': r.enabled | default(true) | bool}) -%}
+{%-   set have = _xnat_scp_current | selectattr('aeTitle', 'equalto', r.ae_title) | selectattr('port', 'equalto', r.port | int) | first | default(none) -%}
+{%-   set label = r.ae_title ~ ':' ~ r.port -%}
+{%-   if have is none -%}
+{%-     if want.enabled -%}
+{%-       set _ = plan.append({'label': label, 'method': 'POST', 'path': '/xapi/dicomscp', 'body': want}) -%}
+{%-     endif -%}
+{%-   else -%}
+{%-     set diff = {} -%}
+{%-     for k, v in want.items() if have[k] | default(none) != v -%}
+{%-       set _ = diff.update({k: v}) -%}
+{%-     endfor -%}
+{%-     if diff -%}
+{%-       set _ = plan.append({'label': label, 'method': 'PUT', 'path': '/xapi/dicomscp/' ~ have.id, 'body': diff}) -%}
+{%-     endif -%}
+{%-   endif -%}
+{%- endfor -%}
+{{ plan | to_json }}

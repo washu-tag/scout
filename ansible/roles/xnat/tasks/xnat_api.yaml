@@ -1,0 +1,32 @@
+---
+# Send each request in _xnat_api_requests ({method, path, body?, label?}) to XNAT's
+# REST API as admin, from inside the pod. Responses land in _xnat_api_responses:
+# each result's stdout is the HTTP status on its first line, then the body. The
+# admin creds are no_log'd, so the status check is a separate task.
+
+- name: Call the XNAT REST API
+  no_log: true
+  loop: '{{ _xnat_api_requests }}'
+  kubernetes.core.k8s_exec:
+    namespace: '{{ xnat_namespace }}'
+    pod: '{{ xnat_helm_release_name }}-0'
+    container: xnat
+    command: >-
+      sh -c "echo {{ item.body | default({}) | to_json | b64encode }} | base64 -d > /tmp/xnat-api.json &&
+      curl -s -o /tmp/xnat-api.out -w '%{http_code}\n' -u 'admin:{{ xnat_admin_password }}'
+      -X {{ item.method }}{{ ' -H content-type:application/json --data @/tmp/xnat-api.json' if item.body is defined else '' }}
+      http://localhost:8080{{ item.path }}; cat /tmp/xnat-api.out"
+  register: _xnat_api_responses
+  changed_when: item.method != 'GET'
+  failed_when: false
+
+- name: Check the XNAT REST API responses
+  loop: '{{ _xnat_api_responses.results }}'
+  loop_control:
+    label: '{{ item.item.method }} {{ item.item.label | default(item.item.path) }}'
+  ansible.builtin.assert:
+    that: (item.stdout | default('')).split('\n') | first is match('2[0-9][0-9]$')
+    fail_msg: >-
+      {{ item.item.method }} {{ item.item.path }} failed:
+      {{ item.stdout | default(item.msg | default('')) }}
+    quiet: true
