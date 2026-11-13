@@ -102,6 +102,15 @@
           data:
             ca.crt: '{{ _traefik_tls_secret.resources[0].data["tls.crt"] }}'
 
+- name: Publish launchpad frame-location script
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: frame_location
+  vars:
+    frame_location_configmap: open-webui-frame-location
+    frame_location_namespace: '{{ chatbot_namespace }}'
+    frame_location_file: loader.js
+
 - name: Parse Helm values
   ansible.builtin.set_fact:
     owui_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"

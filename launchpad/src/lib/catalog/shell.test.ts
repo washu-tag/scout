@@ -2,7 +2,14 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { assemble, type Origin } from './assemble';
 import { CATALOG_API_VERSION, CATALOG_KIND, validateDocument } from './schema';
-import { chipForUrl, chipTarget, embeddedChip, frameUrl, shellSections } from './shell';
+import {
+  chipForUrl,
+  chipTarget,
+  embeddedChip,
+  frameUrl,
+  shellLocation,
+  shellSections,
+} from './shell';
 import type { Catalog } from './types';
 
 const ORIGIN: Origin = { protocol: 'https', host: 'scout.example.edu' };
@@ -135,6 +142,37 @@ describe('frameUrl', () => {
       '/\\evil.example',
     ]) {
       assert.strictEqual(frameUrl(chat, path), chat.href, String(path));
+    }
+  });
+});
+
+describe('shellLocation', () => {
+  const chat = shellSections(assemble(CATALOG, { origin: ORIGIN, isAdmin: false }))[0].chips[0];
+
+  it('maps a location on the chip origin to its launchpad address', () => {
+    assert.strictEqual(
+      shellLocation(chat, 'https://chat.scout.example.edu/c/123?x=1#m'),
+      '/app/chat?path=%2Fc%2F123%3Fx%3D1#m',
+    );
+    assert.strictEqual(shellLocation(chat, 'https://chat.scout.example.edu/'), '/app/chat');
+  });
+
+  it('round-trips through frameUrl', () => {
+    const href = 'https://chat.scout.example.edu/c/123?x=1&y=a%20b#m';
+    const address = new URL(shellLocation(chat, href)!, 'https://scout.example.edu');
+    assert.strictEqual(frameUrl(chat, address.searchParams.get('path')! + address.hash), href);
+  });
+
+  it('ignores anything that is not a location on the chip origin', () => {
+    for (const href of [
+      undefined,
+      42,
+      'not a url',
+      'https://evil.example/c/123',
+      'https://jupyter.scout.example.edu/lab',
+      'http://chat.scout.example.edu/c/123',
+    ]) {
+      assert.strictEqual(shellLocation(chat, href), null, String(href));
     }
   });
 });

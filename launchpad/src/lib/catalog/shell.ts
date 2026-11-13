@@ -58,6 +58,22 @@ export function frameUrl(chip: RenderChip, path: string | null): string {
   }
 }
 
+// The launchpad address for a location a framed app reports, or null when the
+// location is off the chip's origin.
+export function shellLocation(chip: RenderChip, href: unknown): string | null {
+  if (typeof href !== 'string') return null;
+  let url: URL;
+  try {
+    url = new URL(href);
+  } catch {
+    return null;
+  }
+  const home = new URL(chip.href);
+  if (url.origin !== home.origin) return null;
+  if (url.href === home.href) return shellPath(chip.id);
+  return `${shellPath(chip.id)}?path=${encodeURIComponent(url.pathname + url.search)}${url.hash}`;
+}
+
 // The framed app that owns a Scout service URL: among the chips on its host, the
 // one whose own path is the longest prefix of the URL's path, else the first.
 export function chipForUrl(

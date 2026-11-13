@@ -1,0 +1,18 @@
+// Tells the launchpad which page this app is on while the launchpad frames it,
+// so its address bar follows. Sends only this page's address, only to the launchpad.
+(function () {
+  var launchpad = 'https://{{ server_hostname }}';
+  if (window.parent === window) return;
+  var last = '';
+  function report() {
+    var url = new URL(window.location.href);
+    if (url.searchParams.has('XNAT_CSRF')) url.searchParams.delete('XNAT_CSRF');
+    if (url.href === last) return;
+    last = url.href;
+    window.parent.postMessage({ type: 'scout:location', href: url.href }, launchpad);
+  }
+  report();
+  window.addEventListener('popstate', report);
+  window.addEventListener('hashchange', report);
+  window.setInterval(report, 500);
+})();

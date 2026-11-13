@@ -1,0 +1,6 @@
+## A form's result page sits at the action URL, which must not become a link.
+#if($data.request.method == 'GET')
+<script>
+{% include 'frame-location.js.j2' %}
+</script>
+#end

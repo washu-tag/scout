@@ -9,7 +9,13 @@ import { HiOutlineExternalLink } from 'react-icons/hi';
 import { ChipIcon } from '@/components/catalog/CatalogSections';
 import { ChipAnchor, EmbedAppsContext } from '@/components/shell/ChipAnchor';
 import { DEFAULT_ICON, ICONS } from '@/lib/catalog/icons';
-import { chipTarget, embeddedChip, frameUrl, type ShellSection } from '@/lib/catalog/shell';
+import {
+  chipTarget,
+  embeddedChip,
+  frameUrl,
+  shellLocation,
+  type ShellSection,
+} from '@/lib/catalog/shell';
 import { TONES, type ToneName } from '@/lib/catalog/tones';
 import type { RenderChip } from '@/lib/catalog/types';
 
@@ -106,18 +112,17 @@ export default function ShellClient({
       ? frameUrl(active, deepPath + (typeof window === 'undefined' ? '' : window.location.hash))
       : active?.href;
 
+  // The page each framed app last reported, so the address bar can follow it.
+  const [locations, setLocations] = useState<Record<string, string>>({});
+  const frames = useRef(new Map<string, HTMLIFrameElement>());
+
   // Every app opened this visit keeps its frame, so switching back resumes it.
   const [opened, setOpened] = useState<{ chip: RenderChip; src: string }[]>(
     active && activeSrc ? [{ chip: active, src: activeSrc }] : [],
   );
   const [loaded, setLoaded] = useState<string[]>([]);
-  if (active && activeSrc) {
-    const frame = opened.find((entry) => entry.chip.id === active.id);
-    if (!frame) {
-      setOpened([...opened, { chip: active, src: activeSrc }]);
-    } else if (deepPath && frame.src !== activeSrc) {
-      setOpened(opened.map((entry) => (entry === frame ? { ...entry, src: activeSrc } : entry)));
-    }
+  if (active && activeSrc && !opened.some((entry) => entry.chip.id === active.id)) {
+    setOpened([...opened, { chip: active, src: activeSrc }]);
   }
 
   const skipAuth =
@@ -179,6 +184,33 @@ export default function ShellClient({
   useEffect(() => {
     if (activeTitle) document.title = `${activeTitle} · Scout`;
   }, [activeTitle]);
+
+  // Apps report their own address with a `scout:location` message. Only the
+  // app's own frame, from the chip's origin, is believed; content an app nests
+  // inside its frame has a different source and is ignored.
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.data?.type !== 'scout:location') return;
+      for (const [id, frame] of frames.current) {
+        if (frame.contentWindow !== event.source) continue;
+        const chip = embeddedChip(sections, id, embedApps);
+        if (!chip || event.origin !== new URL(chip.href).origin) return;
+        const address = shellLocation(chip, event.data.href);
+        if (!address) return;
+        setLocations((current) => ({ ...current, [id]: address }));
+        return;
+      }
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [sections, embedApps]);
+
+  const activeLocation = active ? locations[active.id] : undefined;
+  useEffect(() => {
+    if (!activeLocation) return;
+    const current = window.location.pathname + window.location.search + window.location.hash;
+    if (current !== activeLocation) window.history.replaceState(null, '', activeLocation);
+  }, [activeLocation]);
 
   const menuOpen = menu !== null;
   useEffect(() => {
@@ -447,6 +479,10 @@ export default function ShellClient({
           {opened.map(({ chip, src }) => (
             <iframe
               key={chip.id}
+              ref={(element) => {
+                if (element) frames.current.set(chip.id, element);
+                else frames.current.delete(chip.id);
+              }}
               src={src}
               title={chip.title}
               allow="clipboard-read; clipboard-write; fullscreen"

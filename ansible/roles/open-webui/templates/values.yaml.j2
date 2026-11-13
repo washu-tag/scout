@@ -365,17 +365,29 @@ extraEnvVars:
     value: /etc/pki/trust/ca.crt
   - name: SSL_CERT_FILE
     value: /etc/pki/trust/ca.crt
+{% endif %}
 
 volumes:
+  - name: frame-location
+    configMap:
+      name: open-webui-frame-location
+{% if open_webui_trust_traefik_ca | bool %}
   - name: trusted-ca
     secret:
       secretName: open-webui-trusted-ca
       items:
         - key: ca.crt
           path: ca.crt
+{% endif %}
 
 volumeMounts:
   container:
+    # Open WebUI copies build/static/loader.js into the static files it serves.
+    - name: frame-location
+      mountPath: /app/build/static/loader.js
+      subPath: loader.js
+      readOnly: true
+{% if open_webui_trust_traefik_ca | bool %}
     - name: trusted-ca
       mountPath: /etc/pki/trust
       readOnly: true

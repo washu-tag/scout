@@ -231,6 +231,9 @@ extraVolumes:
       items:
         - key: ca.crt
           path: ca.crt
+  - name: frame-location
+    configMap:
+      name: superset-frame-location
 extraVolumeMounts:
   - name: scout-logo
     mountPath: /app/superset/static/assets/images/scout.png
@@ -242,6 +245,10 @@ extraVolumeMounts:
     readOnly: true
   - name: trino-ca
     mountPath: /etc/trino-ca
+    readOnly: true
+  - name: frame-location
+    mountPath: /app/superset/templates/tail_js_custom_extra.html
+    subPath: tail_js_custom_extra.html
     readOnly: true
 init:
   # Override the apache/superset chart's default firstname/lastname so the

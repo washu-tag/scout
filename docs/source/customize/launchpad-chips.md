@@ -112,6 +112,21 @@ someone shared, open inside the launchpad at the same page. On-prem, the edge se
 them to the launchpad, which frames the chip on that subdomain whose path matches
 best. A subdomain with no chip opens on its own.
 
+While your service is framed, the launchpad's address bar shows the page the service
+was opened at. To keep it in step as users move around, post the page's address to the
+launchpad whenever it changes:
+
+```js
+window.parent.postMessage(
+  { type: 'scout:location', href: window.location.href },
+  'https://scout.example.edu', // the launchpad's origin
+);
+```
+
+Name the launchpad's origin rather than `'*'`, and send nothing else. The launchpad
+accepts the message only from your chip's frame and only for an address on your
+chip's origin, so content nested inside your page cannot move it.
+
 ## Groups: Defining a section
 
 Chips are grouped on the page into sections called Groups. A chip references a group id;

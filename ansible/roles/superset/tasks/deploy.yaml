@@ -81,6 +81,15 @@
       stringData:
         REDIS_PASSWORD: '{{ valkey_password }}'
 
+- name: Publish launchpad frame-location script
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: frame_location
+  vars:
+    frame_location_configmap: superset-frame-location
+    frame_location_namespace: '{{ superset_namespace }}'
+    frame_location_file: tail_js_custom_extra.html
+
 - name: Parse Superset Helm values
   ansible.builtin.set_fact:
     superset_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"

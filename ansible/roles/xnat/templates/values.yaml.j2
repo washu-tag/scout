@@ -244,6 +244,9 @@ extraVolumes:
   - name: prefs-override
     secret:
       secretName: xnat-prefs-override
+  - name: frame-location
+    configMap:
+      name: xnat-frame-location
 {% for p in xnat_plugins_all %}
 {% for c in p.config | default([]) if c.mechanism == 'file' %}
   - name: cfg-{{ p.name }}-{{ loop.index }}
@@ -261,6 +264,11 @@ extraVolumeMounts:
   - name: prefs-override
     mountPath: /data/xnat/home/config/prefs-override.ini
     subPath: prefs-override.ini
+  # Every XNAT page's <head> includes the classpath templates under screens/header.
+  - name: frame-location
+    mountPath: /data/xnat/home/plugins/scout-frame-location.jar
+    subPath: scout-frame-location.jar
+    readOnly: true
 {% for p in xnat_plugins_all %}
 {% for c in p.config | default([]) if c.mechanism == 'file' %}
   - name: cfg-{{ p.name }}-{{ loop.index }}
