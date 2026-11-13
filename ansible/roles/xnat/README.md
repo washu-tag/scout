@@ -223,8 +223,11 @@ Grafana. The chart's bundled bokysan/postfix subchart is disabled
 
 See `defaults/main.yaml`. Commonly set in inventory: `enable_xnat`,
 `keycloak_xnat_client_secret`, `xnat_postgres_password`, `xnat_admin_password`,
-`xnat_site_id`, `xnat_admin_email`, `xnat_smtp_host`, `xnat_plugins`,
-`xnat_chart_version`, `xnat_image_tag`.
+`xnat_site_id`, `xnat_admin_email`, `xnat_smtp_host`, `xnat_plugins`.
+Chart and image versions are pinned in `group_vars/all/versions.yaml`.
+
+Startup and readiness use the unauthenticated `/xapi/siteConfig/buildInfo`
+endpoint; liveness checks the TCP listener.
 
 `keycloak_xnat_client_secret`, `xnat_postgres_password`, and
 `xnat_admin_password` are **required** when `enable_xnat` is true; the role

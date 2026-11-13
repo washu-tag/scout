@@ -1,6 +1,11 @@
 nameOverride: ''
 namespaceOverride: ''
 
+readinessProbe:
+  httpGet:
+    path: /health/db
+    port: http
+
 # Image is intentionally NOT pinned here — the OWUI chart's appVersion is the
 # single source of truth. Renovate bumps `open_webui_helm_chart_version` in
 # versions.yaml; the chart's default `image.tag` (= appVersion) then determines
