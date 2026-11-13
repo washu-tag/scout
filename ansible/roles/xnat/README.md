@@ -62,10 +62,11 @@ Each plugin entry:
 - name: my-plugin            # init-container name + Secret name suffix
   target: my-plugin.jar      # filename written into the plugins dir
   source:
-    type: coordinates        # file | url | coordinates | image
+    type: coordinates        # file | url | coordinates | s3 | image
     # type: file        -> secret: {name, key, from_file}   (from_file = jar path on the control node)
     # type: url         -> url: https://...
     # type: coordinates -> coordinates: <Maven -Dartifact coord>, plus optional repo_url
+    # type: s3          -> s3_uri: s3://bucket/key.jar       (private bucket; see below)
     # type: image       -> repository, tag                       (chart-native plugins: map; no installer)
     # Maven -Dartifact format: groupId:artifactId:version[:packaging[:classifier]]
     # (a `-xpl.jar` is packaging `jar` + classifier `xpl`, hence `...:jar:xpl`).
@@ -92,8 +93,39 @@ Each plugin entry:
 Every source type goes into the chart's native `plugins:` map, and the chart
 renders the init container: a stock curl image for `url` / `coordinates` / `file`
 (it resolves the coordinate to a URL at render time, so the exact artifact is
-visible in `helm template`), and the plugin's own image for `image`. Jars are
-installed exactly as published — nothing is unpacked or repackaged.
+visible in `helm template`), the AWS CLI for `s3` on a connected cluster, and the
+plugin's own image for `image`. Jars are installed exactly as published — nothing
+is unpacked or repackaged.
+
+### Plugins from a private S3 bucket
+
+```yaml
+# all.vars
+xnat_plugins:
+  - name: my-plugin
+    target: my-plugin.jar
+    source:
+      type: s3
+      s3_uri: s3://my-bucket/plugins/my-plugin-1.0.0.jar
+xnat_plugin_s3_region: us-east-2
+xnat_plugin_s3_access_key_id: <vault-encrypted>
+xnat_plugin_s3_secret_access_key: <vault-encrypted>
+```
+
+The entry is the same on every site; the role picks the route (ADR 0040):
+
+- **Connected:** the keys go into the Secret `xnat-s3-plugin-credentials`, and the
+  chart's installer downloads the jar from S3 at each pod start. This can't be
+  combined with `xnat_dev_war` / `xnat_dev_plugins`, which need the chart's one S3
+  setting for MinIO.
+- **Air-gapped** (`package_proxy_mode: nexus`): `make install-staging` copies the
+  jar into the Nexus raw repo `xnat-plugins` at `<bucket>/<key>`, unless it is
+  already there, and the cluster installs it from that URL. Run it before the XNAT
+  deploy, which fails early, naming the plugin, if the jar isn't in Nexus.
+
+Publish each new build under a new key, e.g. with the version in it. An air-gapped
+site keeps the first copy it made, so to replace a bad one, delete it from the
+`xnat-plugins` repo and re-run `make install-staging`.
 
 Because nothing rewrites the plugins' bundled logback configs any more, plugin
 logs reach `kubectl logs` only if XNAT itself is told to log to the console: set
@@ -108,6 +140,7 @@ plugin logs go to files under `$XNAT_HOME/logs` where nothing collects them.
   `pluginInstaller.caCertSecret` (per ADR-0016) so the fetch trusts Nexus's
   self-signed HTTPS. Release versions only — a `-SNAPSHOT` coordinate is rejected
   at render time, since resolving one needs `maven-metadata.xml`.
+- **s3** installs from the copy `make install-staging` puts in Nexus; see above.
 - **url** needs egress today, so on air-gapped clusters use coordinates, image or
   file instead. The chart can rewrite url plugins onto a mirror
   (`pluginRepository.baseUrl` replaces a matching prefix, e.g. `https://github.com`),

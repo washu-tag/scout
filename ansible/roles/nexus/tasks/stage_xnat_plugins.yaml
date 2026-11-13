@@ -1,0 +1,35 @@
+---
+# Copy each `type: s3` XNAT plugin into the raw repo air-gapped clusters install
+# it from (ADR 0040).
+- name: Validate the S3 credentials for XNAT plugins
+  ansible.builtin.assert:
+    that:
+      - xnat_plugin_s3_region | length > 0
+      - xnat_plugin_s3_access_key_id | length > 0
+      - xnat_plugin_s3_secret_access_key | length > 0
+    fail_msg: >-
+      xnat_plugins declares type: s3 plugins, so xnat_plugin_s3_region,
+      xnat_plugin_s3_access_key_id and xnat_plugin_s3_secret_access_key must be set
+      (vault-encrypted) in all.vars.
+    quiet: true
+
+- name: Wait for the XNAT plugin repo to exist
+  ansible.builtin.uri:
+    url: '{{ nexus_api_base_url }}/service/rest/v1/repositories/raw/hosted/{{ xnat_s3_plugin_repo }}'
+    user: admin
+    password: '{{ nexus_root_password }}'
+    force_basic_auth: true
+  register: _xnat_plugin_repo
+  until: _xnat_plugin_repo.status == 200
+  retries: 30
+  delay: 10
+
+- name: Copy each XNAT plugin from S3
+  ansible.builtin.include_tasks: stage_xnat_plugin.yaml
+  vars:
+    _nexus_url: >-
+      {{ nexus_api_base_url }}/repository/{{ xnat_s3_plugin_repo }}/{{ _plugin_source.s3_uri | s3_object_path }}
+  loop: '{{ xnat_s3_plugin_sources }}'
+  loop_control:
+    loop_var: _plugin_source
+    label: '{{ _plugin_source.s3_uri }}'

@@ -23,9 +23,11 @@ test('new users get iframeSandbox settings enabled', async ({ page }) => {
 
   await signInToScout(page, `https://chat.${hostname}/`, { username, password });
 
-  await page.waitForLoadState('networkidle', { timeout: 30000 });
-  const token = await page.evaluate(() => localStorage.getItem('token'));
-  expect(token, 'OWUI JWT missing from localStorage').toBeTruthy();
+  // Wait for the JWT the OAuth callback stores (0.13's socket.io never lets networkidle settle).
+  // waitForFunction retries an evaluation the sign-in redirect cut off and throws on real errors.
+  const token = await (
+    await page.waitForFunction(() => localStorage.getItem('token'), undefined, { timeout: 30000 })
+  ).jsonValue();
 
   await expect
     .poll(

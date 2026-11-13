@@ -39,14 +39,15 @@ Secrets and database in place.
 
 | Field | Required | Notes |
 | --- | --- | --- |
-| `name` | yes | Helm release name. |
+| `name` | yes | Helm release name, unique among the entries. Lowercase letters, digits and hyphens, starting and ending with a letter or digit, at most 53 characters. |
 | `namespace` | yes | Created if missing. |
 | `chart` | unless `state: absent` | An `oci://` reference or a local chart directory. |
 | `version` | for `oci://` charts | The chart version to install. |
 | `values` | no | Chart values. May reference vaulted variables and Scout variables such as `server_hostname` and `db_host`. |
 | `secrets` | no | Secrets to create in `namespace` before the install, as `{<name>: {<key>: <value>}}`. For charts that read credentials from an existing Secret. Quote values that YAML would read as a number or boolean. |
 | `database` | no | `{name, owner, password}`. Creates the role and database in Scout's Postgres, as Scout's own services do. `name` and `owner` may contain only lowercase letters, digits and underscores. |
-| `registry` | no | `{username, password}` for an `oci://` chart in a private registry. Logs helm in on the Ansible host before the install. |
+| `registry` | no | `{username, password}` for an `oci://` chart in a private registry. Covers the chart and every image on its registry host. See [Private registries](#private-registries). |
+| `registries` | no | In place of `registry`: a list of `{prefixes, username, password}` logins, each covering the images under its prefixes. See [Private registries](#private-registries). |
 | `timeout` | no | Helm wait timeout, default `5m`. |
 | `state` | no | `present` (default) or `absent`, which uninstalls the release. The namespace, Secrets and database are left in place. |
 
@@ -59,17 +60,57 @@ values: "{{ lookup('template', inventory_dir + '/example-app-values.yaml') | fro
 
 ### Private registries
 
-- **The chart.** Add `registry: {username, password}` to the entry, and helm logs in before
-  installing it.
-- **Images, on an air-gapped site.** Nodes pull images through the staging node's Harbor
-  proxy caches, which pull from the upstream anonymously. For a private image on
-  `ghcr.io`, set `harbor_ghcr_proxy_username` and `harbor_ghcr_proxy_password` on the
-  staging group, vault-encrypted, and run `make install-staging`. Harbor checks them against
-  the upstream, and rejects ones it can't use with a 400. A proxy project with credentials
-  is private, so also set `harbor_pull_robot_password` there: Harbor gets a pull-only robot
-  account, `robot$scout-pull`, and `make install-k3s` gives the nodes its login. The chart
-  keeps its `ghcr.io` image references, and no pull Secret is needed. Use a read-only token
-  from an account that can read only the packages the site needs.
+An app whose chart or images are private declares the logins that can read them. When one
+login covers the chart and every image on the chart's registry host, use `registry`:
+
+```yaml
+registry:
+  username: example-bot
+  password: '{{ example_registry_token }}'
+```
+
+Otherwise list the logins in `registries`, each with the image prefixes it covers:
+
+```yaml
+registries:
+  - prefixes: [ghcr.io/example-org]
+    username: example-bot
+    password: '{{ example_registry_token }}'
+  - prefixes: [registry.example.com/apps]
+    username: other-bot
+    password: '{{ other_registry_token }}'
+```
+
+- A prefix is a registry host, optionally followed by path segments, with no scheme or tag.
+  It covers the images under it: `ghcr.io/example-org` covers `ghcr.io/example-org/app:1.0`,
+  but not `ghcr.io/example-org-labs/app:1.0`. Name a host or a path above the repository,
+  not the repository itself.
+- A login's prefixes are all on one host, and an entry's prefixes don't overlap.
+- Helm fetches the chart with the login whose prefix covers its `oci://` reference.
+- An image written without a registry host, such as Docker Hub's `example/app`, matches no
+  prefix.
+- Use read-only tokens that can read only the packages the app needs.
+
+Only the app's pods use the logins. Before the install, Scout creates an admission policy,
+`pluggable-app-<name>`, for the app's namespace, which changes each pod created there:
+
+- **On a connected site,** the logins go in a `kubernetes.io/dockerconfigjson` Secret,
+  `<name>-registry`, in the app's namespace. The policy adds it to each pod's
+  `imagePullSecrets`, so each image is pulled with the login that covers it.
+- **On an air-gapped site,** Scout gives each login a private proxy project in the staging
+  node's Harbor, `app-<name>` (then `app-<name>_2` and so on), holding the login. Harbor
+  checks the login against the registry and rejects one it can't use. The policy points the
+  images at that project: `ghcr.io/example-org/app:1.0` becomes
+  `<harbor host>/app-<name>/example-org/app:1.0`. The token stays in Harbor, and the nodes
+  pull as Harbor's pull robot. Set `harbor_pull_robot_password` on the staging group,
+  vault-encrypted (8 to 128 characters, with an uppercase letter, a lowercase letter and a
+  digit), then run `make install-staging` and `make install-k3s`. That's needed once per
+  site, and Scout won't install the app until the robot exists.
+
+Either way, the chart and its values don't change. Pods that already exist don't get the
+change: after adding a login to an installed app, delete its pods so they're recreated. To
+rotate a token, update it and run `make install-pluggable-apps`. `state: absent`, or removing
+the app's logins, deletes the policy. The pull Secret and the Harbor project stay.
 
 ## With GitOps
 
@@ -91,13 +132,20 @@ lays out one app this way. To remove an app, delete it from the site repo: Flux 
 the release and, with `prune`, deletes its Namespace and everything in it, Secrets
 included. That differs from `state: absent` under Ansible.
 
-On an air-gapped site, Flux fetches charts itself rather than through the nodes' registry
-mirror, so the `OCIRepository` URL names the Harbor proxy project. Images keep their
-`ghcr.io` references, and private ones need the same Harbor credentials as above. Two more
-fields on the `OCIRepository`, each naming a Secret in its namespace:
+An app with private images also needs the admission policy and binding described above, as
+`ansible/roles/pluggable_apps/templates/image-policy.yaml.j2` renders them for the app. On a
+connected site, add the pull Secret to the app's namespace too; the `OCIRepository` can name
+the same Secret in `secretRef`. On an air-gapped site, each login also needs its Harbor
+registry endpoint and private proxy project. They're staging-node configuration, which stays
+outside Flux (ADR 0031).
 
-- `secretRef`, when the proxy project is private: a `kubernetes.io/dockerconfigjson` Secret
-  with the `robot$scout-pull` login.
+On an air-gapped site, Flux fetches charts itself rather than through the nodes' registry
+mirror, so the `OCIRepository` URL names a Harbor project: the proxy project for the chart's
+registry, or for a private chart, the app's own project. Two more fields on the
+`OCIRepository`, each naming a Secret in its namespace:
+
+- `secretRef`, when the project is private: a `kubernetes.io/dockerconfigjson` Secret with
+  the `robot$scout-pull` login.
 - `certSecretRef`, when Harbor uses the staging playbook's default self-signed certificate:
   a Secret with that certificate under `ca.crt`. The nodes skip verifying it, but Flux
   doesn't.

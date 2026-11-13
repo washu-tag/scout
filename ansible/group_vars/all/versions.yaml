@@ -130,11 +130,11 @@ jupyter_helm_chart_version: 4.4.5
 # OWUI image tag = the OWUI chart's appVersion (the bootstrap Job discovers the
 # running Pod); open_webui_image_tag pins it for the haul, Renovate bumps the pair.
 # renovate: datasource=helm registryUrl=https://helm.openwebui.com/ depName=open-webui
-open_webui_helm_chart_version: 16.6.0
+open_webui_helm_chart_version: 18.0.0
 # renovate: datasource=docker depName=ghcr.io/open-webui/open-webui
-open_webui_image_tag: 0.11.4
+open_webui_image_tag: 0.13.0
 # renovate: datasource=docker depName=ollama/ollama
-ollama_image_tag: 0.35.1
+ollama_image_tag: 0.40.16
 
 # Monitoring & Observability - Prometheus
 # Deployed chart is prometheus-community/prometheus (NOT kube-prometheus-stack);
@@ -151,7 +151,11 @@ alloy_helm_chart_version: 1.12.1
 
 # Container Registry
 # renovate: datasource=helm registryUrl=https://helm.goharbor.io depName=harbor
-harbor_version: 1.19.2
+harbor_version: 1.19.4
+# Every Harbor image runs this tag: chart 1.19.4 ships 2.15.4, which still trusts the compromised
+# eMudhra roots; 2.15.5 is fixed. Drop the pin once the chart's default catches up.
+# renovate: datasource=docker depName=goharbor/harbor-core
+harbor_image_tag: v2.15.5
 
 # Package Proxy - Nexus Repository Manager
 # renovate: datasource=helm registryUrl=https://stevehipwell.github.io/helm-charts/ depName=nexus3
@@ -200,6 +204,11 @@ xnat_openid_plugin_version: 1.6.0
 # XNAT Helm chart, OCI artifact on GHCR (Renovate-monitored, ADR 0015).
 # renovate: datasource=docker depName=ghcr.io/nrgxnat/charts/xnat
 xnat_chart_version: 4.1.0
+# The AWS CLI the XNAT chart runs for S3 plugins and the dev side-load. Docker Hub's
+# copy, not the chart's public.ecr.aws default, which Harbor doesn't proxy.
+xnat_awscli_image: docker.io/amazon/aws-cli
+# renovate: datasource=docker depName=amazon/aws-cli
+xnat_awscli_image_tag: 2.40.1
 
 # data-generator Helm chart, OCI artifact on GHCR (Renovate-monitored, ADR 0015).
 # renovate: datasource=docker depName=ghcr.io/washu-tag/charts/data-generator

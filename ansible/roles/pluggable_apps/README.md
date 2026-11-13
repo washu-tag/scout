@@ -10,14 +10,22 @@ GitOps, see `docs/source/customize/install.md`.
 Values, Secrets and registry credentials are not logged, so a failed install reports
 little. Re-run with the values in a file and `helm install --dry-run` to see why.
 
-`registry` leaves helm logged in on the Ansible host, as `helm registry login` does.
+The chart's login leaves helm logged in on the Ansible host, as `helm registry login` does.
 
 ## Private images
 
-Air-gapped nodes pull every image through Harbor's proxy caches, which pull from the
-upstream anonymously. For a private image on `ghcr.io`, set `harbor_ghcr_proxy_username`,
-`harbor_ghcr_proxy_password` and `harbor_pull_robot_password` on the staging group, then run
-`make install-staging` and `make install-k3s`. See `roles/harbor/defaults/main.yaml`.
+An entry's `registry` or `registries` logins reach only its own pods, through a
+`MutatingAdmissionPolicy` and binding, `pluggable-app-<name>`, scoped to its namespace
+(ADR 0041). The `pluggable_app_logins` filter checks the declaration.
 
-Sites that pull images directly need a pull Secret of type `kubernetes.io/dockerconfigjson`,
-which `secrets` does not create.
+- **Connected:** the logins go in a `kubernetes.io/dockerconfigjson` Secret,
+  `<name>-registry`, with an `auths` entry per prefix, and the policy adds it to every new
+  pod's `imagePullSecrets`.
+- **Air-gapped:** `roles/harbor/tasks/app_projects.yaml` gives each login a Harbor registry
+  endpoint and a private proxy project, `app-<name>` (then `app-<name>_2`, ...), and the
+  policy rewrites matching images to that project. The nodes pull it as Harbor's pull robot,
+  which exists once the staging group sets `harbor_pull_robot_password` and `make
+  install-staging` and `make install-k3s` have run. The role checks for the robot first.
+
+`state: absent`, or an entry with no logins, deletes the policy and binding. The pull
+Secret and the Harbor project and endpoint stay.

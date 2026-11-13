@@ -385,3 +385,5 @@ open_webui_scout_default_builtin_tools:
   image_generation: false # requires internet (DALL-E etc.)
   code_interpreter: false # arbitrary code execution; already blocked via capabilities, kept here for defense in depth
   knowledge: false # no knowledge collections attached; would inject empty discovery tools
+  tools: false # OWUI 0.13+: create_tool writes Python tools that run in the OWUI server
+  skills: false # OWUI 0.12+: create_skill and skill-file edits

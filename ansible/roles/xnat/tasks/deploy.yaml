@@ -87,6 +87,47 @@
       future enhancement — see ADR 0027.)
     quiet: true
 
+- name: Guard s3 plugins on air-gapped clusters to Nexus
+  when: (air_gapped | default(false) | bool) and xnat_s3_plugin_sources | length > 0
+  ansible.builtin.assert:
+    that:
+      - package_proxy_mode | default('none') == 'nexus'
+    fail_msg: >
+      On an air-gapped cluster, type: s3 plugins install from the copy
+      `make install-staging` puts in the staging node's Nexus (ADR 0040), so they
+      need package_proxy_mode: nexus.
+    quiet: true
+
+- name: Reject a sha256 on s3 plugins
+  vars:
+    _s3_with_sha256: >-
+      {{ xnat_plugins_all | selectattr('source.type', 'equalto', 's3')
+         | selectattr('source.sha256', 'defined') | map(attribute='name') | list }}
+  ansible.builtin.assert:
+    that:
+      - _s3_with_sha256 | length == 0
+    fail_msg: >
+      type: s3 plugins don't take sha256, because the chart's S3 install doesn't
+      check one (ADR 0040). Remove it from {{ _s3_with_sha256 | join(', ') }}.
+    quiet: true
+
+- name: Validate s3 plugins on connected clusters
+  when: xnat_s3_plugins_direct | bool
+  ansible.builtin.assert:
+    that:
+      - xnat_plugin_s3_region | length > 0
+      - xnat_plugin_s3_access_key_id | length > 0
+      - xnat_plugin_s3_secret_access_key | length > 0
+      - xnat_dev_war | length == 0
+      - xnat_dev_plugins | length == 0
+    fail_msg: >
+      type: s3 plugins need xnat_plugin_s3_region, xnat_plugin_s3_access_key_id and
+      xnat_plugin_s3_secret_access_key (vault-encrypted, in all.vars). On a connected
+      cluster they also can't be combined with xnat_dev_war or xnat_dev_plugins: the
+      chart uses one S3 endpoint and credential for both, and the dev side-load
+      points it at MinIO.
+    quiet: true
+
 - name: Configure Maven proxy trust (repository URL + staging CA)
   ansible.builtin.include_tasks: proxy_trust.yaml
 
