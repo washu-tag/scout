@@ -1732,6 +1732,52 @@ jobs:
           artifact-id: ${{ needs.build-and-upload.outputs['keycloak-fragment-reconciler'] }}
           image-name: keycloak-fragment-reconciler
 
+  # Demo branches only (not for main): publish the tested candidate's fresh images,
+  # charts and stamped scout-config under branch-suffixed tags, unsigned.
+  publish-demo-candidate:
+    if: startsWith(github.ref_name, 'demo-') && needs.prepare-flux-artifacts.result == 'success' && needs.deploy-and-test-flux.result == 'success' && needs.scan-images.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    needs: [changes, prepare-flux-artifacts, scan-images, deploy-and-test-flux]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+      - run: pip install pyyaml
+      - name: Free candidate storage
+        run: |-
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /usr/share/swift /opt/ghc
+          sudo apt-get clean
+          docker system prune -af --volumes
+      - name: Login to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - uses: ./.github/actions/install-hauler-oras
+      - name: Download the tested candidate metadata and charts
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          artifact-ids: ${{ needs.prepare-flux-artifacts.outputs.candidate-id || '0' }}
+          path: candidate
+      - name: Download the tested candidate images
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          artifact-ids: ${{ needs.prepare-flux-artifacts.outputs.images-id || '0' }}
+          path: candidate/images
+      - name: Require the planned candidate
+        run: python3 .github/scripts/copy-flux-artifacts.py validate --candidate candidate
+      - name: Publish the candidate under demo tags
+        run: python3 .github/scripts/publish-demo-candidate.py candidate
+    env:
+      SCOUT_ARTIFACT_ATTEMPT: ${{ needs.changes.outputs.artifact-attempt }}
+      VERSION: ${{ needs.changes.outputs.version }}
   haul-guard-canary:
     # publish-haul's sync fails closed by counting hauler's "signature verified for
     # image [" log lines; a hauler bump that reworded that would zero the count and
