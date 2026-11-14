@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { embedApps, requestModel, requestOrigin } from '@/lib/catalog/request';
+import { requestModel, requestOrigin } from '@/lib/catalog/request';
 import { chipForUrl, shellLocation, shellPath, shellSections } from '@/lib/catalog/shell';
 
 export const dynamic = 'force-dynamic';
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ sub:
   const path = req.nextUrl.pathname.slice(`/open/${sub}`.length) || '/';
   const target = new URL(`${origin.protocol}://${sub}.${origin.host}${path}${req.nextUrl.search}`);
 
-  const chip = chipForUrl(shellSections(await requestModel()), target, embedApps());
+  const chip = chipForUrl(shellSections(await requestModel()), target);
   if (chip) {
     return new NextResponse(null, {
       status: 307,

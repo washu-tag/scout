@@ -100,26 +100,18 @@ describe('chipTarget', () => {
   const byId = (id: string) => chips.find((chip) => chip.id === id)!;
 
   it('frames services, routes launchpad pages in place, and opens outside URLs per newTab', () => {
-    assert.deepStrictEqual(chipTarget(byId('chat'), true), {
+    assert.deepStrictEqual(chipTarget(byId('chat')), {
       href: '/app/chat',
       internal: true,
       newTab: false,
     });
-    assert.deepStrictEqual(chipTarget(byId('users'), true), {
+    assert.deepStrictEqual(chipTarget(byId('users')), {
       href: '/admin/users',
       internal: true,
       newTab: false,
     });
-    assert.deepStrictEqual(chipTarget(byId('guide'), true), {
+    assert.deepStrictEqual(chipTarget(byId('guide')), {
       href: 'https://docs.example.edu',
-      internal: false,
-      newTab: true,
-    });
-  });
-
-  it('opens services directly when embedding is off', () => {
-    assert.deepStrictEqual(chipTarget(byId('chat'), false), {
-      href: 'https://chat.scout.example.edu',
       internal: false,
       newTab: true,
     });
@@ -265,7 +257,7 @@ describe('chipForUrl', () => {
       { origin: ORIGIN, isAdmin: false },
     ),
   );
-  const find = (url: string) => chipForUrl(sections, new URL(url), true)?.id;
+  const find = (url: string) => chipForUrl(sections, new URL(url))?.id;
 
   it('picks the chip whose path prefixes the URL, else the first on the host', () => {
     assert.strictEqual(
@@ -279,13 +271,9 @@ describe('chipForUrl', () => {
     );
   });
 
-  it('finds nothing off the catalog hosts, or with embedding off', () => {
+  it('finds nothing off the catalog hosts', () => {
     assert.strictEqual(find('https://report-viewer.scout.example.edu/'), undefined);
     assert.strictEqual(find('https://docs.example.edu/'), undefined);
-    assert.strictEqual(
-      chipForUrl(sections, new URL('https://temporal.scout.example.edu/'), false),
-      undefined,
-    );
   });
 });
 
@@ -293,18 +281,16 @@ describe('embeddedChip', () => {
   const sections = shellSections(assemble(CATALOG, { origin: ORIGIN, isAdmin: true }));
 
   it('finds only services, and nothing when embedding is off', () => {
-    assert.strictEqual(embeddedChip(sections, 'chat', true)?.title, 'Chat');
-    assert.strictEqual(embeddedChip(sections, 'users', true), undefined);
-    assert.strictEqual(embeddedChip(sections, 'guide', true), undefined);
-    assert.strictEqual(embeddedChip(sections, 'chat', false), undefined);
+    assert.strictEqual(embeddedChip(sections, 'chat')?.title, 'Chat');
+    assert.strictEqual(embeddedChip(sections, 'users'), undefined);
+    assert.strictEqual(embeddedChip(sections, 'guide'), undefined);
   });
 });
 
 describe('openRequest', () => {
   const sections = shellSections(assemble(CATALOG, { origin: ORIGIN, isAdmin: false }));
   const launchpad = new URL('https://scout.example.edu/app/chat');
-  const open = (origin: string, href: unknown) =>
-    openRequest(sections, true, launchpad, origin, href);
+  const open = (origin: string, href: unknown) => openRequest(sections, launchpad, origin, href);
 
   it('opens a Scout page from any Scout frame in the app that owns it', () => {
     const request = open(
@@ -340,9 +326,5 @@ describe('openRequest', () => {
     ]) {
       assert.strictEqual(open('https://chat.scout.example.edu', href), null, String(href));
     }
-    assert.strictEqual(
-      openRequest(sections, false, launchpad, 'https://chat.scout.example.edu', page),
-      null,
-    );
   });
 });

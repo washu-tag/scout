@@ -1,11 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import React, { createContext, useContext } from 'react';
+import React from 'react';
 import { chipTarget } from '@/lib/catalog/shell';
 import type { RenderChip } from '@/lib/catalog/types';
-
-export const EmbedAppsContext = createContext(true);
 
 type ChipAnchorProps = Omit<
   React.AnchorHTMLAttributes<HTMLAnchorElement>,
@@ -13,7 +11,7 @@ type ChipAnchorProps = Omit<
 > & { chip: RenderChip };
 
 export function ChipAnchor({ chip, children, ...props }: ChipAnchorProps) {
-  const target = chipTarget(chip, useContext(EmbedAppsContext));
+  const target = chipTarget(chip);
   if (target.internal) {
     return (
       <Link href={target.href} {...props}>

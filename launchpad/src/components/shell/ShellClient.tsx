@@ -7,7 +7,7 @@ import { useSession, signIn, signOut } from 'next-auth/react';
 import { FaBook, FaMoon, FaSignOutAlt, FaSun } from 'react-icons/fa';
 import { HiOutlineExternalLink } from 'react-icons/hi';
 import { ChipIcon } from '@/components/catalog/CatalogSections';
-import { ChipAnchor, EmbedAppsContext } from '@/components/shell/ChipAnchor';
+import { ChipAnchor } from '@/components/shell/ChipAnchor';
 import { DEFAULT_ICON, ICONS } from '@/lib/catalog/icons';
 import {
   chipTarget,
@@ -25,7 +25,6 @@ import type { RenderChip } from '@/lib/catalog/types';
 
 interface ShellClientProps {
   sections: ShellSection[];
-  embedApps: boolean;
   environment: string;
   docsUrl: string;
   children: React.ReactNode;
@@ -97,7 +96,6 @@ function Spinner() {
 
 export default function ShellClient({
   sections,
-  embedApps,
   environment,
   docsUrl,
   children,
@@ -113,7 +111,7 @@ export default function ShellClient({
   const appId = pathname.startsWith('/app/')
     ? decodeURIComponent(pathname.split('/')[2] ?? '')
     : null;
-  const active = appId ? embeddedChip(sections, appId, embedApps) : undefined;
+  const active = appId ? embeddedChip(sections, appId) : undefined;
 
   // The page each framed app last reported, so the address bar can follow it.
   const [locations, setLocations] = useState<Record<string, string>>({});
@@ -224,7 +222,6 @@ export default function ShellClient({
       if (type === 'scout:open') {
         const request = openRequest(
           sections,
-          embedApps,
           new URL(window.location.href),
           event.origin,
           event.data.href,
@@ -245,7 +242,7 @@ export default function ShellClient({
       if (type !== 'scout:location' && type !== 'scout:leaving') return;
       for (const [id, frame] of frames.current) {
         if (frame.contentWindow !== event.source) continue;
-        const chip = embeddedChip(sections, id, embedApps);
+        const chip = embeddedChip(sections, id);
         if (!chip || !isChipOrigin(chip, event.origin)) return;
         const address = shellLocation(chip, event.data.href);
         if (!address) return;
@@ -260,7 +257,7 @@ export default function ShellClient({
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [sections, embedApps, router]);
+  }, [sections, router]);
 
   const activeLocation = active ? locations[active.id] : undefined;
   useEffect(() => {
@@ -331,7 +328,7 @@ export default function ShellClient({
   const [primary, ...rest] = sections;
   const openSection = rest.find((section) => section.id === menu?.id);
   const isCurrent = (chip: RenderChip) => {
-    const target = chipTarget(chip, embedApps);
+    const target = chipTarget(chip);
     return target.internal && (pathname === target.href || pathname.startsWith(`${target.href}/`));
   };
 
@@ -381,188 +378,181 @@ export default function ShellClient({
   };
 
   return (
-    <EmbedAppsContext.Provider value={embedApps}>
-      <div className="flex h-screen w-full overflow-hidden bg-slate-50 dark:bg-slate-950">
-        <div ref={railRef} className="flex-shrink-0">
-          <nav
-            aria-label="Scout"
-            className="flex h-full w-[72px] flex-col items-center gap-1 overflow-y-auto border-r border-slate-200 bg-white py-3 dark:border-slate-800 dark:bg-slate-900"
+    <div className="flex h-screen w-full overflow-hidden bg-slate-50 dark:bg-slate-950">
+      <div ref={railRef} className="flex-shrink-0">
+        <nav
+          aria-label="Scout"
+          className="flex h-full w-[72px] flex-col items-center gap-1 overflow-y-auto border-r border-slate-200 bg-white py-3 dark:border-slate-800 dark:bg-slate-900"
+        >
+          <Link
+            href="/"
+            title="Scout home"
+            aria-label="Scout home"
+            aria-current={pathname === '/' ? 'page' : undefined}
+            onClick={() => setMenu(null)}
+            className="mb-2 flex flex-col items-center gap-1 rounded-md no-underline hover:opacity-80 transition-opacity"
           >
-            <Link
-              href="/"
-              title="Scout home"
-              aria-label="Scout home"
-              aria-current={pathname === '/' ? 'page' : undefined}
-              onClick={() => setMenu(null)}
-              className="mb-2 flex flex-col items-center gap-1 rounded-md no-underline hover:opacity-80 transition-opacity"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/scout.svg" alt="" className="h-9 w-9 block dark:hidden" />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/scout-dark.svg" alt="" className="h-9 w-9 hidden dark:block" />
-              <span className="max-w-16 truncate text-[10px] leading-tight text-slate-400 dark:text-slate-500">
-                {environment}
-              </span>
-            </Link>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/scout.svg" alt="" className="h-9 w-9 block dark:hidden" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/scout-dark.svg" alt="" className="h-9 w-9 hidden dark:block" />
+            <span className="max-w-16 truncate text-[10px] leading-tight text-slate-400 dark:text-slate-500">
+              {environment}
+            </span>
+          </Link>
 
-            {primary && (
-              <div className="flex w-full flex-col items-center gap-1 border-t border-slate-200 pt-2 dark:border-slate-800">
-                {primary.chips.map(railChip)}
-              </div>
-            )}
-
-            {rest.length > 0 && (
-              <div className="flex w-full flex-col items-center gap-1 border-t border-slate-200 pt-2 dark:border-slate-800">
-                {rest.map((section) =>
-                  section.chips.length === 1 ? railChip(section.chips[0]) : groupButton(section),
-                )}
-              </div>
-            )}
-
-            <div className="mt-auto flex w-full flex-col items-center border-t border-slate-200 pt-2 dark:border-slate-800">
-              <button
-                type="button"
-                aria-haspopup="menu"
-                aria-expanded={menu?.id === ACCOUNT_MENU}
-                title={user?.name || user?.username || 'Account'}
-                onClick={(event) => toggleMenu(ACCOUNT_MENU, event)}
-                className={railItemClass(menu?.id === ACCOUNT_MENU)}
-              >
-                <RailLabel
-                  icon={
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-sm font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200">
-                      {(user?.name || user?.username || 'U').charAt(0).toUpperCase()}
-                    </span>
-                  }
-                  label={user?.name?.split(' ')[0] || user?.username || 'Account'}
-                  active={false}
-                />
-              </button>
-            </div>
-          </nav>
-
-          {openSection && menu && (
-            <div
-              role="menu"
-              aria-label={openSection.title}
-              className={MENU}
-              style={{ top: menu.top }}
-            >
-              <p className="px-2.5 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                {openSection.title}
-              </p>
-              {openSection.chips.map((chip) => {
-                const tone = TONES[chip.tone];
-                const current = isCurrent(chip);
-                return (
-                  <ChipAnchor
-                    key={chip.id}
-                    chip={chip}
-                    role="menuitem"
-                    onClick={() => setMenu(null)}
-                    aria-current={current ? 'page' : undefined}
-                    className={`${MENU_ITEM} ${current ? 'bg-slate-100 dark:bg-slate-800' : ''}`}
-                  >
-                    <span
-                      className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border text-base ${tone.iconBg} ${tone.icon}`}
-                    >
-                      <ChipIcon chip={chip} className="text-base" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium">{chip.title}</span>
-                      {chip.description && (
-                        <span className="block truncate text-xs text-slate-500 dark:text-slate-400">
-                          {chip.description}
-                        </span>
-                      )}
-                    </span>
-                    {!chipTarget(chip, embedApps).internal && (
-                      <HiOutlineExternalLink
-                        className={MENU_ICON}
-                        aria-label="Opens in a new tab"
-                      />
-                    )}
-                  </ChipAnchor>
-                );
-              })}
+          {primary && (
+            <div className="flex w-full flex-col items-center gap-1 border-t border-slate-200 pt-2 dark:border-slate-800">
+              {primary.chips.map(railChip)}
             </div>
           )}
 
-          {menu?.id === ACCOUNT_MENU && (
-            <div role="menu" aria-label="Account" className={`${MENU} bottom-3`}>
-              <div className="mb-1 border-b border-slate-200 px-2.5 pb-2 pt-1 dark:border-slate-700">
-                <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
-                  {user?.name || user?.username || 'User'}
-                </p>
-                {user?.username && (
-                  <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                    {user.username}
-                  </p>
-                )}
-                {user?.email && (
-                  <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                    {user.email}
-                  </p>
-                )}
-              </div>
-              <button role="menuitem" type="button" onClick={toggleTheme} className={MENU_ITEM}>
-                {dark ? <FaSun className={MENU_ICON} /> : <FaMoon className={MENU_ICON} />}
-                {dark ? 'Light mode' : 'Dark mode'}
-              </button>
-              <a
-                role="menuitem"
-                href={docsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setMenu(null)}
-                className={MENU_ITEM}
-              >
-                <FaBook className={MENU_ICON} />
-                Documentation
-              </a>
-              <button role="menuitem" type="button" onClick={signOutOfScout} className={MENU_ITEM}>
-                <FaSignOutAlt className={MENU_ICON} />
-                Sign out
-              </button>
+          {rest.length > 0 && (
+            <div className="flex w-full flex-col items-center gap-1 border-t border-slate-200 pt-2 dark:border-slate-800">
+              {rest.map((section) =>
+                section.chips.length === 1 ? railChip(section.chips[0]) : groupButton(section),
+              )}
             </div>
           )}
-        </div>
 
-        <main className="relative flex-1 overflow-hidden">
-          {opened.map(({ chip, src }) => (
-            <iframe
-              key={chip.id}
-              ref={(element) => {
-                if (element) frames.current.set(chip.id, element);
-                else frames.current.delete(chip.id);
-              }}
-              src={src}
-              title={chip.title}
-              sandbox={chip.sandbox ? FRAME_SANDBOX : undefined}
-              allow="clipboard-read; clipboard-write; fullscreen"
-              aria-hidden={chip.id !== active?.id}
-              onLoad={() => {
-                const next = leaving.current.get(chip.id);
-                leaving.current.delete(chip.id);
-                if (next && Date.now() - next.at < LEAVING_TTL_MS) {
-                  setLocations((current) => ({ ...current, [chip.id]: next.address }));
+          <div className="mt-auto flex w-full flex-col items-center border-t border-slate-200 pt-2 dark:border-slate-800">
+            <button
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={menu?.id === ACCOUNT_MENU}
+              title={user?.name || user?.username || 'Account'}
+              onClick={(event) => toggleMenu(ACCOUNT_MENU, event)}
+              className={railItemClass(menu?.id === ACCOUNT_MENU)}
+            >
+              <RailLabel
+                icon={
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-sm font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                    {(user?.name || user?.username || 'U').charAt(0).toUpperCase()}
+                  </span>
                 }
-                setLoaded((ids) => (ids.includes(chip.id) ? ids : [...ids, chip.id]));
-                checkSession();
-              }}
-              className={`absolute inset-0 h-full w-full border-0 bg-white ${
-                chip.id === active?.id ? 'visible' : 'invisible'
-              }`}
-            />
-          ))}
-          {active && !loaded.includes(active.id) && (
-            <div className="absolute inset-0 flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-              <Spinner />
+                label={user?.name?.split(' ')[0] || user?.username || 'Account'}
+                active={false}
+              />
+            </button>
+          </div>
+        </nav>
+
+        {openSection && menu && (
+          <div
+            role="menu"
+            aria-label={openSection.title}
+            className={MENU}
+            style={{ top: menu.top }}
+          >
+            <p className="px-2.5 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+              {openSection.title}
+            </p>
+            {openSection.chips.map((chip) => {
+              const tone = TONES[chip.tone];
+              const current = isCurrent(chip);
+              return (
+                <ChipAnchor
+                  key={chip.id}
+                  chip={chip}
+                  role="menuitem"
+                  onClick={() => setMenu(null)}
+                  aria-current={current ? 'page' : undefined}
+                  className={`${MENU_ITEM} ${current ? 'bg-slate-100 dark:bg-slate-800' : ''}`}
+                >
+                  <span
+                    className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border text-base ${tone.iconBg} ${tone.icon}`}
+                  >
+                    <ChipIcon chip={chip} className="text-base" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">{chip.title}</span>
+                    {chip.description && (
+                      <span className="block truncate text-xs text-slate-500 dark:text-slate-400">
+                        {chip.description}
+                      </span>
+                    )}
+                  </span>
+                  {!chipTarget(chip).internal && (
+                    <HiOutlineExternalLink className={MENU_ICON} aria-label="Opens in a new tab" />
+                  )}
+                </ChipAnchor>
+              );
+            })}
+          </div>
+        )}
+
+        {menu?.id === ACCOUNT_MENU && (
+          <div role="menu" aria-label="Account" className={`${MENU} bottom-3`}>
+            <div className="mb-1 border-b border-slate-200 px-2.5 pb-2 pt-1 dark:border-slate-700">
+              <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+                {user?.name || user?.username || 'User'}
+              </p>
+              {user?.username && (
+                <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                  {user.username}
+                </p>
+              )}
+              {user?.email && (
+                <p className="truncate text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
+              )}
             </div>
-          )}
-          <div className={`h-full overflow-y-auto ${appId ? 'hidden' : ''}`}>{children}</div>
-        </main>
+            <button role="menuitem" type="button" onClick={toggleTheme} className={MENU_ITEM}>
+              {dark ? <FaSun className={MENU_ICON} /> : <FaMoon className={MENU_ICON} />}
+              {dark ? 'Light mode' : 'Dark mode'}
+            </button>
+            <a
+              role="menuitem"
+              href={docsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setMenu(null)}
+              className={MENU_ITEM}
+            >
+              <FaBook className={MENU_ICON} />
+              Documentation
+            </a>
+            <button role="menuitem" type="button" onClick={signOutOfScout} className={MENU_ITEM}>
+              <FaSignOutAlt className={MENU_ICON} />
+              Sign out
+            </button>
+          </div>
+        )}
       </div>
-    </EmbedAppsContext.Provider>
+
+      <main className="relative flex-1 overflow-hidden">
+        {opened.map(({ chip, src }) => (
+          <iframe
+            key={chip.id}
+            ref={(element) => {
+              if (element) frames.current.set(chip.id, element);
+              else frames.current.delete(chip.id);
+            }}
+            src={src}
+            title={chip.title}
+            sandbox={chip.sandbox ? FRAME_SANDBOX : undefined}
+            allow="clipboard-read; clipboard-write; fullscreen"
+            aria-hidden={chip.id !== active?.id}
+            onLoad={() => {
+              const next = leaving.current.get(chip.id);
+              leaving.current.delete(chip.id);
+              if (next && Date.now() - next.at < LEAVING_TTL_MS) {
+                setLocations((current) => ({ ...current, [chip.id]: next.address }));
+              }
+              setLoaded((ids) => (ids.includes(chip.id) ? ids : [...ids, chip.id]));
+              checkSession();
+            }}
+            className={`absolute inset-0 h-full w-full border-0 bg-white ${
+              chip.id === active?.id ? 'visible' : 'invisible'
+            }`}
+          />
+        ))}
+        {active && !loaded.includes(active.id) && (
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+            <Spinner />
+          </div>
+        )}
+        <div className={`h-full overflow-y-auto ${appId ? 'hidden' : ''}`}>{children}</div>
+      </main>
+    </div>
   );
 }

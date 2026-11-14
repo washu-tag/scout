@@ -40,8 +40,6 @@ data:
       enabled: false
     faviconPublicRoute:
       enabled: false
-    # The ALB edge does not let the launchpad frame Scout services yet.
-    embedApps: false
     auth:
       # aws has no oauth2-proxy (ALB-native OIDC): end the Keycloak session instead,
       # else the live SSO session signs the user straight back in.

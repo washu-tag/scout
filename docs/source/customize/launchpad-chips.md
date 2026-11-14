@@ -106,8 +106,7 @@ opens inside the launchpad, framed next to the rail, so your service must allow 
 launchpad to frame it. On-prem, the `security-headers` middleware from
 [service authentication](service-authentication.md) does that. A path destination is a
 launchpad page and renders with the rail. A `url` destination opens on its own,
-following `newTab`. Sites whose edge does not allow framing set `embedApps: false` on
-the launchpad chart; subdomain destinations then open on their own too.
+following `newTab`.
 
 Links into your service that arrive from outside Scout, such as a bookmark or a link
 someone shared, open inside the launchpad at the same page, and so does a new tab or

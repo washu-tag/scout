@@ -36,9 +36,3 @@ export async function requestModel(): Promise<RenderModel> {
   const isAdmin = devAdmin || session?.user?.isAdmin === true;
   return assemble(await loadCatalog(), { origin, isAdmin });
 }
-
-// Off where the edge does not let the launchpad frame Scout services; chips
-// for services then open the service itself.
-export function embedApps(): boolean {
-  return process.env.LAUNCHPAD_EMBED_APPS !== 'false';
-}

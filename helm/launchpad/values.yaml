@@ -45,10 +45,6 @@ deployerName: ''
 # falls back to the latest published docs.
 docsUrl: ''
 
-# Open Scout services inside the launchpad, framed next to its navigation rail.
-# Turn off where the edge does not let the launchpad frame Scout services.
-embedApps: true
-
 image:
   repository: ghcr.io/washu-tag/launchpad
   # Empty falls through to .Chart.AppVersion, which helm package stamps at publish

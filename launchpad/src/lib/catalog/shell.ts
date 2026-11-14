@@ -37,8 +37,8 @@ export function shellPath(id: string): string {
   return `/app/${id}`;
 }
 
-export function chipTarget(chip: RenderChip, embedApps: boolean): ChipTarget {
-  if (chip.kind === 'service' && embedApps) {
+export function chipTarget(chip: RenderChip): ChipTarget {
+  if (chip.kind === 'service') {
     return { href: shellPath(chip.id), internal: true, newTab: false };
   }
   if (chip.kind === 'page') return { href: chip.href, internal: true, newTab: false };
@@ -107,12 +107,7 @@ export function shellLocation(chip: RenderChip, href: unknown): string | null {
 
 // The framed app that owns a Scout service URL: among the chips on its host, the
 // one whose own path is the longest prefix of the URL's path, else the first.
-export function chipForUrl(
-  sections: ShellSection[],
-  url: URL,
-  embedApps: boolean,
-): RenderChip | undefined {
-  if (!embedApps) return undefined;
+export function chipForUrl(sections: ShellSection[], url: URL): RenderChip | undefined {
   const candidates = sections
     .flatMap((section) => section.chips)
     .filter((chip) => chip.kind === 'service' && new URL(chip.href).host === url.host);
@@ -147,7 +142,6 @@ function onHost(launchpad: URL, value: string): boolean {
 // of it and a chip owns `href`.
 export function openRequest(
   sections: ShellSection[],
-  embedApps: boolean,
   launchpad: URL,
   origin: string,
   href: unknown,
@@ -156,7 +150,7 @@ export function openRequest(
     return null;
   }
   const url = new URL(href);
-  const chip = chipForUrl(sections, url, embedApps);
+  const chip = chipForUrl(sections, url);
   const address = chip ? shellLocation(chip, url.href) : null;
   return chip && address ? { chip, address, href: url.href } : null;
 }
@@ -166,12 +160,7 @@ export function recentApps(recent: string[], id: string, max: number): string[] 
   return [...recent.filter((other) => other !== id), id].slice(-max);
 }
 
-export function embeddedChip(
-  sections: ShellSection[],
-  id: string,
-  embedApps: boolean,
-): RenderChip | undefined {
-  if (!embedApps) return undefined;
+export function embeddedChip(sections: ShellSection[], id: string): RenderChip | undefined {
   return sections
     .flatMap((section) => section.chips)
     .find((chip) => chip.id === id && chip.kind === 'service');
