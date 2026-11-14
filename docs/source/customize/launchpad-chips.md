@@ -69,6 +69,7 @@ basics on an older launchpad.
 | `iconData`       | no       | —         | `data:image/(png\|jpeg\|svg+xml);base64,…`, max 16 KiB. Wins over `icon`.                                                                        |
 | `tone`           | no       | `indigo`  | One of `indigo emerald amber violet rose cyan red orange slate`.                                                                                 |
 | `newTab`         | no       | `true`    | Open a `url` destination in a new tab. Other destinations open inside the launchpad — see [links](#links).                                       |
+| `sandbox`        | no       | `false`   | Open the framed app in a sandbox that can't open popups or navigate the launchpad window. For apps that render untrusted content, such as chat. |
 | `group`          | no       | `more`    | Which section the chip renders in.                                                                                                               |
 | `weight`         | no       | `100`     | Lower renders first; ties break by title, then id.                                                                                               |
 | `audience`       | no       | `user`    | `user` (any authenticated user) or `admin`. This is display filtering only — your service must still enforce its own access.                     |
@@ -77,8 +78,9 @@ basics on an older launchpad.
 Invalid values in the optional presentation fields fall back to their defaults (the
 chip still renders, and the problem is reported — see
 [troubleshooting](#troubleshooting)). A chip without a valid `id`, `title`, and `link`
-is skipped entirely — and so is a chip with an invalid `audience` or `enabled`:
-visibility fails closed, because a typo there must not widen who sees the chip.
+is skipped entirely — and so is a chip with an invalid `audience`, `enabled` or `sandbox`:
+visibility and the sandbox fail closed, because a typo there must not widen who sees
+the chip or drop its sandbox.
 
 ### Links
 

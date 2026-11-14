@@ -25,6 +25,7 @@ export interface Chip {
   tone: ToneName;
   link: ChipLink;
   newTab: boolean;
+  sandbox: boolean;
   group: string;
   weight: number;
   audience: Audience;
@@ -84,6 +85,7 @@ export interface RenderChip {
   kind: ChipKind;
   href: string;
   newTab: boolean;
+  sandbox: boolean;
 }
 
 export interface RenderGroup {

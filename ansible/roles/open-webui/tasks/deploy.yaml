@@ -208,5 +208,6 @@
           icon: chat
           tone: emerald
           link: { subdomain: chat }
+          sandbox: true
           group: core
           weight: 10

@@ -37,6 +37,9 @@ const RECOVERY_KEY = 'scout-shell-session-recovery';
 const RECOVERY_BACKOFF_MS = 60_000;
 const LEAVING_TTL_MS = 30_000;
 const MAX_OPEN_APPS = 3;
+// A sandboxed app keeps scripts, its own origin, forms, dialogs and downloads, but
+// can't open popups or navigate the launchpad window.
+const FRAME_SANDBOX = 'allow-scripts allow-same-origin allow-forms allow-modals allow-downloads';
 
 const MENU =
   'fixed left-[76px] z-30 w-64 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-900';
@@ -535,6 +538,7 @@ export default function ShellClient({
               }}
               src={src}
               title={chip.title}
+              sandbox={chip.sandbox ? FRAME_SANDBOX : undefined}
               allow="clipboard-read; clipboard-write; fullscreen"
               aria-hidden={chip.id !== active?.id}
               onLoad={() => {

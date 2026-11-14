@@ -143,6 +143,7 @@ export function assemble(catalog: Catalog, options: AssembleOptions): RenderMode
           kind: chipKind(chip.link),
           href: resolveHref(chip.link, origin),
           newTab: chip.newTab,
+          sandbox: chip.sandbox,
         })),
       };
     });

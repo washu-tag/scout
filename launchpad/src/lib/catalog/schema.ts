@@ -80,6 +80,7 @@ const chipBase = {
   tone: z.enum(TONE_NAMES),
   link: linkSchema,
   newTab: z.boolean(),
+  sandbox: z.boolean(),
   group: idSchema,
   weight: z.number(),
   audience: audienceSchema,
@@ -120,6 +121,7 @@ const CHIP_FALLBACKS = {
   icon: DEFAULT_ICON,
   tone: DEFAULT_TONE,
   newTab: true,
+  sandbox: false,
   group: DEFAULT_GROUP,
   weight: 100,
   audience: 'user',
@@ -187,6 +189,9 @@ const chipSchema = z.object({
   tone: caught('tone', chipBase.tone, CHIP_FALLBACKS.tone),
   link: chipBase.link,
   newTab: caught('newTab', chipBase.newTab, CHIP_FALLBACKS.newTab),
+  // Fails closed like audience: an invalid value rejects the chip rather than
+  // dropping the sandbox.
+  sandbox: chipBase.sandbox.default(CHIP_FALLBACKS.sandbox),
   group: caught('group', chipBase.group, CHIP_FALLBACKS.group),
   weight: caught('weight', chipBase.weight, CHIP_FALLBACKS.weight),
   // Visibility fails closed: no .catch() here, so an invalid value rejects

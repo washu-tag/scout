@@ -31,6 +31,7 @@ describe('validateDocument', () => {
       icon: 'app',
       tone: 'indigo',
       newTab: true,
+      sandbox: false,
       group: 'more',
       weight: 100,
       audience: 'user',
@@ -192,6 +193,18 @@ describe('validateDocument', () => {
     for (const overrides of [{ enabled: 'no' }, { enabled: 0 }, { audience: 'adminstrator' }]) {
       const result = validateDocument(doc({ chips: [chip(overrides)] }), SOURCE);
       assert.strictEqual(result.chips.length, 0, JSON.stringify(overrides));
+      assert.match(result.diagnostics[0].message, /chip skipped/);
+    }
+  });
+
+  it('keeps a sandbox request and rejects a chip whose sandbox is invalid (fails closed)', () => {
+    assert.strictEqual(
+      validateDocument(doc({ chips: [chip({ sandbox: true })] }), SOURCE).chips[0].sandbox,
+      true,
+    );
+    for (const sandbox of ['yes', 1]) {
+      const result = validateDocument(doc({ chips: [chip({ sandbox })] }), SOURCE);
+      assert.strictEqual(result.chips.length, 0, JSON.stringify(sandbox));
       assert.match(result.diagnostics[0].message, /chip skipped/);
     }
   });
