@@ -248,6 +248,13 @@
             "composite": false,
             "clientRole": true,
             "attributes": {}
+          },
+          {
+            "name": "xnat-admin",
+            "description": "Scout Admin Role for XNAT Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
           }
         ]{{- end }}
       }
@@ -294,7 +301,10 @@
               an admin likely needs) to a finer-grained set of roles. */}}
           "realm-management": [
             "realm-admin"
-          ]
+          ]{{- if eq (.Values.enableXnat | toString) "true" }},
+          "xnat": [
+            "xnat-admin"
+          ]{{- end }}
         }
       },
       {
@@ -1350,17 +1360,18 @@
           "roles": ["manage-clients", "view-realm", "manage-realm"]
         }
       ]{{- if eq (.Values.enableXnat | toString) "true" }},
-      {{- /* The clientScope entry brings xnat-access along with aud=xnat. A
+      {{- /* The clientScope entry brings the xnat roles along with aud=xnat. A
           fullScopeAllowed: false client (jupyterhub, every fragment client)
-          otherwise gets the audience but no resource_access.xnat.roles. */}}
+          otherwise gets the audience but no resource_access.xnat.roles, and
+          XNAT's role sync would take xnat-admin's role away on its calls. */}}
       "xnat": [
         {
           "client": "xnat",
-          "roles": ["xnat-access"]
+          "roles": ["xnat-access", "xnat-admin"]
         },
         {
           "clientScope": "xnat-audience",
-          "roles": ["xnat-access"]
+          "roles": ["xnat-access", "xnat-admin"]
         }
       ]{{- end }}
     },
