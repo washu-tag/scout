@@ -61,10 +61,11 @@ function RailLabel({
   active: boolean;
   tone?: ToneName;
 }) {
-  const colors =
-    active && tone
+  const colors = !tone
+    ? 'border-transparent text-slate-500 dark:text-slate-400'
+    : active
       ? `${TONES[tone].iconBg} ${TONES[tone].icon}`
-      : 'border-transparent text-slate-500 dark:text-slate-400';
+      : `border-transparent ${TONES[tone].icon}`;
   return (
     <>
       <span
