@@ -133,7 +133,10 @@
   vars:
     frame_location_configmap: jupyter-frame-location
     frame_location_namespace: '{{ jupyter_namespace }}'
-    frame_location_file: labextension
+    frame_location_files:
+      package.json: package.json
+      remoteEntry.js: remoteEntry.js
+      frame-location.js: frame-location.js
 
 - name: Parse Helm values
   no_log: true

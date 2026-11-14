@@ -253,6 +253,10 @@ extraVolumeMounts:
     mountPath: /app/superset/templates/tail_js_custom_extra.html
     subPath: tail_js_custom_extra.html
     readOnly: true
+  - name: frame-location
+    mountPath: /app/superset/static/assets/scout-frame-location.js
+    subPath: scout-frame-location.js
+    readOnly: true
   - name: head-extra
     mountPath: /app/superset/templates/head_custom_extra.html
     subPath: head_custom_extra.html

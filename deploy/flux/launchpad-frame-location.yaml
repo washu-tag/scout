@@ -1,0 +1,22 @@
+# The launchpad frame-location scripts (ADR 0042): ConfigMaps that framed apps
+# mount, including apps a site deploys outside this base.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: launchpad-frame-location
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./base/launchpad-frame-location
+  prune: true
+  wait: true
+  timeout: 5m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  dependsOn:
+    - name: scout-analytics-foundation

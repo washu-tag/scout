@@ -342,6 +342,12 @@ spec:
       - name: statsd-mapping
         configMap:
           name: superset-statsd-mapping
+      - name: frame-location
+        configMap:
+          name: superset-frame-location
+      - name: head-extra
+        configMap:
+          name: superset-head-extra
       # CA from the trino-tls Secret; DB_CONNECTION_MUTATOR passes /etc/trino-ca/ca.crt
       # as http_session.verify to trust Trino's self-signed cert.
       - name: trino-ca
@@ -361,4 +367,16 @@ spec:
         readOnly: true
       - name: trino-ca
         mountPath: /etc/trino-ca
+        readOnly: true
+      - name: frame-location
+        mountPath: /app/superset/templates/tail_js_custom_extra.html
+        subPath: tail_js_custom_extra.html
+        readOnly: true
+      - name: frame-location
+        mountPath: /app/superset/static/assets/scout-frame-location.js
+        subPath: scout-frame-location.js
+        readOnly: true
+      - name: head-extra
+        mountPath: /app/superset/templates/head_custom_extra.html
+        subPath: head_custom_extra.html
         readOnly: true

@@ -1,7 +1,7 @@
 // Tells the launchpad which page this app is on while the launchpad frames it,
 // so its address bar follows. Sends only this page's address, only to the launchpad.
 (function () {
-  var launchpad = 'https://{{ server_hostname }}';
+  var launchpad = 'https://${server_hostname}';
   if (window.parent === window) return;
   function clean(href) {
     var url = new URL(href, window.location.href);

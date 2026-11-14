@@ -109,7 +109,7 @@
   vars:
     frame_location_configmap: open-webui-frame-location
     frame_location_namespace: '{{ chatbot_namespace }}'
-    frame_location_file: loader.js
+    frame_location_files: { loader.js: frame-location.js }
 
 - name: Parse Helm values
   ansible.builtin.set_fact:

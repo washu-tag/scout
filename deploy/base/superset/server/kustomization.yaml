@@ -13,6 +13,10 @@ configMapGenerator:
     files:
       - superset_trino_auth.py
       - superset_metrics.py
+  # Hides Superset's own logo inside the launchpad, next to the rail's (ADR 0042).
+  - name: superset-head-extra
+    files:
+      - head_custom_extra.html
 generatorOptions:
   # Fixed name: referenced in HelmRelease valuesFrom. Flux re-reconciles on content
   # change, so a .py edit still rolls the release.

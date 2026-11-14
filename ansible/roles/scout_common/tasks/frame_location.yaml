@@ -1,14 +1,10 @@
 ---
 # Publish the script that tells the launchpad which page a framed app is on, so
-# the launchpad's address bar follows navigation inside the app. The file's
-# extension picks how it is wrapped for the app: .js (a plain script), .html
-# (Jinja, carrying the page's CSP nonce) or .jar (an XNAT header template, GET
-# pages only, packed so it loads from XNAT's plugins directory). The value
-# `labextension` instead publishes a JupyterLab prebuilt extension, package.json
-# and remoteEntry.js, to mount as the extension's directory. remoteEntry.js stays
-# out of static/, which JupyterLab serves as immutable for a year.
+# the launchpad's address bar follows navigation inside the app (ADR 0042). The
+# files live in deploy/base/launchpad-frame-location (files/frame-location links
+# to them), shared with the GitOps lane; ${server_hostname} is filled in here.
 #
-# Include with:
+# Include with `frame_location_files`, a map of ConfigMap key to file name:
 #
 #   - name: Publish launchpad frame-location script
 #     ansible.builtin.include_role:
@@ -17,39 +13,38 @@
 #     vars:
 #       frame_location_configmap: my-service-frame-location
 #       frame_location_namespace: '{{ my_service_namespace }}'
-#       frame_location_file: loader.js
+#       frame_location_files: { loader.js: frame-location.js }
 #
-# then mount that key where the app loads it.
+# or with `frame_location_file: <name>.jar` for XNAT, which packs an XNAT header
+# template (GET pages only) into a jar that loads from XNAT's plugins directory.
+# Then mount the keys where the app loads them.
 - name: Publish frame-location ConfigMap {{ frame_location_configmap }}
-  when: frame_location_file is not match('.*\.jar$') and frame_location_file != 'labextension'
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: ConfigMap
-      metadata:
-        name: '{{ frame_location_configmap }}'
-        namespace: '{{ frame_location_namespace }}'
-      data: >-
-        {{ {frame_location_file: lookup('ansible.builtin.template',
-        'frame-location' ~ (frame_location_file | splitext | last) ~ '.j2')} }}
+  when: frame_location_files is defined
+  block:
+    - name: Read the frame-location files
+      ansible.builtin.set_fact:
+        _frame_location_data: >-
+          {{ (_frame_location_data if ansible_loop.index > 1 else {}) | combine({item.key:
+          lookup('ansible.builtin.file', 'frame-location/' ~ item.value)
+          | replace('${server_hostname}', server_hostname)}) }}
+      loop: '{{ frame_location_files | dict2items }}'
+      loop_control:
+        extended: true
+        label: '{{ item.key }}'
 
-- name: Publish frame-location JupyterLab extension ConfigMap {{ frame_location_configmap }}
-  when: frame_location_file == 'labextension'
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: ConfigMap
-      metadata:
-        name: '{{ frame_location_configmap }}'
-        namespace: '{{ frame_location_namespace }}'
-      data: >-
-        {{ {'package.json': lookup('ansible.builtin.template', 'frame-location-labextension.json.j2'),
-        'remoteEntry.js': lookup('ansible.builtin.template', 'frame-location-labextension.js.j2')} }}
+    - name: Publish the ConfigMap
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: '{{ frame_location_configmap }}'
+            namespace: '{{ frame_location_namespace }}'
+          data: '{{ _frame_location_data }}'
 
 - name: Publish frame-location jar ConfigMap {{ frame_location_configmap }}
-  when: frame_location_file is match('.*\.jar$')
+  when: frame_location_file is defined and frame_location_file is match('.*\.jar$')
   block:
     - name: Create a frame-location build directory
       ansible.builtin.tempfile:
