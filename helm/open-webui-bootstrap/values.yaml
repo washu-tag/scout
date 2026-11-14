@@ -91,7 +91,7 @@ scoutModels: []
 # Ansible passes through.
 scoutDefaults:
   systemPromptFile: scout-system-prompt.md
-  profileImageFile: scout-logo-128.png.b64
+  profileImageFile: scout-avatar-256.png.b64
   toolIds: []
   suggestionPrompts: []
   capabilities: {}
