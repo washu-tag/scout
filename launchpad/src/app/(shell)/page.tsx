@@ -6,5 +6,11 @@ import { requestModel } from '@/lib/catalog/request';
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
-  return <HomeClient model={await requestModel()} deployerName={process.env.DEPLOYER_NAME} />;
+  return (
+    <HomeClient
+      model={await requestModel()}
+      environment={process.env.SCOUT_ENV ?? 'local'}
+      deployerName={process.env.DEPLOYER_NAME}
+    />
+  );
 }
