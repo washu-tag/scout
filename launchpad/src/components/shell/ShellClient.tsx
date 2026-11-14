@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { FaBook, FaMoon, FaSignOutAlt, FaSun } from 'react-icons/fa';
 import { HiOutlineExternalLink } from 'react-icons/hi';
@@ -15,6 +15,7 @@ import {
   embeddedChip,
   frameUrl,
   isChipOrigin,
+  openRequest,
   recentApps,
   shellLocation,
   type ShellSection,
@@ -98,6 +99,7 @@ export default function ShellClient({
   children,
 }: ShellClientProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { data: session, status } = useSession();
   const railRef = useRef<HTMLDivElement>(null);
   const signingOut = useRef(false);
@@ -210,10 +212,32 @@ export default function ShellClient({
   // Apps report their own address with a `scout:location` message, and where a
   // navigation is headed with `scout:leaving`. Only the app's own frame, from the
   // chip's origin, is believed; content an app nests inside its frame has a
-  // different source and is ignored.
+  // different source and is ignored. Any Scout frame, nested ones included, can
+  // ask with `scout:open` to open a Scout page here instead of in a new tab.
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
       const type = event.data?.type;
+      if (type === 'scout:open') {
+        const request = openRequest(
+          sections,
+          embedApps,
+          new URL(window.location.href),
+          event.origin,
+          event.data.href,
+        );
+        if (!request) return;
+        const { chip, address, href } = request;
+        setLocations((current) => ({ ...current, [chip.id]: address }));
+        setOpened((current) =>
+          current.map((entry) => (entry.chip.id === chip.id ? { ...entry, src: href } : entry)),
+        );
+        router.push(address);
+        (event.source as Window | null)?.postMessage(
+          { type: 'scout:opened', href: event.data.href },
+          event.origin,
+        );
+        return;
+      }
       if (type !== 'scout:location' && type !== 'scout:leaving') return;
       for (const [id, frame] of frames.current) {
         if (frame.contentWindow !== event.source) continue;
@@ -232,7 +256,7 @@ export default function ShellClient({
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [sections, embedApps]);
+  }, [sections, embedApps, router]);
 
   const activeLocation = active ? locations[active.id] : undefined;
   useEffect(() => {

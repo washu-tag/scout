@@ -129,6 +129,22 @@ accepts the message only from your chip's frame and only for an address on your
 chip's host or one of its subdomains, so content nested inside your page cannot move
 it.
 
+To send users to another Scout page, for example a button that opens a result in
+another service, ask the launchpad to open it instead of opening a new tab:
+
+```js
+window.top.postMessage(
+  { type: 'scout:open', href: 'https://xnat.scout.example.edu/data/projects/P1' },
+  'https://scout.example.edu', // the launchpad's origin
+);
+```
+
+The launchpad opens the page in the chip that owns it and answers the sender with
+`{ type: 'scout:opened', href }`. It accepts the request from any frame on the
+launchpad's host or one of its subdomains, nested ones included, and ignores pages no
+chip owns. Without an answer, open the page as you otherwise would. This also works
+from inside a sandboxed iframe, where a new tab would inherit the sandbox.
+
 ## Groups: Defining a section
 
 Chips are grouped on the page into sections called Groups. A chip references a group id;

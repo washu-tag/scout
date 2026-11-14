@@ -9,6 +9,7 @@ import {
   embeddedChip,
   frameUrl,
   isChipOrigin,
+  openRequest,
   recentApps,
   shellLocation,
   shellSections,
@@ -296,5 +297,52 @@ describe('embeddedChip', () => {
     assert.strictEqual(embeddedChip(sections, 'users', true), undefined);
     assert.strictEqual(embeddedChip(sections, 'guide', true), undefined);
     assert.strictEqual(embeddedChip(sections, 'chat', false), undefined);
+  });
+});
+
+describe('openRequest', () => {
+  const sections = shellSections(assemble(CATALOG, { origin: ORIGIN, isAdmin: false }));
+  const launchpad = new URL('https://scout.example.edu/app/chat');
+  const open = (origin: string, href: unknown) =>
+    openRequest(sections, true, launchpad, origin, href);
+
+  it('opens a Scout page from any Scout frame in the app that owns it', () => {
+    const request = open(
+      'https://report-viewer.scout.example.edu',
+      'https://chat.scout.example.edu/c/1?x=1',
+    );
+    assert.strictEqual(request?.chip.id, 'chat');
+    assert.strictEqual(request?.address, '/app/chat/c/1?x=1');
+    assert.strictEqual(
+      open('https://scout.example.edu', 'https://jupyter.scout.example.edu/')?.address,
+      '/app/notebooks',
+    );
+  });
+
+  it('ignores senders and pages off the launchpad host, and pages no chip owns', () => {
+    const page = 'https://chat.scout.example.edu/c/1';
+    for (const origin of [
+      'null',
+      '',
+      'https://evil.example',
+      'http://chat.scout.example.edu',
+      'https://scout.example.edu.evil.example',
+    ]) {
+      assert.strictEqual(open(origin, page), null, origin);
+    }
+    for (const href of [
+      undefined,
+      42,
+      'not a url',
+      'https://evil.example/c/1',
+      'https://datasets.scout.example.edu/x',
+      'javascript:alert(1)',
+    ]) {
+      assert.strictEqual(open('https://chat.scout.example.edu', href), null, String(href));
+    }
+    assert.strictEqual(
+      openRequest(sections, false, launchpad, 'https://chat.scout.example.edu', page),
+      null,
+    );
   });
 });

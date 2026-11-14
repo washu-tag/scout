@@ -129,6 +129,38 @@ export function chipForUrl(
   return best ?? candidates[0];
 }
 
+function onHost(launchpad: URL, value: string): boolean {
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === launchpad.protocol &&
+      url.port === launchpad.port &&
+      (url.hostname === launchpad.hostname || url.hostname.endsWith(`.${launchpad.hostname}`))
+    );
+  } catch {
+    return false;
+  }
+}
+
+// A `scout:open` request: the framed app and launchpad address for `href`, when
+// both the sender's origin and `href` are on the launchpad's host or a subdomain
+// of it and a chip owns `href`.
+export function openRequest(
+  sections: ShellSection[],
+  embedApps: boolean,
+  launchpad: URL,
+  origin: string,
+  href: unknown,
+): { chip: RenderChip; address: string; href: string } | null {
+  if (typeof href !== 'string' || !onHost(launchpad, origin) || !onHost(launchpad, href)) {
+    return null;
+  }
+  const url = new URL(href);
+  const chip = chipForUrl(sections, url, embedApps);
+  const address = chip ? shellLocation(chip, url.href) : null;
+  return chip && address ? { chip, address, href: url.href } : null;
+}
+
 // The most recently used app ids, newest last, at most `max`.
 export function recentApps(recent: string[], id: string, max: number): string[] {
   return [...recent.filter((other) => other !== id), id].slice(-max);
