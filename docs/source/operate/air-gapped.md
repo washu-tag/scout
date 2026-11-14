@@ -42,6 +42,18 @@ Scout supports air-gapped deployments through a staging node architecture. Ansib
 
 ## Requirements
 
+To pin Superset's dockerize init image, or to pull it from a registry the K3s
+mirrors don't cover, set `superset_init_image_repository` and
+`superset_init_image_tag` in the Ansible inventory or GitOps `cluster-vars`. Use a
+repository without a tag or digest, and a tag such as
+`dockerize@sha256:<verified-digest>`; the chart joins them with a colon. These
+optional values apply to Deployment init containers and the database-init Helm
+hook. Staging-node installations already route the default Docker Hub image
+through Harbor's K3s registry mirror, including hook pods. Both deployment paths
+default to `apache/superset` and `dockerize`. The GitOps generator emits these keys
+even for older site values files; existing `cluster-vars` ConfigMaps without them
+use the same defaults.
+
 ### Operating System
 
 **Critical:** Production K3s nodes must run **Rocky Linux 9** (or compatible RHEL 9-based distribution).

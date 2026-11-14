@@ -16,6 +16,8 @@ scout_dashboards_helm_chart_ref: '{{ scout_repo_dir }}/helm/scout-dashboards'
 superset_image_repository: ghcr.io/washu-tag/superset
 # Matches helm/superset/VERSION; the -ca rebuild needs a new tag for IfNotPresent nodes.
 superset_image_tag: 5.0.0-ca.2
+superset_init_image_repository: apache/superset
+superset_init_image_tag: dockerize
 
 # Branding
 superset_app_name: Scout Analytics

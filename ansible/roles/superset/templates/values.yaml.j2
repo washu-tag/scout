@@ -1,6 +1,9 @@
 image:
   repository: "{{ superset_image_repository }}"
   tag: "{{ superset_image_tag }}"
+initImage:
+  repository: "{{ superset_init_image_repository }}"
+  tag: "{{ superset_init_image_tag }}"
 redis:
   # Disable embedded Redis - using centralized Valkey instance instead
   enabled: false

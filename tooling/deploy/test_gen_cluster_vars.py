@@ -88,6 +88,29 @@ def test_output_key_set_equals_required_vars(values, required):
     assert set(data) == set(required)
 
 
+@pytest.mark.parametrize(
+    "repository,tag",
+    [
+        (None, None),
+        (
+            "registry.example.test:5000/scout/apache/superset",
+            "dockerize@sha256:" + "a" * 64,
+        ),
+    ],
+)
+def test_superset_init_image_defaults_and_overrides(values, required, repository, tag):
+    values.pop("superset_init_image_repository", None)
+    values.pop("superset_init_image_tag", None)
+    if repository is not None:
+        values.update(
+            superset_init_image_repository=repository, superset_init_image_tag=tag
+        )
+    data = build(values, required)
+    assert data["superset_init_image_repository"] == (repository or "apache/superset")
+    assert data["superset_init_image_tag"] == (tag or "dockerize")
+    assert check(data, required) == ([], [])
+
+
 def test_rendered_configmap_keys_match_required(values, required, tmp_path):
     """End-to-end via main(): the emitted ConfigMap data keys == required-vars."""
     out = tmp_path / "cluster-vars.yaml"

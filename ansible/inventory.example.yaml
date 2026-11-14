@@ -192,6 +192,10 @@ k3s_cluster:
     # environment before applying them to production. For example:
     #   ansible-playbook -e "k3s_version=v1.35.0+k3s1" playbooks/k3s.yaml
 
+    # Optional Superset init-image pin or registry override outside the K3s mirrors.
+    # superset_init_image_repository: harbor.example.edu/scout/docker.io/apache/superset
+    # superset_init_image_tag: dockerize@sha256:<mirrored-digest>
+    #
     # Namespaces - Scout uses 6 consolidated namespaces by default
     # Core infrastructure (PostgreSQL, Valkey, Keycloak, OAuth2-Proxy, Launchpad)
     # scout_core_namespace: scout-core
