@@ -54,32 +54,29 @@ const ChipCard = ({ chip, large }: { chip: RenderChip; large: boolean }) => {
   return (
     <ChipAnchor
       chip={chip}
-      className={`group flex flex-col no-underline transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${SURFACE} ${tone.hoverBorder} ${tone.hoverShadow} ${
-        large ? 'gap-3.5 p-[22px] rounded-2xl shadow-sm' : 'gap-2.5 p-[18px] rounded-[14px]'
+      className={`group flex items-start no-underline transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${SURFACE} ${tone.hoverBorder} ${tone.hoverShadow} ${
+        large ? 'gap-4 p-5 rounded-2xl shadow-sm' : 'gap-3 p-4 rounded-[14px]'
       }`}
     >
       <ToneIcon
         chip={chip}
         size={large ? 'w-[42px] h-[42px] rounded-xl' : 'w-9 h-9 rounded-[10px]'}
       />
-      <span className="flex flex-col gap-1.5">
+      <span className="flex min-w-0 flex-col gap-1">
         <span
-          className={`font-semibold tracking-tight text-slate-900 dark:text-slate-100 ${large ? 'text-lg' : 'text-[15px]'}`}
+          className={`inline-flex items-center gap-1.5 font-semibold tracking-tight text-slate-900 dark:text-slate-100 ${large ? 'text-lg' : 'text-[15px]'}`}
         >
           {chip.title}
+          {large && (
+            <HiArrowRight
+              className={`text-base ${tone.cta} transition-transform duration-200 group-hover:translate-x-1`}
+            />
+          )}
         </span>
         <span className={`leading-normal ${MUTED} ${large ? 'text-sm' : 'text-[13px]'}`}>
           {chip.description}
         </span>
       </span>
-      {large && (
-        <span
-          className={`mt-auto inline-flex items-center gap-1.5 text-sm font-semibold ${tone.cta}`}
-        >
-          Open
-          <HiArrowRight className="transition-transform duration-200 group-hover:translate-x-1" />
-        </span>
-      )}
     </ChipAnchor>
   );
 };
@@ -87,7 +84,7 @@ const ChipCard = ({ chip, large }: { chip: RenderChip; large: boolean }) => {
 const ChipRow = ({ chip }: { chip: RenderChip }) => (
   <ChipAnchor
     chip={chip}
-    className="group flex items-center gap-3.5 px-4 py-3.5 no-underline transition-colors duration-200 hover:bg-slate-50 dark:hover:bg-slate-800/60"
+    className="group flex items-center gap-3.5 px-4 py-2.5 no-underline transition-colors duration-200 hover:bg-slate-50 dark:hover:bg-slate-800/60"
   >
     <ToneIcon chip={chip} size="w-[34px] h-[34px] rounded-[9px]" />
     <span className="flex flex-1 min-w-0 flex-col gap-0.5">
@@ -106,7 +103,7 @@ const ChipTile = ({ chip }: { chip: RenderChip }) => {
     <ChipAnchor
       chip={chip}
       title={chip.description}
-      className={`flex flex-col items-center gap-2 px-2 py-4 rounded-[14px] no-underline text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${SURFACE} ${tone.hoverBorder} ${tone.hoverShadow}`}
+      className={`flex items-center gap-2.5 px-3 py-2.5 rounded-[14px] no-underline transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${SURFACE} ${tone.hoverBorder} ${tone.hoverShadow}`}
     >
       <ToneIcon chip={chip} size="w-[34px] h-[34px] rounded-[9px]" />
       <span className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">
@@ -117,11 +114,9 @@ const ChipTile = ({ chip }: { chip: RenderChip }) => {
 };
 
 const GroupSection = ({ group, half }: { group: RenderGroup; half: boolean }) => (
-  <section className="flex min-w-0 flex-col gap-4">
+  <section className="flex min-w-0 flex-col gap-3">
     <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 pb-3 border-b border-slate-200 dark:border-slate-800">
-      <div
-        className={`flex ${half ? 'flex-col gap-1' : 'flex-wrap items-baseline gap-x-3 gap-y-1'}`}
-      >
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
           {group.title}
         </h2>
@@ -162,7 +157,7 @@ const GroupSection = ({ group, half }: { group: RenderGroup; half: boolean }) =>
     )}
     {group.layout === 'tiles' && (
       <div
-        className={`grid gap-2.5 ${TILE_COLS[group.columns] ?? 'grid-cols-2'} ${half ? '' : 'md:max-w-[calc(50%_-_1.25rem)]'}`}
+        className={`grid gap-2.5 ${TILE_COLS[half ? group.columns : Math.min(group.columns * 2, 4)] ?? 'grid-cols-2'}`}
       >
         {group.chips.map((chip) => (
           <ChipTile key={`${chip.source}:${chip.id}`} chip={chip} />
@@ -253,10 +248,10 @@ export default function CatalogSections({ model }: { model: RenderModel }) {
   }
 
   return (
-    <div className="flex flex-col gap-11">
+    <div className="flex flex-col gap-8">
       {model.rows.map((row) =>
         row.groups.length === 2 ? (
-          <div key={row.groups[0].id} className="grid gap-11 md:grid-cols-2 md:gap-10">
+          <div key={row.groups[0].id} className="grid gap-8 md:grid-cols-2">
             {row.groups.map((group) => (
               <SectionBoundary key={group.id} title={group.title}>
                 <GroupSection group={group} half />
