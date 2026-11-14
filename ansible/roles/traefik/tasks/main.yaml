@@ -132,9 +132,8 @@
             style-src 'self' 'unsafe-inline';
             img-src 'self' data: blob:;
             font-src 'self' data:;
-            connect-src 'self' ws: wss: {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
+            connect-src 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
             form-action 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
-            frame-src 'self' https://*.{{ server_hostname }};
             frame-ancestors https://{{ server_hostname }}
           customResponseHeaders:
             Permissions-Policy: 'camera=(), microphone=(), geolocation=(), payment=()'
@@ -189,7 +188,7 @@
             style-src 'self' 'unsafe-inline';
             img-src 'self' data: blob:;
             font-src 'self' data:;
-            connect-src 'self' ws: wss: {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
+            connect-src 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
             form-action 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
             frame-ancestors {{ traefik_embeddable_frame_ancestors }}
           customResponseHeaders:
@@ -224,7 +223,7 @@
             style-src 'self' 'unsafe-inline';
             img-src 'self' data: blob:;
             font-src 'self' data:;
-            connect-src 'self' ws: wss: {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
+            connect-src 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
             form-action 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
             frame-ancestors 'self' https://{{ server_hostname }}
           customResponseHeaders:
@@ -284,7 +283,7 @@
             style-src 'self' 'unsafe-inline';
             img-src 'self' data: blob:;
             font-src 'self' data:;
-            connect-src 'self' ws: wss: {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
+            connect-src 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
             form-action 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
             frame-ancestors 'self'
           customResponseHeaders:
