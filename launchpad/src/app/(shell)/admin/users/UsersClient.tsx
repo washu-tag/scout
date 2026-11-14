@@ -840,7 +840,7 @@ export default function UsersClient() {
 
   return (
     <div className="min-h-full w-full bg-gradient-to-br from-slate-50 via-white to-indigo-50/40 dark:from-slate-950 dark:via-slate-950 dark:to-indigo-950/30">
-      <main className="max-w-content mx-auto px-4 py-8 md:px-6 lg:px-8">
+      <main className="max-w-content 2xl:max-w-content-wide mx-auto px-4 py-8 md:px-6 lg:px-8">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight">

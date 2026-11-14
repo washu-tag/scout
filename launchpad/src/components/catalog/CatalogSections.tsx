@@ -248,10 +248,13 @@ export default function CatalogSections({ model }: { model: RenderModel }) {
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8 tall:gap-11">
       {model.rows.map((row) =>
         row.groups.length === 2 ? (
-          <div key={row.groups[0].id} className="grid gap-8 md:grid-cols-2">
+          <div
+            key={row.groups[0].id}
+            className="grid gap-8 md:grid-cols-2 tall:gap-11 tall:md:gap-10"
+          >
             {row.groups.map((group) => (
               <SectionBoundary key={group.id} title={group.title}>
                 <GroupSection group={group} half />

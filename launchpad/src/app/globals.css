@@ -13,6 +13,7 @@
   /* Shared page content width so the home page and the admin console line up.
      Used as max-w-content; 80rem matches Tailwind's 7xl. */
   --container-content: 80rem;
+  --container-content-wide: 88rem;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -23,6 +24,9 @@
 }
 
 @variant dark (.dark &);
+
+/* Screens with room to spare get the roomier home spacing. */
+@custom-variant tall (@media (min-height: 900px));
 
 body {
   background: var(--background);
