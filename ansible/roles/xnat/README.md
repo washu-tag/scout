@@ -24,6 +24,16 @@ nothing XNAT is created — and the Keycloak realm omits the `xnat` client and t
 > working until they expire. ADR 0026 records the earlier posture, when the role
 > was not enforced.
 
+> **Roles note:** members of `scout-admin` hold the `xnat` client's `xnat-admin`
+> role, and the openid plugin's role sync makes them XNAT site administrators at
+> each sign-in, browser or API, and takes the role away once they lose it. Role
+> sync manages only the XNAT roles named in `xnat_openid_role_mappings_all`; a
+> site maps more by listing `<claim path>:<token role>=<XNAT role>` entries in
+> `xnat_openid_role_mappings`, for example
+> `resource_access.<client>.roles:<role>=<XNAT role>` for a role another client's
+> tokens carry. It needs an openid plugin release with role sync; older releases
+> ignore the setting.
+
 ## How it deploys
 
 1. **Chart**: the upstream chart is published as an OCI artifact
