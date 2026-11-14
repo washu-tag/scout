@@ -353,7 +353,7 @@
         namespace: '{{ traefik_namespace }}'
       spec:
         redirectRegex:
-          regex: '^https://([a-z0-9-]+)\.{{ server_hostname | regex_escape }}/(.*)'
+          regex: '^https://([a-z0-9-]+\.{{ server_hostname | regex_escape }})/(.*)'
           replacement: 'https://{{ server_hostname }}/open/${1}/${2}'
           permanent: false
 

@@ -124,6 +124,17 @@ export function chipForUrl(sections: ShellSection[], url: URL): RenderChip | und
   return best ?? candidates[0];
 }
 
+const DNS_LABEL = /^[a-z0-9-]{1,63}$/;
+
+// `value` when it is a subdomain of the launchpad's host (port included), else null.
+export function serviceHost(value: string, launchpadHost: string): string | null {
+  const host = value.toLowerCase();
+  const suffix = `.${launchpadHost.toLowerCase()}`;
+  if (!host.endsWith(suffix)) return null;
+  const labels = host.slice(0, -suffix.length).split('.');
+  return labels.every((label) => DNS_LABEL.test(label)) ? host : null;
+}
+
 function onHost(launchpad: URL, value: string): boolean {
   try {
     const url = new URL(value);

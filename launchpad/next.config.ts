@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, './'),
   poweredByHeader: false,
-  // /open/<subdomain>/<path> carries a service path verbatim, trailing slash included.
+  // /open/<service host>/<path> carries a service path verbatim, trailing slash included.
   skipTrailingSlashRedirect: true,
 };
 

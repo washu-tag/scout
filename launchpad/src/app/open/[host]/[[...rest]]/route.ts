@@ -1,26 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requestModel, requestOrigin } from '@/lib/catalog/request';
-import { chipForUrl, shellLocation, shellPath, shellSections } from '@/lib/catalog/shell';
+import {
+  chipForUrl,
+  serviceHost,
+  shellLocation,
+  shellPath,
+  shellSections,
+} from '@/lib/catalog/shell';
 
 export const dynamic = 'force-dynamic';
-
-const DNS_LABEL = /^[a-z0-9-]{1,63}$/;
 
 function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
 // The edge sends links into a Scout service that arrive from outside Scout
-// (bookmarks, shared links) here, as /open/<subdomain>/<path>. A framed app opens
-// in the shell at that path; anything else opens on its own.
-export async function GET(req: NextRequest, { params }: { params: Promise<{ sub: string }> }) {
-  const { sub } = await params;
-  if (!DNS_LABEL.test(sub)) {
+// (bookmarks, shared links) here, as /open/<service host>/<path>. A framed app
+// opens in the shell at that path; anything else opens on its own.
+export async function GET(req: NextRequest, { params }: { params: Promise<{ host: string }> }) {
+  const { host: segment } = await params;
+  const origin = await requestOrigin();
+  const host = serviceHost(segment, origin.host);
+  if (!host) {
     return new NextResponse(null, { status: 307, headers: { Location: '/' } });
   }
-  const origin = await requestOrigin();
-  const path = req.nextUrl.pathname.slice(`/open/${sub}`.length) || '/';
-  const target = new URL(`${origin.protocol}://${sub}.${origin.host}${path}${req.nextUrl.search}`);
+  const path = req.nextUrl.pathname.slice(`/open/${segment}`.length) || '/';
+  const target = new URL(`${origin.protocol}://${host}${path}${req.nextUrl.search}`);
 
   const chip = chipForUrl(shellSections(await requestModel()), target);
   if (chip) {

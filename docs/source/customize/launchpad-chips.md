@@ -110,9 +110,13 @@ following `newTab`.
 
 Links into your service that arrive from outside Scout, such as a bookmark or a link
 someone shared, open inside the launchpad at the same page, and so does a new tab or
-window that a framed Scout service opens. On-prem, the edge sends them to the
-launchpad, which frames the chip on that subdomain whose path matches best. A
-subdomain with no chip opens on its own.
+window that a framed Scout service opens. The edge sends them to
+`https://<launchpad host>/open/<service host>/<path>`, and the launchpad frames the
+chip on that host whose path matches best; a host with no chip opens on its own.
+On-prem, Traefik does this for every Scout subdomain. Other edges redirect top-level
+document loads (`Sec-Fetch-Dest: document`) that did not come from the launchpad; the
+Ingresses of framed services carry the label `launchpad.scout.xnat.org/deep-link: "true"`
+so an edge overlay can find them.
 
 While your service is framed, the launchpad's address bar shows the page the service
 was opened at. To keep it in step as users move around, post the page's address to the

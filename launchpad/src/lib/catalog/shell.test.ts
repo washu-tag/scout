@@ -11,6 +11,7 @@ import {
   isChipOrigin,
   openRequest,
   recentApps,
+  serviceHost,
   shellLocation,
   shellSections,
 } from './shell';
@@ -274,6 +275,36 @@ describe('chipForUrl', () => {
   it('finds nothing off the catalog hosts', () => {
     assert.strictEqual(find('https://report-viewer.scout.example.edu/'), undefined);
     assert.strictEqual(find('https://docs.example.edu/'), undefined);
+  });
+});
+
+describe('serviceHost', () => {
+  it('accepts subdomains of the launchpad host, at any depth', () => {
+    assert.strictEqual(
+      serviceHost('Superset.scout.example.edu', 'scout.example.edu'),
+      'superset.scout.example.edu',
+    );
+    assert.strictEqual(
+      serviceHost('alice.jupyter.scout.example.edu', 'scout.example.edu'),
+      'alice.jupyter.scout.example.edu',
+    );
+    assert.strictEqual(serviceHost('chat.localhost:3998', 'localhost:3998'), 'chat.localhost:3998');
+  });
+
+  it('rejects other hosts and malformed labels', () => {
+    for (const value of [
+      'scout.example.edu',
+      'superset',
+      'evil.example.com',
+      'scout.example.edu.evil.example.com',
+      'xscout.example.edu',
+      '.scout.example.edu',
+      'a..scout.example.edu',
+      'a_b.scout.example.edu',
+      'evil.com/.scout.example.edu',
+    ]) {
+      assert.strictEqual(serviceHost(value, 'scout.example.edu'), null, value);
+    }
   });
 });
 
