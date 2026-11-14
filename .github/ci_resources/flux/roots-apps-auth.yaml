@@ -33,7 +33,7 @@ spec:
           value: 1m
     - target:
         kind: Kustomization
-        name: ^(extractor|temporal-server|temporal-bootstrap|trino-rw|superset-server|superset-dashboards)$
+        name: ^(extractor|temporal-server|temporal-bootstrap|trino-rw|superset-server|superset-dashboards|launchpad-frame-location)$
       patch: |
         - op: add
           path: /spec/suspend
