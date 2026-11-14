@@ -374,6 +374,7 @@ def test_invoke_backend_call_action_returns_url(
         {"primary_report_identifier": "s3://x/2", "accession_number": None},
     ]
     assert call["json"]["cohort_truncated"] is False
+    assert call["json"]["filters"] == []
 
 
 def test_invoke_backend_call_action_filters_to_visible_report_ids(
@@ -396,13 +397,17 @@ def test_invoke_backend_call_action_filters_to_visible_report_ids(
     r = client.post(
         f"/api/searches/{search_id}/actions/explore-xnat-demo/invoke",
         headers=bearer_headers,
-        json={"visible_report_ids": ["s3://x/1"]},
+        json={
+            "visible_report_ids": ["s3://x/1"],
+            "filters": ["modality in (CT, MR)"],
+        },
     )
     assert r.status_code == 200, r.text
     call = _FakeAsyncClient.last_call
     assert call["json"]["reports"] == [
         {"primary_report_identifier": "s3://x/1", "accession_number": "ACC1"},
     ]
+    assert call["json"]["filters"] == ["modality in (CT, MR)"]
 
 
 def test_invoke_backend_call_action_ignores_unauthorized_visible_ids(

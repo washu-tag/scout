@@ -123,7 +123,7 @@ actions:
 | `endpointUrl`                            | yes      | —       | POSTed to when the button is clicked. Must be `http(s)` with a real host.                                           |
 | `invokeToken`                            | no       | —       | Forwarded as `X-Report-Viewer-Action-Token`. See [Securing a backend-call target](#securing-a-backend-call-target). |
 
-report-viewer POSTs `{search_id, sql, username, reports, cohort_truncated}` to
+report-viewer POSTs `{search_id, sql, username, reports, cohort_truncated, filters}` to
 `endpointUrl` — `reports` is the resolved cohort as
 `{primary_report_identifier, accession_number}` pairs, not just the raw SQL, capped at
 the same row limit the SPA itself uses (`REPORT_VIEWER_MAX_COHORT_ROWS`, 50000 by
@@ -142,6 +142,12 @@ actually part of the search is silently dropped, never trusted on its own. Click
 backend-call button always means "these studies" — whatever's currently filtered — the
 same scope Download CSV already exports, not "the entire search" regardless of what's
 on screen.
+
+`sql` is the saved search before those filters. `filters` lists them as readable text,
+one entry per filter (for example `modality in (CT, MR)`), and is empty when none are
+active. If your service records the query behind a cohort, record `filters` alongside
+`sql`. The text comes from the browser as-is; report-viewer does not check it against
+`reports`.
 
 There is no values field for a `client`-type action (page-specific frontend logic, like
 Download CSV) — that needs a handler already registered in report-viewer's own

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any
 
 from pydantic import BaseModel, Field
 
@@ -250,6 +250,10 @@ class ActionInvokeRequest(BaseModel):
     behavior."""
 
     visible_report_ids: list[str] | None = None
+    # Readable text of the filters behind visible_report_ids, forwarded as-is.
+    filters: list[Annotated[str, Field(max_length=1000)]] | None = Field(
+        default=None, max_length=32
+    )
 
 
 class ActionInvokeResponse(BaseModel):

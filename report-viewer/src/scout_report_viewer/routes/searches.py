@@ -573,6 +573,7 @@ async def invoke_search_action(
         # it was never going to be in the caller's own search either way.
         visible = set(body.visible_report_ids)
         reports = [r for r in reports if r["primary_report_identifier"] in visible]
+    filters = body.filters if body is not None and body.filters else []
 
     headers = {}
     if invoke_token:
@@ -587,6 +588,7 @@ async def invoke_search_action(
                     "username": user.sub,
                     "reports": reports,
                     "cohort_truncated": cohort_truncated,
+                    "filters": filters,
                 },
                 headers=headers,
             )
