@@ -339,9 +339,9 @@ open_webui_scout_default_suggestion_prompts:
 # Default profile image (avatar): the bootstrap chart embeds
 # helm/open-webui-bootstrap/files/payloads/scout-avatar-256.png.b64 as a data
 # URL on every Scout Explorer entry. Open WebUI crops avatars to a circle, so
-# the source is helm/open-webui-bootstrap/files/scout-avatar.svg, the
-# launchpad logo's mark on a round chip, rendered at 256×256 and base64
-# encoded. Per-model overrides still work via scout_models[].ui.profile_image_url.
+# the source is helm/open-webui-bootstrap/files/scout-avatar.svg, the logo on
+# a round indigo tile that reads in light and dark, rendered at 256×256 and
+# base64 encoded. Per-model overrides still work via scout_models[].ui.profile_image_url.
 
 # Default capability flags. OWUI's DEFAULT_CAPABILITIES has everything `true`,
 # but a few are unsafe for Scout's air-gapped + PHI-handling deployment:
