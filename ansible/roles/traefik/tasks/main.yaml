@@ -378,7 +378,9 @@
               && !Host(`{{ oauth2_proxy_subdomain }}.{{ server_hostname }}`)
               && Method(`GET`)
               && Header(`Sec-Fetch-Dest`, `document`)
-              && HeaderRegexp(`Sec-Fetch-Site`, `^(none|cross-site)$`)
+              && (HeaderRegexp(`Sec-Fetch-Site`, `^(none|cross-site)$`)
+              || (Header(`Sec-Fetch-Site`, `same-site`)
+              && !HeaderRegexp(`Referer`, `^https://{{ server_hostname | regex_escape }}/`)))
             priority: 10000
             middlewares:
               - name: security-headers

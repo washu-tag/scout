@@ -108,9 +108,10 @@ following `newTab`. Sites whose edge does not allow framing set `embedApps: fals
 the launchpad chart; subdomain destinations then open on their own too.
 
 Links into your service that arrive from outside Scout, such as a bookmark or a link
-someone shared, open inside the launchpad at the same page. On-prem, the edge sends
-them to the launchpad, which frames the chip on that subdomain whose path matches
-best. A subdomain with no chip opens on its own.
+someone shared, open inside the launchpad at the same page, and so does a new tab or
+window that a framed Scout service opens. On-prem, the edge sends them to the
+launchpad, which frames the chip on that subdomain whose path matches best. A
+subdomain with no chip opens on its own.
 
 While your service is framed, the launchpad's address bar shows the page the service
 was opened at. To keep it in step as users move around, post the page's address to the
