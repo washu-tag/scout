@@ -31,6 +31,20 @@
         favicon.ico: '{{ lookup("community.general.binary_file", superset_favicon_path) }}'
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
+- name: Create ConfigMap hiding Superset's logo inside the launchpad
+  delegate_to: localhost
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: superset-head-extra
+        namespace: '{{ superset_namespace }}'
+      data:
+        head_custom_extra.html: '{{ lookup("file", "head_custom_extra.html") }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+
 - name: Create ConfigMap for StatsD exporter mapping
   delegate_to: localhost
   kubernetes.core.k8s:

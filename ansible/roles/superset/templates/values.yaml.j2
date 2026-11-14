@@ -234,6 +234,9 @@ extraVolumes:
   - name: frame-location
     configMap:
       name: superset-frame-location
+  - name: head-extra
+    configMap:
+      name: superset-head-extra
 extraVolumeMounts:
   - name: scout-logo
     mountPath: /app/superset/static/assets/images/scout.png
@@ -249,6 +252,10 @@ extraVolumeMounts:
   - name: frame-location
     mountPath: /app/superset/templates/tail_js_custom_extra.html
     subPath: tail_js_custom_extra.html
+    readOnly: true
+  - name: head-extra
+    mountPath: /app/superset/templates/head_custom_extra.html
+    subPath: head_custom_extra.html
     readOnly: true
 init:
   # Override the apache/superset chart's default firstname/lastname so the
