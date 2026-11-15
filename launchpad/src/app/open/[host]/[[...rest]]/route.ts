@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requestModel, requestOrigin } from '@/lib/catalog/request';
 import {
   chipForUrl,
-  serviceHost,
+  openTarget,
   shellLocation,
   shellPath,
   shellSections,
@@ -17,15 +17,12 @@ function escapeHtml(value: string): string {
 // The edge sends links into a Scout service that arrive from outside Scout
 // (bookmarks, shared links) here, as /open/<service host>/<path>. A framed app
 // opens in the shell at that path; anything else opens on its own.
-export async function GET(req: NextRequest, { params }: { params: Promise<{ host: string }> }) {
-  const { host: segment } = await params;
+export async function GET(req: NextRequest) {
   const origin = await requestOrigin();
-  const host = serviceHost(segment, origin.host);
-  if (!host) {
+  const target = openTarget(req.nextUrl.pathname, req.nextUrl.search, origin);
+  if (!target) {
     return new NextResponse(null, { status: 307, headers: { Location: '/' } });
   }
-  const path = req.nextUrl.pathname.slice(`/open/${segment}`.length) || '/';
-  const target = new URL(`${origin.protocol}://${host}${path}${req.nextUrl.search}`);
 
   const chip = chipForUrl(shellSections(await requestModel()), target);
   if (chip) {

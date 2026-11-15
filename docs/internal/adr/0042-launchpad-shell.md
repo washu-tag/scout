@@ -61,6 +61,14 @@ A top-level navigation to a service URL goes through the launchpad:
   label `launchpad.scout.xnat.org/deep-link: "true"`, so a site's edge overlay can
   add its redirect to all of them with one rule. Because the redirect passes the
   request host through, the rule is the same for every service.
+  - **An ALB** takes the redirect per Ingress, as rules that are Ingress paths
+    naming action annotations, ahead of the service's own path. A framed service's
+    chart, Pluggable Apps included, accepts extra Ingress annotations and paths so the
+    site can add them.
+  - **An ALB can't test for a missing header**, so it redirects a `same-site` load only
+    when the `Referer` is another Scout service. A link that strips the `Referer`
+    (`rel="noreferrer"`) opens outside the launchpad there. Services open other Scout
+    pages with `scout:open`, and keep the `Referer` on links they open in a new tab.
 
 ### Messages between the launchpad and services
 
@@ -74,7 +82,8 @@ Framed services may post two messages to the launchpad (`window.parent` or
 - **`scout:open`** asks the launchpad to open another Scout page in the shell
   instead of a new tab. Report-viewer uses it for Send to XNAT. The sender's origin
   and the target must both be on the launchpad's host or a subdomain, and a chip
-  must own the target. The launchpad answers `scout:opened`. Without that answer, the
+  must own the target. A sandboxed chip's origin can't send it, since its pages may
+  run content the service didn't write. The launchpad answers `scout:opened`. Without that answer, the
   sender falls back to a new tab.
 
 Supporting either message is optional. A service that sends neither still works

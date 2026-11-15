@@ -10,6 +10,7 @@ import {
   frameUrl,
   isChipOrigin,
   openRequest,
+  openTarget,
   recentApps,
   serviceHost,
   shellLocation,
@@ -40,7 +41,14 @@ const CATALOG = catalogFrom({
       group: 'core',
       weight: 30,
     },
-    { id: 'chat', title: 'Chat', link: { subdomain: 'chat' }, group: 'core', weight: 10 },
+    {
+      id: 'chat',
+      title: 'Chat',
+      link: { subdomain: 'chat' },
+      group: 'core',
+      weight: 10,
+      sandbox: true,
+    },
     { id: 'guide', title: 'Guide', link: { url: 'https://docs.example.edu' }, group: 'docs' },
     {
       id: 'users',
@@ -308,6 +316,49 @@ describe('serviceHost', () => {
   });
 });
 
+describe('openTarget', () => {
+  const launchpad = { protocol: 'https', host: 'scout.example.edu' };
+  const target = (pathname: string, search = '') =>
+    openTarget(pathname, search, launchpad)?.href ?? null;
+
+  it('names the service URL after /open/<host>', () => {
+    assert.strictEqual(
+      target('/open/superset.scout.example.edu/superset/dashboard/1/', '?standalone=1'),
+      'https://superset.scout.example.edu/superset/dashboard/1/?standalone=1',
+    );
+    assert.strictEqual(target('/open/chat.scout.example.edu'), 'https://chat.scout.example.edu/');
+    assert.strictEqual(
+      target('/open/chat.scout.example.edu/c/a%20b'),
+      'https://chat.scout.example.edu/c/a%20b',
+    );
+  });
+
+  it('refuses a percent-encoded or foreign host segment', () => {
+    for (const pathname of [
+      '/open/%78%78.scout.example.edu/',
+      '/open/%78%78%78%78%78%78%78%78.scout.example.edu/.evil.com/',
+      '/open/evil.com/',
+      '/open/evil.com%2f.scout.example.edu/',
+      '/open/superset.scout.example.edu@evil.com/',
+      '/open/',
+      '/elsewhere/superset.scout.example.edu/',
+    ]) {
+      assert.strictEqual(target(pathname), null, pathname);
+    }
+  });
+
+  it('keeps the target on the named host whatever the path holds', () => {
+    for (const pathname of [
+      '/open/superset.scout.example.edu//evil.com/',
+      '/open/superset.scout.example.edu/@evil.com',
+      '/open/superset.scout.example.edu/%2f%2fevil.com',
+      '/open/superset.scout.example.edu/..%2f..%2f',
+    ]) {
+      assert.strictEqual(new URL(target(pathname)!).host, 'superset.scout.example.edu', pathname);
+    }
+  });
+});
+
 describe('embeddedChip', () => {
   const sections = shellSections(assemble(CATALOG, { origin: ORIGIN, isAdmin: true }));
 
@@ -334,6 +385,23 @@ describe('openRequest', () => {
       open('https://scout.example.edu', 'https://jupyter.scout.example.edu/')?.address,
       '/app/notebooks',
     );
+  });
+
+  it("opens a page on a JupyterHub user's server in the notebooks app", () => {
+    assert.strictEqual(
+      open(
+        'https://report-viewer.scout.example.edu',
+        'https://alice.jupyter.scout.example.edu/user/alice/lab',
+      )?.address,
+      '/app/notebooks/user/alice/lab',
+    );
+  });
+
+  it("ignores a sandboxed app's pages, which may run content the app didn't write", () => {
+    const page = 'https://jupyter.scout.example.edu/';
+    assert.strictEqual(open('https://chat.scout.example.edu', page), null);
+    assert.strictEqual(open('https://embed.chat.scout.example.edu', page), null);
+    assert.strictEqual(open('https://report-viewer.scout.example.edu', page)?.chip.id, 'notebooks');
   });
 
   it('ignores senders and pages off the launchpad host, and pages no chip owns', () => {

@@ -105,12 +105,17 @@ export function shellLocation(chip: RenderChip, href: unknown): string | null {
   return `${shellPath(chip.id)}${url.pathname}${url.search}${url.hash}`;
 }
 
-// The framed app that owns a Scout service URL: among the chips on its host, the
-// one whose own path is the longest prefix of the URL's path, else the first.
+// The framed app that owns a Scout service URL: among the chips on its host (or,
+// for JupyterHub's per-user servers, a host it is a subdomain of), the one whose
+// own path is the longest prefix of the URL's path, else the first.
 export function chipForUrl(sections: ShellSection[], url: URL): RenderChip | undefined {
-  const candidates = sections
+  const services = sections
     .flatMap((section) => section.chips)
-    .filter((chip) => chip.kind === 'service' && new URL(chip.href).host === url.host);
+    .filter((chip) => chip.kind === 'service');
+  const sameHost = services.filter((chip) => new URL(chip.href).host === url.host);
+  const candidates = sameHost.length
+    ? sameHost
+    : services.filter((chip) => isChipOrigin(chip, url.origin));
   let best: RenderChip | undefined;
   let bestLength = -1;
   for (const chip of candidates) {
@@ -135,6 +140,24 @@ export function serviceHost(value: string, launchpadHost: string): string | null
   return labels.every((label) => DNS_LABEL.test(label)) ? host : null;
 }
 
+// The service URL an `/open/<service host>/<path>` request names, from the raw
+// (still percent-encoded) request path, when its host is a subdomain of the
+// launchpad's host; else null.
+export function openTarget(
+  pathname: string,
+  search: string,
+  launchpad: { protocol: string; host: string },
+): URL | null {
+  const prefix = '/open/';
+  if (!pathname.startsWith(prefix)) return null;
+  const segment = pathname.slice(prefix.length).split('/')[0];
+  const host = serviceHost(segment, launchpad.host);
+  if (!host) return null;
+  const path = pathname.slice(prefix.length + segment.length) || '/';
+  const target = new URL(`${launchpad.protocol}://${host}${path}${search}`);
+  return target.host === host ? target : null;
+}
+
 function onHost(launchpad: URL, value: string): boolean {
   try {
     const url = new URL(value);
@@ -150,7 +173,8 @@ function onHost(launchpad: URL, value: string): boolean {
 
 // A `scout:open` request: the framed app and launchpad address for `href`, when
 // both the sender's origin and `href` are on the launchpad's host or a subdomain
-// of it and a chip owns `href`.
+// of it and a chip owns `href`. A sandboxed chip's origin can't ask: its pages
+// may run content the app didn't write.
 export function openRequest(
   sections: ShellSection[],
   launchpad: URL,
@@ -160,6 +184,8 @@ export function openRequest(
   if (typeof href !== 'string' || !onHost(launchpad, origin) || !onHost(launchpad, href)) {
     return null;
   }
+  const chips = sections.flatMap((section) => section.chips);
+  if (chips.some((chip) => chip.sandbox && isChipOrigin(chip, origin))) return null;
   const url = new URL(href);
   const chip = chipForUrl(sections, url);
   const address = chip ? shellLocation(chip, url.href) : null;
