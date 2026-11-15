@@ -21,9 +21,9 @@ export default function HomeClient({ model, environment, deployerName }: HomeCli
   }, []);
 
   return (
-    <div className="min-h-full w-full bg-slate-50 dark:bg-slate-950 transition-colors duration-500 flex justify-center px-4 py-8 md:px-6 lg:px-8 tall:py-12">
+    <div className="min-h-full w-full bg-slate-50 dark:bg-slate-950 transition-colors duration-500 flex justify-center px-4 py-8 content-md:px-6 content-lg:px-8 tall:py-12">
       <div
-        className={`w-full max-w-content 2xl:max-w-content-wide flex flex-col gap-8 tall:gap-11 transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+        className={`w-full max-w-content content-2xl:max-w-content-wide flex flex-col gap-8 tall:gap-11 transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
       >
         <header className="flex flex-col gap-2.5">
           <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-indigo-700 dark:text-indigo-300">

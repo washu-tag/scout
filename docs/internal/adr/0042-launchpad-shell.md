@@ -47,8 +47,8 @@ A top-level navigation to a service URL goes through the launchpad:
 
 - **The contract.** The edge redirects the browser to
   `https://<launchpad host>/open/<service host>/<path>?<query>`. It does this only
-  for top-level document loads (`Sec-Fetch-Dest: document`) that did not come from
-  the launchpad itself. Those are loads with `Sec-Fetch-Site` of `none` or
+  for top-level `GET` document loads (`Sec-Fetch-Dest: document`) that did not come
+  from the launchpad itself. Those are loads with `Sec-Fetch-Site` of `none` or
   `cross-site`, or `same-site` without a launchpad `Referer`.
   - Frame loads, API calls, downloads and sign-in callbacks are not redirected.
   - Clients that send no `Sec-Fetch-*` headers are not redirected either.
@@ -62,9 +62,10 @@ A top-level navigation to a service URL goes through the launchpad:
   add its redirect to all of them with one rule. Because the redirect passes the
   request host through, the rule is the same for every service.
   - **An ALB** takes the redirect per Ingress, as rules that are Ingress paths
-    naming action annotations, ahead of the service's own path. A framed service's
-    chart, Pluggable Apps included, accepts extra Ingress annotations and paths so the
-    site can add them.
+    naming action annotations, in a rule without a host ahead of the service's own
+    (an ALB rule holds five conditions, and the host would leave no room for the
+    `GET` check). A framed service's chart, Pluggable Apps included, accepts extra
+    Ingress annotations and paths so the site can add them.
   - **An ALB can't test for a missing header**, so it redirects a `same-site` load only
     when the `Referer` is another Scout service. A link that strips the `Referer`
     (`rel="noreferrer"`) opens outside the launchpad there. Services open other Scout
