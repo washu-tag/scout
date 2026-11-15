@@ -30,6 +30,23 @@
           data:
             ca.crt: '{{ _traefik_tls_secret.resources[0].data["tls.crt"] }}'
 
+- name: Read the launchpad's security headers middleware
+  kubernetes.core.k8s_info:
+    api_version: traefik.io/v1alpha1
+    kind: Middleware
+    name: security-headers-app-csp
+    namespace: '{{ traefik_namespace }}'
+  register: _launchpad_headers_middleware
+
+# Traefik drops a route whose middleware is missing, which would take the launchpad down.
+- name: Require the launchpad's security headers middleware
+  ansible.builtin.assert:
+    that: _launchpad_headers_middleware.resources | length > 0
+    fail_msg: >-
+      Middleware {{ traefik_namespace }}/security-headers-app-csp is missing. Run
+      `make config-traefik` before `make install-launchpad`.
+    quiet: true
+
 - name: Deploy Launchpad
   ansible.builtin.include_role:
     name: scout_common
@@ -90,3 +107,56 @@
       volumeMounts: >-
         {{ [{'name': 'trusted-ca', 'mountPath': '/etc/pki/trust', 'readOnly': true}]
         if launchpad_trust_traefik_ca | bool else [] }}
+
+# A top-level page load of a Scout service URL goes to the launchpad, which opens it
+# inside the shell at the same page (ADR 0042): a bookmark or shared link, and a load
+# from another Scout host that didn't come from the launchpad (a new tab from another
+# app, a sign-in callback). Frame loads, form posts and API clients (which send no
+# Sec-Fetch headers) reach the service directly. Created here, after the launchpad that
+# serves /open is up, so no link is sent to a launchpad without it.
+- name: Create open-in-launchpad Middleware
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: traefik.io/v1alpha1
+      kind: Middleware
+      metadata:
+        name: open-in-launchpad
+        namespace: '{{ traefik_namespace }}'
+      spec:
+        redirectRegex:
+          regex: '^https://([a-z0-9-]+\.{{ server_hostname | regex_escape }})/(.*)'
+          replacement: 'https://{{ server_hostname }}/open/${1}/${2}'
+          permanent: false
+
+- name: Create open-in-launchpad IngressRoute
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: traefik.io/v1alpha1
+      kind: IngressRoute
+      metadata:
+        name: open-in-launchpad
+        namespace: '{{ traefik_namespace }}'
+      spec:
+        entryPoints:
+          - websecure
+        routes:
+          - kind: Rule
+            match: >-
+              HostRegexp(`^[a-z0-9-]+\.{{ server_hostname | regex_escape }}$`)
+              && !Host(`{{ keycloak_subdomain }}.{{ server_hostname }}`)
+              && !Host(`{{ oauth2_proxy_subdomain }}.{{ server_hostname }}`)
+              && Method(`GET`)
+              && Header(`Sec-Fetch-Dest`, `document`)
+              && (HeaderRegexp(`Sec-Fetch-Site`, `^(none|cross-site)$`)
+              || (Header(`Sec-Fetch-Site`, `same-site`)
+              && !HeaderRegexp(`Referer`, `^https://{{ server_hostname | regex_escape }}/`)))
+            priority: 10000
+            middlewares:
+              - name: security-headers
+              - name: open-in-launchpad
+            services:
+              - kind: TraefikService
+                name: noop@internal
+        tls: {}
