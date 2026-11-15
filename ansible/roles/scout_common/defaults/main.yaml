@@ -432,33 +432,16 @@ xnat_plugins_default:
           # someone with no XNAT account is refused rather than silently provisioning
           # one; they sign in through the browser once first.
           openid.keycloak.bearer.forceUserCreate: 'false'
-          # Keep XNAT roles in step with Keycloak roles at each sign-in, browser or API.
-          openid.keycloak.roleSync.enabled: 'true'
-          openid.keycloak.roleSync.mappings: "{{ xnat_openid_role_mappings_all | join(',') }}"
-          openid.keycloak.idToken.roleSync.mappings: "{{ (xnat_openid_id_token_role_mappings + xnat_openid_role_mappings_all) | join(',') }}"
           # Skip the login page when the user already has a Keycloak session (prompt=none).
           openid.keycloak.autoLogin: 'true'
           # Log out through oauth2-proxy, as the other Scout services do: it clears the edge
-          # session and ends the Keycloak one.
+          # session and ends the Keycloak one. XNAT's idle timeout also lands here, which is
+          # why the xnat role pins that timeout to the SSO lifetime (prefs-override.ini).
           openid.keycloak.logoutUri: '{{ oauth2_proxy_signout_url }}'
-          # An expired XNAT session (idle timeout included) signs in again through Keycloak
-          # rather than signing out of Scout.
-          openid.keycloak.session.onInvalid: reauth
 
 # Combined list the xnat role's templates/tasks iterate. xnat_plugins is
 # operator-supplied (defaulted to [] inline here).
 xnat_plugins_all: '{{ xnat_plugins_default + (xnat_plugins | default([])) }}'
-
-# Keycloak roles the openid plugin maps to XNAT roles at each sign-in, each
-# `<claim path>:<token role>=<XNAT role>`. Access tokens carry the xnat client's
-# roles in resource_access.xnat.roles. Every client puts its own roles in
-# `groups`, so that claim is read only from XNAT's own ID token. Sites add their
-# own with xnat_openid_role_mappings.
-xnat_openid_role_mappings_default:
-  - resource_access.xnat.roles:xnat-admin=Administrator
-xnat_openid_id_token_role_mappings:
-  - groups:xnat-admin=Administrator
-xnat_openid_role_mappings_all: '{{ xnat_openid_role_mappings_default + (xnat_openid_role_mappings | default([])) }}'
 
 # Distinct repo URLs for coordinate-resolved plugins. Consumed by the xnat role
 # (plugins.<name>.mavenUrl) and the Nexus role (proxy members, air-gapped). Projects ONLY
