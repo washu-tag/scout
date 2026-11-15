@@ -47,7 +47,7 @@ const MENU_ITEM =
 const MENU_ICON = 'text-base text-slate-500 dark:text-slate-400';
 
 function railItemClass(highlighted: boolean) {
-  return `flex w-16 flex-col items-center gap-1 rounded-xl px-1 py-1.5 no-underline transition-colors cursor-pointer ${
+  return `flex w-[70px] flex-col items-center gap-1 rounded-xl py-1.5 no-underline transition-colors cursor-pointer ${
     highlighted ? 'bg-slate-100 dark:bg-slate-800' : 'hover:bg-slate-100 dark:hover:bg-slate-800'
   }`;
 }
@@ -76,10 +76,8 @@ function RailLabel({
         {icon}
       </span>
       <span
-        className={`line-clamp-2 w-full break-words text-center text-[11px] leading-tight ${
-          active
-            ? 'font-semibold text-slate-900 dark:text-white'
-            : 'text-slate-500 dark:text-slate-400'
+        className={`line-clamp-2 w-full break-words text-center text-[11px] font-medium leading-tight ${
+          active ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'
         }`}
       >
         {label}
