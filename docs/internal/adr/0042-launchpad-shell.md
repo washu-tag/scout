@@ -82,7 +82,8 @@ Framed services may post two messages to the launchpad (`window.parent` or
 - **`scout:open`** asks the launchpad to open another Scout page in the shell
   instead of a new tab. Report-viewer uses it for Send to XNAT. The sender's origin
   and the target must both be on the launchpad's host or a subdomain, and a chip
-  must own the target. The launchpad answers `scout:opened`. Without that answer, the
+  must own the target. A sandboxed chip's origin can't send it, since its pages may
+  run content the service didn't write. The launchpad answers `scout:opened`. Without that answer, the
   sender falls back to a new tab.
 
 Supporting either message is optional. A service that sends neither still works

@@ -208,7 +208,8 @@ export default function ShellClient({
   // navigation is headed with `scout:leaving`. Only the app's own frame, from the
   // chip's origin, is believed; content an app nests inside its frame has a
   // different source and is ignored. Any Scout frame, nested ones included, can
-  // ask with `scout:open` to open a Scout page here instead of in a new tab.
+  // ask with `scout:open` to open a Scout page here instead of in a new tab,
+  // except a sandboxed app's.
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
       const type = event.data?.type;
