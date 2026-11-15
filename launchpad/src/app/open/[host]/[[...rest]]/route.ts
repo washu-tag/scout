@@ -35,7 +35,8 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // A script navigation from this page is same-site, so the edge lets it through
+  // A script navigation from this page is same-site and carries the launchpad's
+  // origin as its Referer (the Referrer-Policy), so the edge lets it through
   // instead of sending it back here.
   const href = target.href;
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');

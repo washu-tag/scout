@@ -171,17 +171,27 @@ function onHost(launchpad: URL, value: string): boolean {
   }
 }
 
-// A `scout:open` request: the framed app and launchpad address for `href`, when
-// both the sender's origin and `href` are on the launchpad's host or a subdomain
-// of it and a chip owns `href`. A sandboxed chip's origin can't ask: its pages
-// may run content the app didn't write.
+// Whether `origin` may send `scout:open`: the launchpad itself or a service on a
+// single-label subdomain of its host. Deeper hosts (JupyterHub's per-user servers)
+// serve users' own content, so they can't.
+function canAskToOpen(launchpad: URL, origin: string): boolean {
+  if (!onHost(launchpad, origin)) return false;
+  const host = new URL(origin).hostname;
+  if (host === launchpad.hostname) return true;
+  return !host.slice(0, -launchpad.hostname.length - 1).includes('.');
+}
+
+// A `scout:open` request: the framed app and launchpad address for `href`, when the
+// sender may ask (canAskToOpen), `href` is on the launchpad's host or a subdomain of
+// it, and a chip owns `href`. A sandboxed chip's origin can't ask: its pages may run
+// content the app didn't write.
 export function openRequest(
   sections: ShellSection[],
   launchpad: URL,
   origin: string,
   href: unknown,
 ): { chip: RenderChip; address: string; href: string } | null {
-  if (typeof href !== 'string' || !onHost(launchpad, origin) || !onHost(launchpad, href)) {
+  if (typeof href !== 'string' || !canAskToOpen(launchpad, origin) || !onHost(launchpad, href)) {
     return null;
   }
   const chips = sections.flatMap((section) => section.chips);

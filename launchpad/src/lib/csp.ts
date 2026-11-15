@@ -1,7 +1,9 @@
 const HOSTNAME = /^[a-z0-9.-]+$/i;
 
-// The launchpad's Content-Security-Policy: scripts run only with this response's
-// nonce (Next.js attaches it to its own), and only Scout's subdomains may be framed.
+// The launchpad's Content-Security-Policy: a page script runs only with this
+// response's nonce (Next.js attaches it to its own), and scripts those load inherit
+// that trust ('strict-dynamic'); only Scout's subdomains may be framed. Development
+// also allows eval and the dev server's WebSocket.
 export function contentSecurityPolicy({
   nonce,
   host,

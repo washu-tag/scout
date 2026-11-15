@@ -70,12 +70,10 @@ export interface OpenResultState {
  * fallback is needed; always expose the link afterward so the caller can
  * render an "open this manually" affordance unconditionally.
  *
- * Whether the popup actually succeeds is controlled by the destination's
- * own Cross-Origin-Opener-Policy response header, not anything this hook
- * does - see security-headers-sameorigin-popups in
- * ansible/roles/traefik/tasks/main.yaml for which value is required and
- * why. A destination that hasn't opted in will always fall through to
- * the copy-link affordance when embedded in OWUI's sandboxed chat iframe.
+ * Inside chat no popup can open at all: chat's frame is sandboxed without
+ * allow-popups (ADR 0042), and report-viewer's frame inherits that, whatever
+ * the destination's Cross-Origin-Opener-Policy. There, a page the launchpad
+ * doesn't own falls through to the copy-link affordance.
  *
  * Copying is a separate, explicit `copyLink` call rather than something
  * `open` does automatically: `document.execCommand('copy')` only succeeds
@@ -112,7 +110,9 @@ export function useOpenResult() {
       const link = document.createElement('a');
       link.href = url;
       link.target = '_blank';
-      link.rel = 'noopener noreferrer';
+      // The Referer stays: an edge redirects a new tab from a Scout page into the
+      // launchpad by it (ADR 0042), and the Referrer-Policy sends only the origin.
+      link.rel = 'noopener';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
