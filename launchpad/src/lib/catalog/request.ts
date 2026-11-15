@@ -27,12 +27,14 @@ export async function requestOrigin(): Promise<Origin> {
 
 // The catalog as this request's viewer sees it: audience-filtered, links
 // resolved against the request host.
-export async function requestModel(): Promise<RenderModel> {
+// `anyAudience` keeps admin-only chips, for matching a URL to its app before the user has
+// signed in to the launchpad; the session-aware render still applies the audience.
+export async function requestModel({ anyAudience = false } = {}): Promise<RenderModel> {
   const origin = await requestOrigin();
   // Dev-only override, mirroring the client-side NEXT_PUBLIC_DEV_ADMIN gate.
   const devAdmin =
     process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEV_ADMIN === 'true';
   const session = await getServerSession(authOptions);
-  const isAdmin = devAdmin || session?.user?.isAdmin === true;
+  const isAdmin = anyAudience || devAdmin || session?.user?.isAdmin === true;
   return assemble(await loadCatalog(), { origin, isAdmin });
 }
