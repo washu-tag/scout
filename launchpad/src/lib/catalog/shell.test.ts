@@ -397,6 +397,13 @@ describe('openRequest', () => {
     );
   });
 
+  it("ignores JupyterHub's per-user hosts, which serve users' own content", () => {
+    assert.strictEqual(
+      open('https://alice.jupyter.scout.example.edu', 'https://superset.scout.example.edu/'),
+      null,
+    );
+  });
+
   it("ignores a sandboxed app's pages, which may run content the app didn't write", () => {
     const page = 'https://jupyter.scout.example.edu/';
     assert.strictEqual(open('https://chat.scout.example.edu', page), null);
