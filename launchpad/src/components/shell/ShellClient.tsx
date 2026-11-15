@@ -162,17 +162,18 @@ export default function ShellClient({
 
   // Scout's sessions can end while an app is open in a frame, where the sign-in
   // pages cannot render. Check from the top window and send the whole window to
-  // sign in: a 401 is oauth2-proxy (the ingress session is gone), a 440 is the
-  // launchpad reporting the SSO session gone.
+  // sign in: a 401 is oauth2-proxy and a redirect is a load balancer's OIDC sign-in
+  // (the edge session is gone), a 440 is the launchpad reporting the SSO session gone.
   const checkSession = useCallback(async () => {
     if (skipAuth || signingOut.current) return;
     let response: Response;
     try {
-      response = await fetch('/api/session', { cache: 'no-store' });
+      response = await fetch('/api/session', { cache: 'no-store', redirect: 'manual' });
     } catch {
       return;
     }
-    if (response.status !== 401 && response.status !== 440) return;
+    const edgeGone = response.status === 401 || response.type === 'opaqueredirect';
+    if (!edgeGone && response.status !== 440) return;
     try {
       const last = Number(sessionStorage.getItem(RECOVERY_KEY) ?? 0);
       if (Date.now() - last < RECOVERY_BACKOFF_MS) return;
@@ -180,7 +181,7 @@ export default function ShellClient({
     } catch {
       // Without storage there is no loop guard; recover anyway.
     }
-    if (response.status === 401) window.location.reload();
+    if (edgeGone) window.location.reload();
     else signIn('keycloak', { callbackUrl: window.location.href });
   }, [skipAuth]);
 
