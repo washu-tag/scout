@@ -204,11 +204,6 @@ export default function ShellClient({
     document.documentElement.classList.toggle('dark', prefersDark);
   }, []);
 
-  const activeTitle = active?.title;
-  useEffect(() => {
-    if (activeTitle) document.title = `${activeTitle} · Scout`;
-  }, [activeTitle]);
-
   // Apps report their own address with a `scout:location` message, and where a
   // navigation is headed with `scout:leaving`. Only the app's own frame, from the
   // chip's origin, is believed; content an app nests inside its frame has a
