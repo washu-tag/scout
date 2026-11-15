@@ -1,4 +1,6 @@
+import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { authOptions } from '@/lib/auth';
 import { requestModel, requestOrigin } from '@/lib/catalog/request';
 import {
   chipForUrl,
@@ -24,7 +26,8 @@ export async function GET(req: NextRequest) {
     return new NextResponse(null, { status: 307, headers: { Location: '/' } });
   }
 
-  const chip = chipForUrl(shellSections(await requestModel()), target);
+  const signedIn = Boolean(await getServerSession(authOptions));
+  const chip = chipForUrl(shellSections(await requestModel({ anyAudience: !signedIn })), target);
   if (chip) {
     return new NextResponse(null, {
       status: 307,

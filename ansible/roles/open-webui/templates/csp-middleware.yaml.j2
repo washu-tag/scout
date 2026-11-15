@@ -11,8 +11,8 @@ spec:
   headers:
     # Block external resources while allowing app functionality
     # - img-src: blocks external images (quickchart.io, etc.) that could exfiltrate data
-    # - connect-src: Keycloak OAuth; 'self' covers chat's own WebSocket, and no other
-    #   host can be fetched or posted to (ADR 0042 lists the channels CSP can't close)
+    # - connect-src: fetch, XHR and WebSockets reach only chat itself (its own
+    #   WebSocket included), Keycloak and oauth2-proxy
     # - frame-src: report viewer, plus the login redirect chain the chat tool
     #   follows in a hidden frame to renew a session
     # - script/style: allows inline (required by Open WebUI frontend)

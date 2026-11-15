@@ -42,8 +42,13 @@ test.describe('Unauthorized User', () => {
   for (const { name, url } of protectedServices) {
     test(`${name} returns 403 Access Pending`, async ({ page }) => {
       await signInToScout(page, url, unauthorizedUser);
-      const response = await page.reload({ waitUntil: 'domcontentloaded' });
-      expect(response?.status()).toBe(403);
+      // A top-level page load goes to the launchpad first (ADR 0042), so ask the host itself:
+      // page.request shares the browser's cookies and sends no Sec-Fetch headers. A host with
+      // no route of its own still redirects to the launchpad, which answers 403 too.
+      const response = await page.request.get(url, {
+        maxRedirects: name === 'Nonexistent Service' ? 20 : 0,
+      });
+      expect(response.status()).toBe(403);
     });
   }
 });

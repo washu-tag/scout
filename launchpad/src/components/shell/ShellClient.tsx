@@ -223,6 +223,9 @@ export default function ShellClient({
         );
         if (!request) return;
         const { chip, address, href } = request;
+        // React won't reload a frame whose src is unchanged, wherever the user has since gone.
+        const frame = frames.current.get(chip.id);
+        if (frame?.getAttribute('src') === href) frame.src = href;
         setLocations((current) => ({ ...current, [chip.id]: address }));
         setOpened((current) =>
           current.map((entry) => (entry.chip.id === chip.id ? { ...entry, src: href } : entry)),
@@ -259,7 +262,7 @@ export default function ShellClient({
     if (!activeLocation) return;
     const current = window.location.pathname + window.location.search + window.location.hash;
     if (current !== activeLocation) window.history.replaceState(null, '', activeLocation);
-  }, [activeLocation]);
+  }, [activeLocation, pathname]);
 
   const menuOpen = menu !== null;
   useEffect(() => {
