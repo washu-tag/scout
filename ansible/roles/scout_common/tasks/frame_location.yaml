@@ -32,6 +32,12 @@
         extended: true
         label: '{{ item.key }}'
 
+    # Apps mount these by subPath, which never refreshes, so each role puts this in
+    # its pod annotations and a changed script rolls the pods.
+    - name: Fingerprint the frame-location files
+      ansible.builtin.set_fact:
+        frame_location_checksum: '{{ _frame_location_data | to_json | hash("sha256") }}'
+
     - name: Publish the ConfigMap
       kubernetes.core.k8s:
         state: present
@@ -89,6 +95,10 @@
       ansible.builtin.slurp:
         src: '{{ _frame_location_build.path }}/{{ frame_location_file }}'
       register: _frame_location_jar
+
+    - name: Fingerprint the jar
+      ansible.builtin.set_fact:
+        frame_location_checksum: '{{ _frame_location_jar.content | hash("sha256") }}'
 
     - name: Publish the jar
       kubernetes.core.k8s:
