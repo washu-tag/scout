@@ -111,7 +111,7 @@ following `newTab`.
 A page-style service (forms, lists, reports, as opposed to a full-screen tool) lines up
 with the launchpad's own pages if it uses the same page gutter, measured on its own
 width: 16px, 24px from 768px wide, and 32px from 1024px, around content at most 80rem
-wide, 88rem from 1536px. Inside the launchpad the frame is the window less the rail, and
+wide, 88rem from 1536px, with 2rem above the page's first line. Inside the launchpad the frame is the window less the rail, and
 the launchpad's pages switch at the same frame widths. A service doesn't need to know
 whether it is framed to get this right.
 
