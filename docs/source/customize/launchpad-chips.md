@@ -111,19 +111,22 @@ following `newTab`.
 A page-style service (forms, lists, reports, as opposed to a full-screen tool) lines up
 with the launchpad's own pages if it uses the same page gutter, measured on its own
 width: 16px, 24px from 768px wide, and 32px from 1024px, around content at most 80rem
-wide, 88rem from 1536px, with 2rem above the page's first line. Inside the launchpad the frame is the window less the rail, and
-the launchpad's pages switch at the same frame widths. A service doesn't need to know
-whether it is framed to get this right.
+wide, 88rem from 1536px, with 2rem above the page's first line. Inside the launchpad
+the frame is the window less the rail, and the launchpad's pages switch at the same
+frame widths. A service doesn't need to know whether it is framed to get this right.
 
 Links into your service that arrive from outside Scout, such as a bookmark or a link
 someone shared, open inside the launchpad at the same page, and so does a new tab or
-window that a framed Scout service opens. The edge sends them to
+window that another Scout service opens. The edge sends top-level `GET` page loads
+that didn't come from the launchpad to
 `https://<launchpad host>/open/<service host>/<path>`, and the launchpad frames the
 chip on that host whose path matches best; a host with no chip opens on its own.
-On-prem, Traefik does this for every Scout subdomain. Other edges redirect top-level
-document loads (`Sec-Fetch-Dest: document`) that did not come from the launchpad; the
-Ingresses of framed services carry the label `launchpad.scout.xnat.org/deep-link: "true"`
-so an edge overlay can find them.
+Frame loads, form posts, fetch and XHR, and navigation within your own host reach your
+service directly. The edge can't tell a sign-in callback or a download from any other
+page load: one that arrives at the top level opens in your frame too. On-prem, Traefik
+does this for every single-label Scout subdomain. On other edges, the Ingresses of
+framed services carry the label `launchpad.scout.xnat.org/deep-link: "true"` so an edge
+overlay can find them.
 
 While your service is framed, the launchpad's address bar shows the page the service
 was opened at. To keep it in step as users move around, post the page's address to the
@@ -139,7 +142,8 @@ window.parent.postMessage(
 Name the launchpad's origin rather than `'*'`, and send nothing else. The launchpad
 accepts the message only from your chip's frame and only for an address on your
 chip's host or one of its subdomains, so content your page nests from another origin
-cannot move it.
+cannot move it. It keeps the path, query and fragment, which then appear in the
+launchpad's address bar and history, so don't report addresses with secrets in them.
 
 To send users to another Scout page, for example a button that opens a result in
 another service, ask the launchpad to open it instead of opening a new tab:
@@ -152,11 +156,12 @@ window.top.postMessage(
 ```
 
 The launchpad opens the page in the chip that owns it and answers the sender with
-`{ type: 'scout:opened', href }`. It accepts the request from any frame on the
-launchpad's host or one of its subdomains, nested ones included, except a chip with
-`sandbox: true`, and ignores pages no chip owns. Without an answer, open the page as
-you otherwise would. This also works from a page your service embeds in a sandboxed
-iframe on another origin, where a new tab would inherit the sandbox.
+`{ type: 'scout:opened', href }`. It accepts the request from any frame, nested ones
+included, whose origin is the launchpad's or a single-label subdomain of its host,
+except a chip with `sandbox: true`, and ignores pages no chip owns. Without an answer,
+open the page as you otherwise would. This also works from a page your service shows
+inside another service's sandboxed frame, as report-viewer does inside chat, where a
+new tab would inherit the sandbox, as long as that frame keeps your origin.
 
 ## Groups: Defining a section
 
