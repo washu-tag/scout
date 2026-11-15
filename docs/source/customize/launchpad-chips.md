@@ -108,6 +108,13 @@ launchpad to frame it. On-prem, the `security-headers` middleware from
 launchpad page and renders with the rail. A `url` destination opens on its own,
 following `newTab`.
 
+A page-style service (forms, lists, reports, as opposed to a full-screen tool) lines up
+with the launchpad's own pages if it uses the same page gutter, measured on its own
+width: 16px, 24px from 768px wide, and 32px from 1024px, around content at most 80rem
+wide, 88rem from 1536px. Inside the launchpad the frame is the window less the rail, and
+the launchpad's pages switch at the same frame widths. A service doesn't need to know
+whether it is framed to get this right.
+
 Links into your service that arrive from outside Scout, such as a bookmark or a link
 someone shared, open inside the launchpad at the same page, and so does a new tab or
 window that a framed Scout service opens. The edge sends them to
