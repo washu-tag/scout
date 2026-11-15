@@ -40,19 +40,24 @@ export async function freshAccessToken(jwt: JWT): Promise<string | null> {
   return data.access_token ?? null;
 }
 
-// Whether the SSO session behind the refresh token is still alive. Introspection
-// rather than a refresh grant, so a periodic check doesn't reset Keycloak's idle
-// timeout.
-export async function ssoSessionActive(jwt: JWT): Promise<boolean> {
+// Whether the SSO session behind the refresh token is still alive, or null when Keycloak
+// didn't answer (restarting, unreachable). Introspection rather than a refresh grant, so a
+// periodic check doesn't reset Keycloak's idle timeout.
+export async function ssoSessionActive(jwt: JWT): Promise<boolean | null> {
   if (!jwt.refreshToken) {
     return false;
   }
-  const res = await tokenRequest('token/introspect', {
-    token: jwt.refreshToken,
-    token_type_hint: 'refresh_token',
-  });
+  let res: Response;
+  try {
+    res = await tokenRequest('token/introspect', {
+      token: jwt.refreshToken,
+      token_type_hint: 'refresh_token',
+    });
+  } catch {
+    return null;
+  }
   if (!res.ok) {
-    return false;
+    return null;
   }
   const data = (await res.json()) as { active?: boolean };
   return data.active === true;
