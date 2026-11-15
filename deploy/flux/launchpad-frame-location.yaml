@@ -1,5 +1,7 @@
 # The launchpad frame-location scripts (ADR 0042): ConfigMaps that framed apps
-# mount, including apps a site deploys outside this base.
+# mount, including apps a site deploys outside this base. All three land in the
+# analytics namespace, where Scout runs chat and JupyterHub; a site that runs either
+# elsewhere mounts a copy there.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
