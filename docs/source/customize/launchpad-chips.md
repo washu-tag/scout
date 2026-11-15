@@ -118,11 +118,14 @@ frame widths. A service doesn't need to know whether it is framed to get this ri
 Links into your service that arrive from outside Scout, such as a bookmark or a link
 someone shared, open inside the launchpad at the same page, and so does a new tab or
 window that another Scout service opens. The edge sends top-level `GET` page loads
-that didn't come from the launchpad to
+from anywhere but your own host to
 `https://<launchpad host>/open/<service host>/<path>`, and the launchpad frames the
-chip on that host whose path matches best; a host with no chip opens on its own.
-Frame loads, form posts, fetch and XHR, and navigation within your own host reach your
-service directly. The edge can't tell a sign-in callback or a download from any other
+chip on that host whose path matches best; a URL no chip owns goes to the launchpad's
+home page. Frame loads, form posts, fetch and XHR, and navigation within your own host
+reach your service directly. A new tab your service opens to its own host isn't
+redirected; to send it into the launchpad too, have a page that finds itself outside a
+frame (`window.parent === window`) go to `https://<launchpad host>/open/<its host><its
+path>`, as the address-bar script Scout ships for its own apps does. The edge can't tell a sign-in callback or a download from any other
 page load: one that arrives at the top level opens in your frame too. On-prem, Traefik
 does this for every single-label Scout subdomain. On other edges, the Ingresses of
 framed services carry the label `launchpad.scout.xnat.org/deep-link: "true"` so an edge

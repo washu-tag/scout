@@ -47,13 +47,15 @@ A `url` destination opens on its own, following `newTab`.
 A top-level navigation to a service URL goes through the launchpad:
 
 - **The contract.** The edge redirects top-level `GET` document loads
-  (`Sec-Fetch-Dest: document`) of a service URL that did not come from the launchpad
-  to `https://<launchpad host>/open/<service host>/<path>?<query>`. Those are loads
-  with `Sec-Fetch-Site` of `none` or `cross-site`, or `same-site` without a launchpad
-  `Referer`.
+  (`Sec-Fetch-Dest: document`) of a service URL from anywhere but the service's own
+  origin (`Sec-Fetch-Site` of `none`, `cross-site` or `same-site`) to
+  `https://<launchpad host>/open/<service host>/<path>?<query>`.
   - Everything else reaches the service: frame loads, form posts, same-origin
     navigation, fetch and XHR, and clients that send no `Sec-Fetch-*` headers. The
     identity hosts (Keycloak, oauth2-proxy) are never redirected.
+  - A service page opened on its own by same-origin navigation (a new tab from inside
+    the service) reopens inside the launchpad if it runs the shared address-bar
+    script, which sends an unframed page to `/open`.
   - The edge can't tell what a page load is for. A sign-in callback that arrives at
     the top level, or a link that turns out to be a download, is redirected like any
     other and then loads in the app's frame.
@@ -61,9 +63,9 @@ A top-level navigation to a service URL goes through the launchpad:
   when it is a subdomain of the launchpad's host, each label a DNS label. It frames
   the chip on that exact host, or failing that a chip whose host the URL's is a
   subdomain of (JupyterHub's per-user servers), choosing by longest path prefix and
-  else the first. The chip reopens on its own host at the URL's path. A host with no
-  chip opens on its own, through a script navigation from the launchpad's page, which
-  the edge lets through because it carries the launchpad's `Referer`.
+  else the first. The chip reopens on its own host at the URL's path. A URL no chip
+  owns goes to the launchpad's home page: Scout services open only inside the
+  launchpad.
 - **On-prem**, a Traefik `open-in-launchpad` route, deployed with the launchpad,
   implements the contract for single-label subdomains (not JupyterHub's per-user
   hosts).
@@ -78,10 +80,6 @@ A top-level navigation to a service URL goes through the launchpad:
     suits only an ALB that serves that one service; a shared ALB needs the host
     condition back. A framed service's chart, Pluggable Apps included, must accept
     extra Ingress annotations and paths so the site can add the rules.
-  - **An ALB can't test for a missing header**, so it redirects a `same-site` load only
-    when the `Referer` is another Scout service. A link that strips the `Referer`
-    (`rel="noreferrer"`) opens outside the launchpad there. Services open other Scout
-    pages with `scout:open`, and keep the `Referer` on links they open in a new tab.
 
 ### Messages between the launchpad and services
 
@@ -135,8 +133,6 @@ framed; its address bar just stays at the page it was opened on.
 - **Referrer-Policy:** Scout's shared header middlewares send
   `strict-origin-when-cross-origin`, so outside sites see only the origin, never a
   path.
-  - Deep links rely on the launchpad's origin reaching services as the `Referer`. A
-    policy that drops it (`no-referrer`, `same-origin`) makes `/open`'s fallback loop.
 
 **Sandboxed chips.**
 

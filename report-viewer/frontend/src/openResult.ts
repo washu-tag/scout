@@ -110,9 +110,7 @@ export function useOpenResult() {
       const link = document.createElement('a');
       link.href = url;
       link.target = '_blank';
-      // The Referer stays: an edge redirects a new tab from a Scout page into the
-      // launchpad by it (ADR 0042), and the Referrer-Policy sends only the origin.
-      link.rel = 'noopener';
+      link.rel = 'noopener noreferrer';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
