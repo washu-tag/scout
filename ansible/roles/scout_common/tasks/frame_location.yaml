@@ -63,6 +63,21 @@
         dest: '{{ _frame_location_build.path }}/META-INF/resources/templates/screens/header/scout-frame-location.vm'
         mode: '0644'
 
+    # Zip stores modification times, so fixed ones make the same template the same jar
+    # bytes, and the ConfigMap changes only when the template does.
+    - name: Fix the template's timestamps
+      ansible.builtin.file:
+        path: '{{ _frame_location_build.path }}/{{ item }}'
+        modification_time: '198001010000.00'
+        access_time: '198001010000.00'
+      loop:
+        - META-INF/resources/templates/screens/header/scout-frame-location.vm
+        - META-INF/resources/templates/screens/header
+        - META-INF/resources/templates/screens
+        - META-INF/resources/templates
+        - META-INF/resources
+        - META-INF
+
     - name: Pack the header template into a jar
       community.general.archive:
         path: '{{ _frame_location_build.path }}/META-INF'
