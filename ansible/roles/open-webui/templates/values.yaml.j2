@@ -1,5 +1,8 @@
 nameOverride: ''
 namespaceOverride: ''
+podAnnotations:
+  # Rolls the pod when the launchpad frame-location script changes (subPath mount).
+  checksum/frame-location: '{{ frame_location_checksum }}'
 
 readinessProbe:
   httpGet:

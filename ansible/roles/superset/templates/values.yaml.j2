@@ -41,6 +41,9 @@ ingress:
 postgresql:
   enabled: false
 supersetNode:
+  podAnnotations:
+    # Rolls the pods when the launchpad frame-location script changes (subPath mounts).
+    checksum/frame-location: '{{ frame_location_checksum }}'
   command:
     - /bin/sh
     - -c
@@ -254,7 +257,7 @@ extraVolumeMounts:
     subPath: tail_js_custom_extra.html
     readOnly: true
   - name: frame-location
-    mountPath: /app/superset/static/assets/scout-frame-location.js
+    mountPath: /app/superset/templates/scout-frame-location.js
     subPath: scout-frame-location.js
     readOnly: true
   - name: head-extra

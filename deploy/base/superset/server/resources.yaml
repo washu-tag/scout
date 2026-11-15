@@ -373,7 +373,7 @@ spec:
         subPath: tail_js_custom_extra.html
         readOnly: true
       - name: frame-location
-        mountPath: /app/superset/static/assets/scout-frame-location.js
+        mountPath: /app/superset/templates/scout-frame-location.js
         subPath: scout-frame-location.js
         readOnly: true
       - name: head-extra

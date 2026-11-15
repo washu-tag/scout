@@ -1,8 +1,16 @@
 // Tells the launchpad which page this app is on while the launchpad frames it,
 // so its address bar follows. Sends only this page's address, only to the launchpad.
+// Opened on its own (a new tab from inside this app, which the edge doesn't
+// redirect), the page reopens inside the launchpad.
 (function () {
   var launchpad = 'https://${server_hostname}';
-  if (window.parent === window) return;
+  if (window.parent === window) {
+    var here = window.location;
+    window.location.replace(
+      launchpad + '/open/' + here.host + here.pathname + here.search + here.hash,
+    );
+    return;
+  }
   function clean(href) {
     var url = new URL(href, window.location.href);
     if (url.origin !== window.location.origin) return null;
