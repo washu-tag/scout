@@ -105,12 +105,17 @@ export function shellLocation(chip: RenderChip, href: unknown): string | null {
   return `${shellPath(chip.id)}${url.pathname}${url.search}${url.hash}`;
 }
 
-// The framed app that owns a Scout service URL: among the chips on its host, the
-// one whose own path is the longest prefix of the URL's path, else the first.
+// The framed app that owns a Scout service URL: among the chips on its host (or,
+// for JupyterHub's per-user servers, a host it is a subdomain of), the one whose
+// own path is the longest prefix of the URL's path, else the first.
 export function chipForUrl(sections: ShellSection[], url: URL): RenderChip | undefined {
-  const candidates = sections
+  const services = sections
     .flatMap((section) => section.chips)
-    .filter((chip) => chip.kind === 'service' && new URL(chip.href).host === url.host);
+    .filter((chip) => chip.kind === 'service');
+  const sameHost = services.filter((chip) => new URL(chip.href).host === url.host);
+  const candidates = sameHost.length
+    ? sameHost
+    : services.filter((chip) => isChipOrigin(chip, url.origin));
   let best: RenderChip | undefined;
   let bestLength = -1;
   for (const chip of candidates) {

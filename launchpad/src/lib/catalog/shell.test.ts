@@ -387,6 +387,16 @@ describe('openRequest', () => {
     );
   });
 
+  it("opens a page on a JupyterHub user's server in the notebooks app", () => {
+    assert.strictEqual(
+      open(
+        'https://report-viewer.scout.example.edu',
+        'https://alice.jupyter.scout.example.edu/user/alice/lab',
+      )?.address,
+      '/app/notebooks/user/alice/lab',
+    );
+  });
+
   it("ignores a sandboxed app's pages, which may run content the app didn't write", () => {
     const page = 'https://jupyter.scout.example.edu/';
     assert.strictEqual(open('https://chat.scout.example.edu', page), null);
