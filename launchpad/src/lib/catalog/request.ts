@@ -36,5 +36,5 @@ export async function requestModel({ anyAudience = false } = {}): Promise<Render
     process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEV_ADMIN === 'true';
   const session = await getServerSession(authOptions);
   const isAdmin = anyAudience || devAdmin || session?.user?.isAdmin === true;
-  return assemble(await loadCatalog(), { origin, isAdmin });
+  return assemble(await loadCatalog(), { origin, isAdmin, username: session?.user?.username });
 }
