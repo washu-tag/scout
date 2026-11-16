@@ -15,8 +15,8 @@
 #       frame_location_namespace: '{{ my_service_namespace }}'
 #       frame_location_files: { loader.js: frame-location.js }
 #
-# or with `frame_location_file: <name>.jar` for XNAT, which packs an XNAT header
-# template (GET pages only) into a jar that loads from XNAT's plugins directory.
+# or with `frame_location_file: <name>.jar` for XNAT: a jar holding an XNAT header
+# template (GET pages only) that loads from XNAT's plugins directory.
 # Then mount the keys where the app loads them.
 - name: Publish frame-location ConfigMap {{ frame_location_configmap }}
   when: frame_location_files is defined
@@ -55,45 +55,26 @@
     - name: Create a frame-location build directory
       ansible.builtin.tempfile:
         state: directory
+      delegate_to: localhost
+      become: false
       register: _frame_location_build
 
-    - name: Create the XNAT header template directory
-      ansible.builtin.file:
-        path: '{{ _frame_location_build.path }}/META-INF/resources/templates/screens/header'
-        state: directory
-        mode: '0755'
-
-    - name: Render the XNAT header template
-      ansible.builtin.template:
-        src: frame-location.vm.j2
-        dest: '{{ _frame_location_build.path }}/META-INF/resources/templates/screens/header/scout-frame-location.vm'
-        mode: '0644'
-
-    # Zip stores modification times, so fixed ones make the same template the same jar
-    # bytes, and the ConfigMap changes only when the template does.
-    - name: Fix the template's timestamps
-      ansible.builtin.file:
-        path: '{{ _frame_location_build.path }}/{{ item }}'
-        modification_time: '198001010000.00'
-        access_time: '198001010000.00'
-      loop:
-        - META-INF/resources/templates/screens/header/scout-frame-location.vm
-        - META-INF/resources/templates/screens/header
-        - META-INF/resources/templates/screens
-        - META-INF/resources/templates
-        - META-INF/resources
-        - META-INF
-
-    - name: Pack the header template into a jar
-      community.general.archive:
-        path: '{{ _frame_location_build.path }}/META-INF'
-        dest: '{{ _frame_location_build.path }}/{{ frame_location_file }}'
-        format: zip
-        mode: '0644'
+    # The same jar every Scout release carries (tooling/deploy/xnat_frame_location_jar.py).
+    - name: Build the frame-location jar
+      ansible.builtin.command:
+        argv:
+          - '{{ ansible_playbook_python }}'
+          - '{{ role_path }}/../../../tooling/deploy/xnat_frame_location_jar.py'
+          - '{{ _frame_location_build.path }}/{{ frame_location_file }}'
+      delegate_to: localhost
+      become: false
+      changed_when: false
 
     - name: Read the jar
       ansible.builtin.slurp:
         src: '{{ _frame_location_build.path }}/{{ frame_location_file }}'
+      delegate_to: localhost
+      become: false
       register: _frame_location_jar
 
     - name: Fingerprint the jar
@@ -116,3 +97,5 @@
       ansible.builtin.file:
         path: '{{ _frame_location_build.path }}'
         state: absent
+      delegate_to: localhost
+      become: false
