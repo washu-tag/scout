@@ -19,6 +19,7 @@ export interface Origin {
 export interface AssembleOptions {
   origin: Origin;
   isAdmin: boolean;
+  username?: string;
 }
 
 // Chip authors state a subdomain, never a hostname: links resolve against the
@@ -44,13 +45,16 @@ function titleCaseId(id: string): string {
 }
 
 // Per-request assembly: filter the validated catalog by the viewer's
-// audience, resolve links against the request origin, merge and order groups,
-// and pack half-width groups into side-by-side rows. Pure computation over
-// the loader snapshot — no I/O.
+// audience and username, resolve links against the request origin, merge and
+// order groups, and pack half-width groups into side-by-side rows. Pure
+// computation over the loader snapshot — no I/O.
 export function assemble(catalog: Catalog, options: AssembleOptions): RenderModel {
   const { origin, isAdmin } = options;
+  const username = options.username?.toLowerCase();
   const diagnostics: Diagnostic[] = [...catalog.diagnostics];
   const audienceOk = (audience: 'user' | 'admin') => audience === 'user' || isAdmin;
+  const usersOk = (users?: string[]) =>
+    users === undefined || (username !== undefined && users.includes(username));
 
   // Group definitions merge across documents; the launchpad's own mounted
   // catalog (lowest source rank) wins, then lowest weight, then source name.
@@ -71,7 +75,9 @@ export function assemble(catalog: Catalog, options: AssembleOptions): RenderMode
     groupDefs.set(candidate.id, candidate);
   }
 
-  const visibleChips = catalog.chips.filter((chip) => chip.enabled && audienceOk(chip.audience));
+  const visibleChips = catalog.chips.filter(
+    (chip) => chip.enabled && audienceOk(chip.audience) && usersOk(chip.users),
+  );
 
   const membership = new Map<string, Chip[]>();
   for (const chip of visibleChips) {

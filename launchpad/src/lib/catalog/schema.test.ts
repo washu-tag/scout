@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { CATALOG_API_VERSION, CATALOG_KIND, parseCatalogText, validateDocument } from './schema';
+import {
+  CATALOG_API_VERSION,
+  CATALOG_API_VERSION_V1ALPHA2,
+  CATALOG_KIND,
+  parseCatalogText,
+  validateDocument,
+} from './schema';
 
 const SOURCE = 'test/apps.yaml';
 
@@ -192,6 +198,52 @@ describe('validateDocument', () => {
     for (const overrides of [{ enabled: 'no' }, { enabled: 0 }, { audience: 'adminstrator' }]) {
       const result = validateDocument(doc({ chips: [chip(overrides)] }), SOURCE);
       assert.strictEqual(result.chips.length, 0, JSON.stringify(overrides));
+      assert.match(result.diagnostics[0].message, /chip skipped/);
+    }
+  });
+
+  it('accepts users in a v1alpha2 document, lowercased', () => {
+    const result = validateDocument(
+      doc({ apiVersion: CATALOG_API_VERSION_V1ALPHA2, chips: [chip({ users: ['Alice', 'bob'] })] }),
+      SOURCE,
+    );
+    assert.deepStrictEqual(result.diagnostics, []);
+    assert.deepStrictEqual(result.chips[0].users, ['alice', 'bob']);
+  });
+
+  it('parses a v1alpha2 document without users like a v1alpha1 one', () => {
+    const result = validateDocument(
+      doc({
+        apiVersion: CATALOG_API_VERSION_V1ALPHA2,
+        groups: [{ id: 'a', title: 'A' }],
+        chips: [chip({ group: 'a' })],
+      }),
+      SOURCE,
+    );
+    assert.deepStrictEqual(result.diagnostics, []);
+    assert.strictEqual(result.groups.length, 1);
+    assert.strictEqual(result.chips[0].users, undefined);
+  });
+
+  it('rejects a chip with users in a v1alpha1 document, keeping its siblings', () => {
+    const result = validateDocument(
+      doc({ chips: [chip({ users: ['alice'] }), chip({ id: 'other' })] }),
+      SOURCE,
+    );
+    assert.deepStrictEqual(
+      result.chips.map((c) => c.id),
+      ['other'],
+    );
+    assert.match(result.diagnostics[0].message, /users needs apiVersion .*v1alpha2/);
+  });
+
+  it('rejects a chip whose users is invalid (visibility fails closed)', () => {
+    for (const users of ['alice', [''], ['  '], [42], null]) {
+      const result = validateDocument(
+        doc({ apiVersion: CATALOG_API_VERSION_V1ALPHA2, chips: [chip({ users })] }),
+        SOURCE,
+      );
+      assert.strictEqual(result.chips.length, 0, JSON.stringify(users));
       assert.match(result.diagnostics[0].message, /chip skipped/);
     }
   });

@@ -29,6 +29,8 @@ export interface Chip {
   weight: number;
   audience: Audience;
   enabled: boolean;
+  // Lowercased usernames: when set, only these users see the chip.
+  users?: string[];
   source: string;
 }
 

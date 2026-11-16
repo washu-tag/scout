@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { assemble, resolveHref, type Origin } from './assemble';
-import { CATALOG_API_VERSION, CATALOG_KIND, validateDocument } from './schema';
+import {
+  CATALOG_API_VERSION,
+  CATALOG_API_VERSION_V1ALPHA2,
+  CATALOG_KIND,
+  validateDocument,
+} from './schema';
 import type { Catalog } from './types';
 
 const ORIGIN: Origin = { protocol: 'https', host: 'scout.example.edu' };
@@ -251,6 +256,36 @@ describe('assemble mechanics', () => {
     assert.deepStrictEqual(
       adminModel.rows[0].groups[0].chips.map((chip) => chip.id),
       ['a'],
+    );
+  });
+
+  it('shows a chip with users only to those users, ignoring case', () => {
+    const catalog = validateDocument(
+      {
+        apiVersion: CATALOG_API_VERSION_V1ALPHA2,
+        kind: CATALOG_KIND,
+        groups: [{ id: 'mine', title: 'Mine', weight: 5 }],
+        chips: [
+          { id: 'a', title: 'A', link: { path: '/a' }, group: 'mine', users: ['Alice'] },
+          { id: 'b', title: 'B', link: { path: '/b' }, group: 'mine', users: ['alice', 'bob'] },
+          { id: 'nobody', title: 'Nobody', link: { path: '/n' }, group: 'mine', users: [] },
+        ],
+      },
+      'test/mine.yaml',
+    );
+    const idsFor = (username?: string) =>
+      assemble(catalog, { origin: ORIGIN, isAdmin: false, username }).rows.flatMap((row) =>
+        row.groups.flatMap((group) => group.chips.map((chip) => chip.id)),
+      );
+    assert.deepStrictEqual(idsFor('ALICE'), ['a', 'b']);
+    assert.deepStrictEqual(idsFor('bob'), ['b']);
+    // With nothing visible, the group itself disappears.
+    assert.deepStrictEqual(idsFor('carol'), []);
+    assert.deepStrictEqual(idsFor(undefined), []);
+    // Being an admin doesn't widen it.
+    assert.strictEqual(
+      assemble(catalog, { origin: ORIGIN, isAdmin: true, username: 'carol' }).rows.length,
+      0,
     );
   });
 
