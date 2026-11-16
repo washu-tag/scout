@@ -19,10 +19,13 @@ resources:
     memory: 256Mi
 
 # Rendered into the OPA policy ConfigMap; policy-hash annotation rolls the
-# Deployment on any change. Empty policy.rego falls back to chart-owned
-# files/main.rego (authoritative Trino policy, ADR 0020).
+# Deployment on any change. Each empty entry falls back to the chart-owned file:
+# files/main.rego (authoritative Trino policy, ADR 0020), files/authz.rego (OPA
+# API allow-list), files/scout.rego (Report Viewer cache fingerprint).
 policy:
   rego: ''
+  authz: ''
+  scout: ''
 data:
   json: '{}'
 config:
