@@ -16,6 +16,7 @@ import {
   frameUrl,
   isChipOrigin,
   openRequest,
+  railSections,
   recentApps,
   shellLocation,
   type ShellSection,
@@ -323,7 +324,7 @@ export default function ShellClient({
   }
 
   const user = session?.user;
-  const [primary, ...rest] = sections;
+  const { pinned: primary, rest } = railSections(sections);
   const openSection = rest.find((section) => section.id === menu?.id);
   const isCurrent = (chip: RenderChip) => {
     const target = chipTarget(chip);

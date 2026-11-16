@@ -33,6 +33,18 @@ export function shellSections(model: RenderModel): ShellSection[] {
   return sections;
 }
 
+// The rail lists Core Services' chips first, wherever group weights put that group on
+// the page, and every other section after it in page order.
+const RAIL_GROUP = 'core';
+
+export function railSections(sections: ShellSection[]): {
+  pinned?: ShellSection;
+  rest: ShellSection[];
+} {
+  const pinned = sections.find((section) => section.id === RAIL_GROUP) ?? sections[0];
+  return { pinned, rest: sections.filter((section) => section !== pinned) };
+}
+
 export function shellPath(id: string): string {
   return `/app/${id}`;
 }

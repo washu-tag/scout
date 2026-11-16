@@ -11,6 +11,7 @@ import {
   isChipOrigin,
   openRequest,
   openTarget,
+  railSections,
   recentApps,
   serviceHost,
   shellLocation,
@@ -78,6 +79,40 @@ describe('shellSections', () => {
       userSections.map((section) => section.id),
       ['core', 'docs'],
     );
+  });
+
+  it('pins Core Services to the top of the rail, else the first section', () => {
+    const withMine = catalogFrom({
+      groups: [
+        { id: 'core', title: 'Core', weight: 10 },
+        { id: 'mine', title: 'Mine', weight: 5 },
+        { id: 'docs', title: 'Docs', weight: 20 },
+      ],
+      chips: [
+        { id: 'chat', title: 'Chat', link: { subdomain: 'chat' }, group: 'core' },
+        { id: 'draft', title: 'Draft', link: { subdomain: 'drafts' }, group: 'mine' },
+        { id: 'guide', title: 'Guide', link: { url: 'https://docs.example.edu' }, group: 'docs' },
+      ],
+    });
+    const { pinned, rest } = railSections(
+      shellSections(assemble(withMine, { origin: ORIGIN, isAdmin: false })),
+    );
+    assert.strictEqual(pinned?.id, 'core');
+    assert.deepStrictEqual(
+      rest.map((section) => section.id),
+      ['mine', 'docs'],
+    );
+
+    const noCore = catalogFrom({
+      groups: [{ id: 'docs', title: 'Docs', weight: 20 }],
+      chips: [
+        { id: 'guide', title: 'Guide', link: { url: 'https://docs.example.edu' }, group: 'docs' },
+      ],
+    });
+    const fallback = railSections(
+      shellSections(assemble(noCore, { origin: ORIGIN, isAdmin: false })),
+    );
+    assert.deepStrictEqual([fallback.pinned?.id, fallback.rest], ['docs', []]);
   });
 
   it('gives a duplicated id to the first chip in page order', () => {
