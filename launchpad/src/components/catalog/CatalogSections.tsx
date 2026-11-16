@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { HiArrowRight, HiOutlineDocumentText, HiOutlineExclamation } from 'react-icons/hi';
+import { ChipBadge } from '@/components/catalog/ChipBadge';
 import { DEFAULT_ICON, ICONS } from '@/lib/catalog/icons';
 import { TONES } from '@/lib/catalog/tones';
 import type { RenderChip, RenderGroup, RenderModel } from '@/lib/catalog/types';
@@ -57,6 +58,7 @@ const ChipCard = ({ chip }: { chip: RenderChip }) => {
         <h3 className="text-xl font-semibold text-slate-900 dark:text-white tracking-tight">
           {chip.title}
         </h3>
+        <ChipBadge chip={chip} />
       </div>
       <p className="text-base text-slate-500 dark:text-slate-400 mb-4 leading-relaxed font-light">
         {chip.description}
@@ -88,9 +90,12 @@ const ChipCompact = ({ chip, arrow }: { chip: RenderChip; arrow: boolean }) => {
         </div>
       </div>
       <div className="flex-1 min-w-0">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-white tracking-tight">
-          {chip.title}
-        </h3>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-white tracking-tight">
+            {chip.title}
+          </h3>
+          <ChipBadge chip={chip} />
+        </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 leading-snug font-light">
           {chip.description}
         </p>

@@ -69,6 +69,7 @@ which needs `apiVersion: launchpad.scout.xnat.org/v1alpha2`.
 | `icon`           | no       | `app`     | A name from the [icon registry](#icons-and-tones).                                                                                               |
 | `iconData`       | no       | —         | `data:image/(png\|jpeg\|svg+xml);base64,…`, max 16 KiB. Wins over `icon`.                                                                        |
 | `tone`           | no       | `indigo`  | One of `indigo emerald amber violet rose cyan red orange slate`.                                                                                 |
+| `badge`          | no       | —         | `{text, tone}`: a short status beside the title, such as "Draft". `text` max 24 characters; `tone` as above, default `slate`.                   |
 | `newTab`         | no       | `true`    | Open the destination in a new tab.                                                                                                               |
 | `group`          | no       | `more`    | Which section the chip renders in.                                                                                                               |
 | `weight`         | no       | `100`     | Lower renders first; ties break by title, then id.                                                                                               |

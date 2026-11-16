@@ -10,6 +10,11 @@ export interface ChipLink {
   url?: string;
 }
 
+export interface ChipBadge {
+  text: string;
+  tone: ToneName;
+}
+
 export interface FooterLink {
   text: string;
   url: string;
@@ -23,6 +28,7 @@ export interface Chip {
   icon: string;
   iconData?: string;
   tone: ToneName;
+  badge?: ChipBadge;
   link: ChipLink;
   newTab: boolean;
   group: string;
@@ -79,6 +85,7 @@ export interface RenderChip {
   icon: string;
   iconData?: string;
   tone: ToneName;
+  badge?: ChipBadge;
   href: string;
   newTab: boolean;
 }

@@ -140,6 +140,7 @@ export function assemble(catalog: Catalog, options: AssembleOptions): RenderMode
           icon: chip.icon,
           iconData: chip.iconData,
           tone: chip.tone,
+          badge: chip.badge,
           href: resolveHref(chip.link, origin),
           newTab: chip.newTab,
         })),
