@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -242,6 +242,10 @@ class PlotMeta(BaseModel):
     owui_chat_id: str = ""
 
 
+MAX_FILTERS = 32
+MAX_FILTER_CHARS = 1000
+
+
 class ActionInvokeRequest(BaseModel):
     """Optional filter narrowing a backend-call invoke to a subset of the
     search's cohort - e.g. the SPA's currently client-side-filtered rows,
@@ -250,10 +254,9 @@ class ActionInvokeRequest(BaseModel):
     behavior."""
 
     visible_report_ids: list[str] | None = None
-    # Readable text of the filters behind visible_report_ids, forwarded as-is.
-    filters: list[Annotated[str, Field(max_length=1000)]] | None = Field(
-        default=None, max_length=32
-    )
+    # Readable text of the filters behind visible_report_ids; the invoke
+    # forwards at most MAX_FILTERS of them, each cut to MAX_FILTER_CHARS.
+    filters: list[str] | None = None
 
 
 class ActionInvokeResponse(BaseModel):

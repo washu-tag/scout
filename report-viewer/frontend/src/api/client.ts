@@ -261,20 +261,15 @@ export function filterClauses(filters: FilterState): string[] {
   if (filters.modality && filters.modality.length > 0) {
     clauses.push(`modality in (${filters.modality.join(', ')})`);
   }
-  if (filters.service_name) {
-    clauses.push(`service_name contains "${filters.service_name}"`);
-  }
-  if (filters.epic_mrn) {
-    clauses.push(`epic_mrn contains "${filters.epic_mrn}"`);
-  }
-  if (filters.patient_mpi) {
-    clauses.push(`patient_mpi contains "${filters.patient_mpi}"`);
-  }
-  if (filters.accession_number) {
-    clauses.push(`accession_number contains "${filters.accession_number}"`);
-  }
-  if (filters.sending_facility) {
-    clauses.push(`sending_facility contains "${filters.sending_facility}"`);
+  for (const field of [
+    'service_name',
+    'epic_mrn',
+    'patient_mpi',
+    'accession_number',
+    'sending_facility',
+  ] as const) {
+    const value = filters[field]?.trim();
+    if (value) clauses.push(`${field} contains "${value}"`);
   }
   return clauses;
 }

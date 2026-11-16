@@ -58,6 +58,8 @@ from ..csv_upload import (
 from ..ids import new_search_id
 from ..logging_setup import scrub_for_log
 from ..models import (
+    MAX_FILTER_CHARS,
+    MAX_FILTERS,
     SEARCH_REQUIRED_COLUMNS,
     ActionInvokeRequest,
     ActionInvokeResponse,
@@ -573,7 +575,12 @@ async def invoke_search_action(
         # it was never going to be in the caller's own search either way.
         visible = set(body.visible_report_ids)
         reports = [r for r in reports if r["primary_report_identifier"] in visible]
-    filters = body.filters if body is not None and body.filters else []
+    filters = [
+        f[:MAX_FILTER_CHARS]
+        for f in (body.filters if body is not None and body.filters else [])[
+            :MAX_FILTERS
+        ]
+    ]
 
     headers = {}
     if invoke_token:

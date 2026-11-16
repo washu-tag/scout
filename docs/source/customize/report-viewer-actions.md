@@ -146,8 +146,8 @@ on screen.
 `sql` is the saved search before those filters. `filters` lists them as readable text,
 one entry per filter (for example `modality in (CT, MR)`), and is empty when none are
 active. If your service records the query behind a cohort, record `filters` alongside
-`sql`. The text comes from the browser as-is; report-viewer does not check it against
-`reports`.
+`sql`. The text comes from the browser; report-viewer forwards at most 32 entries, each cut
+to 1000 characters, and does not check it against `reports`.
 
 There is no values field for a `client`-type action (page-specific frontend logic, like
 Download CSV) — that needs a handler already registered in report-viewer's own

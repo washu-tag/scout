@@ -1010,3 +1010,27 @@ async def test_kube_calls_share_one_client(monkeypatch, tmp_path):
     assert seen == ["Bearer sa-token"] * 2
     await kube.aclose()
     assert kube._client is None
+
+
+def test_invoke_backend_call_action_cuts_long_filters(
+    client, keypair, fake_trino, catalog_with_backend_call_action
+):
+    """A long filter (an evidence span can run to a paragraph) is cut to
+    size rather than failing the action."""
+    priv, _ = keypair
+    bearer_headers = _bearer_headers(priv)
+    search_id = _create_search(client, bearer_headers, fake_trino)
+
+    fake_trino(
+        ["primary_report_identifier", "accession_number"],
+        [{"primary_report_identifier": "s3://x/1", "accession_number": "ACC1"}],
+    )
+    r = client.post(
+        f"/api/searches/{search_id}/actions/explore-xnat-demo/invoke",
+        headers=bearer_headers,
+        json={"filters": ["x" * 1500] + ["modality in (CT)"] * 40},
+    )
+    assert r.status_code == 200, r.text
+    filters = _FakeAsyncClient.last_call["json"]["filters"]
+    assert len(filters) == 32
+    assert filters[0] == "x" * 1000
