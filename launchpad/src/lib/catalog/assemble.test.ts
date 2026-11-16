@@ -266,7 +266,14 @@ describe('assemble mechanics', () => {
         kind: CATALOG_KIND,
         groups: [{ id: 'mine', title: 'Mine', weight: 5 }],
         chips: [
-          { id: 'a', title: 'A', link: { path: '/a' }, group: 'mine', users: ['Alice'] },
+          {
+            id: 'a',
+            title: 'A',
+            link: { path: '/a' },
+            group: 'mine',
+            users: ['Alice'],
+            badge: { text: 'Draft' },
+          },
           { id: 'b', title: 'B', link: { path: '/b' }, group: 'mine', users: ['alice', 'bob'] },
           { id: 'nobody', title: 'Nobody', link: { path: '/n' }, group: 'mine', users: [] },
         ],
@@ -278,6 +285,11 @@ describe('assemble mechanics', () => {
         row.groups.flatMap((group) => group.chips.map((chip) => chip.id)),
       );
     assert.deepStrictEqual(idsFor('ALICE'), ['a', 'b']);
+    assert.deepStrictEqual(
+      assemble(catalog, { origin: ORIGIN, isAdmin: false, username: 'alice' }).rows[0].groups[0]
+        .chips[0].badge,
+      { text: 'Draft', tone: 'slate' },
+    );
     assert.deepStrictEqual(idsFor('bob'), ['b']);
     // With nothing visible, the group itself disappears.
     assert.deepStrictEqual(idsFor('carol'), []);

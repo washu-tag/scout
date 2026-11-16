@@ -18,6 +18,7 @@ export const CATALOG_KIND = 'Catalog';
 
 export const TITLE_MAX = 60;
 export const DESCRIPTION_MAX = 200;
+export const BADGE_MAX = 24;
 export const ICON_DATA_MAX_CHARS = 16 * 1024;
 
 // Where a chip lands when it names no group. The core catalog defines the
@@ -82,6 +83,10 @@ const chipBase = {
     .regex(ICON_DATA_RE, 'iconData must be a base64 png/jpeg/svg+xml data URI')
     .max(ICON_DATA_MAX_CHARS, `iconData must be at most ${ICON_DATA_MAX_CHARS} characters`),
   tone: z.enum(TONE_NAMES),
+  badge: z.object({
+    text: z.string().trim().min(1).max(BADGE_MAX),
+    tone: z.enum(TONE_NAMES).default('slate'),
+  }),
   link: linkSchema,
   newTab: z.boolean(),
   sandbox: z.boolean(),
@@ -193,6 +198,7 @@ const chipSchema = z.object({
   icon: caught('icon', chipBase.icon, CHIP_FALLBACKS.icon),
   iconData: caughtOptional('iconData', chipBase.iconData),
   tone: caught('tone', chipBase.tone, CHIP_FALLBACKS.tone),
+  badge: caughtOptional('badge', chipBase.badge),
   link: chipBase.link,
   newTab: caught('newTab', chipBase.newTab, CHIP_FALLBACKS.newTab),
   // Fails closed like audience: an invalid value rejects the chip rather than

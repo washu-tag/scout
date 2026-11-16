@@ -3,6 +3,7 @@
 import React from 'react';
 import { HiArrowRight, HiChevronRight, HiOutlineExclamation } from 'react-icons/hi';
 import { DEFAULT_ICON, ICONS } from '@/lib/catalog/icons';
+import { ChipBadge } from '@/components/catalog/ChipBadge';
 import { ChipAnchor } from '@/components/shell/ChipAnchor';
 import { TONES } from '@/lib/catalog/tones';
 import type { RenderChip, RenderGroup, RenderModel } from '@/lib/catalog/types';
@@ -63,15 +64,18 @@ const ChipCard = ({ chip, large }: { chip: RenderChip; large: boolean }) => {
         size={large ? 'w-[42px] h-[42px] rounded-xl' : 'w-9 h-9 rounded-[10px]'}
       />
       <span className="flex min-w-0 flex-col gap-1">
-        <span
-          className={`inline-flex items-center gap-1.5 font-semibold tracking-tight text-slate-900 dark:text-slate-100 ${large ? 'text-lg' : 'text-[15px]'}`}
-        >
-          {chip.title}
-          {large && (
-            <HiArrowRight
-              className={`text-base ${tone.cta} transition-transform duration-200 group-hover:translate-x-1`}
-            />
-          )}
+        <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+          <span
+            className={`inline-flex items-center gap-1.5 font-semibold tracking-tight text-slate-900 dark:text-slate-100 ${large ? 'text-lg' : 'text-[15px]'}`}
+          >
+            {chip.title}
+            {large && (
+              <HiArrowRight
+                className={`text-base ${tone.cta} transition-transform duration-200 group-hover:translate-x-1`}
+              />
+            )}
+          </span>
+          <ChipBadge chip={chip} />
         </span>
         <span className={`leading-normal ${MUTED} ${large ? 'text-sm' : 'text-[13px]'}`}>
           {chip.description}
@@ -88,7 +92,12 @@ const ChipRow = ({ chip }: { chip: RenderChip }) => (
   >
     <ToneIcon chip={chip} size="w-[34px] h-[34px] rounded-[9px]" />
     <span className="flex flex-1 min-w-0 flex-col gap-0.5">
-      <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{chip.title}</span>
+      <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+          {chip.title}
+        </span>
+        <ChipBadge chip={chip} />
+      </span>
       <span className={`text-[13px] ${MUTED}`}>{chip.description}</span>
     </span>
     <HiChevronRight
@@ -109,6 +118,7 @@ const ChipTile = ({ chip }: { chip: RenderChip }) => {
       <span className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">
         {chip.title}
       </span>
+      <ChipBadge chip={chip} />
     </ChipAnchor>
   );
 };

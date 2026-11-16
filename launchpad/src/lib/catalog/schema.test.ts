@@ -215,6 +215,38 @@ describe('validateDocument', () => {
     }
   });
 
+  it('accepts a badge, slate by default, and drops an invalid one with a diagnostic', () => {
+    const result = validateDocument(
+      doc({
+        chips: [
+          chip({ id: 'a', badge: { text: ' Draft ' } }),
+          chip({ id: 'b', badge: { text: 'Shared', tone: 'amber' } }),
+        ],
+      }),
+      SOURCE,
+    );
+    assert.deepStrictEqual(result.diagnostics, []);
+    assert.deepStrictEqual(
+      result.chips.map((c) => c.badge),
+      [
+        { text: 'Draft', tone: 'slate' },
+        { text: 'Shared', tone: 'amber' },
+      ],
+    );
+
+    for (const badge of [
+      'Draft',
+      { text: '' },
+      { text: 'x'.repeat(25) },
+      { text: 'Draft', tone: 'pink' },
+    ]) {
+      const invalid = validateDocument(doc({ chips: [chip({ badge })] }), SOURCE);
+      assert.strictEqual(invalid.chips.length, 1, JSON.stringify(badge));
+      assert.strictEqual(invalid.chips[0].badge, undefined, JSON.stringify(badge));
+      assert.match(invalid.diagnostics[0].message, /badge/);
+    }
+  });
+
   it('accepts users in a v1alpha2 document, lowercased', () => {
     const result = validateDocument(
       doc({ apiVersion: CATALOG_API_VERSION_V1ALPHA2, chips: [chip({ users: ['Alice', 'bob'] })] }),
