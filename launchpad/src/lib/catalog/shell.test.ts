@@ -157,17 +157,17 @@ describe('shellSections', () => {
       ],
     });
     const sections = shellSections(assemble(catalog, { origin: ORIGIN, isAdmin: false }));
-    const link = embeddedChip(sections, 'mine.link');
+    const link = embeddedChip(sections, 'mine');
     assert.partialDeepStrictEqual(link, {
       title: 'Mine',
       kind: 'service',
       href: 'https://books.scout.example.edu/',
     });
     // A url heading link isn't routed; it opens in a new tab as before.
-    assert.strictEqual(embeddedChip(sections, 'core.link'), undefined);
+    assert.strictEqual(embeddedChip(sections, 'core'), undefined);
     // The service's own pages still go to their chips; the rest of its host to the link.
     const owner = (url: string) => chipForUrl(sections, new URL(url))?.id;
-    assert.strictEqual(owner('https://books.scout.example.edu/'), 'mine.link');
+    assert.strictEqual(owner('https://books.scout.example.edu/'), 'mine');
     assert.strictEqual(owner('https://books.scout.example.edu/d/1'), 'draft');
     assert.strictEqual(owner('https://books.scout.example.edu/p/1'), 'book');
     // The Books menu lists Mine's chips and its own, not the link, but the link opening
@@ -180,7 +180,26 @@ describe('shellSections', () => {
     );
     assert.deepStrictEqual(
       routableChips(blocks).map((chip) => chip.id),
-      ['draft', 'mine.link', 'book'],
+      ['draft', 'mine', 'book'],
+    );
+
+    // A group named like a chip routes its link at <group id>.link, leaving the chip its id.
+    const named = catalogFrom({
+      groups: [
+        { id: 'books', title: 'Books', footerLink: { text: 'All', link: { subdomain: 'books' } } },
+      ],
+      chips: [
+        { id: 'books', title: 'Books', link: { subdomain: 'books', path: '/p' }, group: 'books' },
+      ],
+    });
+    const namedSections = shellSections(assemble(named, { origin: ORIGIN, isAdmin: false }));
+    assert.strictEqual(
+      embeddedChip(namedSections, 'books')?.href,
+      'https://books.scout.example.edu/p',
+    );
+    assert.strictEqual(
+      embeddedChip(namedSections, 'books.link')?.href,
+      'https://books.scout.example.edu',
     );
   });
 

@@ -78,6 +78,7 @@ export function assemble(catalog: Catalog, options: AssembleOptions): RenderMode
   }
 
   const visibleChips = catalog.chips.filter((chip) => chip.enabled && audienceOk(chip.audience));
+  const chipIds = new Set(visibleChips.map((chip) => chip.id));
 
   const membership = new Map<string, Chip[]>();
   for (const chip of visibleChips) {
@@ -135,10 +136,11 @@ export function assemble(catalog: Catalog, options: AssembleOptions): RenderMode
         railMenu: group.railMenu,
         footerLink: group.footerLink && {
           text: group.footerLink.text,
-          // A chip id can't contain ".", so this never collides with one.
+          // Routed at /app/<group id>; a chip id can't contain ".", so the fallback for a
+          // group named like a chip never collides with one.
           chip: {
             source: group.source,
-            id: `${group.id}.link`,
+            id: chipIds.has(group.id) ? `${group.id}.link` : group.id,
             title: group.title,
             description: '',
             icon: group.icon,
