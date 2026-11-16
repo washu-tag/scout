@@ -13,6 +13,7 @@ import {
   openTarget,
   railSections,
   recentApps,
+  routableChips,
   serviceHost,
   shellLocation,
   shellSections,
@@ -134,6 +135,53 @@ describe('shellSections', () => {
     assert.deepStrictEqual(railFor([chat, draft, book]), [['books', ['mine']]]);
     // Without a visible Books section, Mine gets its own entry.
     assert.deepStrictEqual(railFor([chat, draft]), [['mine', []]]);
+  });
+
+  it("routes a heading link to a Scout service like a chip, under its section's rail entry", () => {
+    const catalog = catalogFrom({
+      groups: [
+        { id: 'core', title: 'Core', weight: 10, footerLink: { text: 'Docs', url: '/docs' } },
+        {
+          id: 'mine',
+          title: 'Mine',
+          weight: 5,
+          railMenu: 'books',
+          footerLink: { text: 'See all', link: { subdomain: 'books', path: '/' } },
+        },
+        { id: 'books', title: 'Books', weight: 20 },
+      ],
+      chips: [
+        { id: 'chat', title: 'Chat', link: { subdomain: 'chat' }, group: 'core' },
+        { id: 'draft', title: 'Draft', link: { subdomain: 'books', path: '/d/1' }, group: 'mine' },
+        { id: 'book', title: 'Book', link: { subdomain: 'books', path: '/p/1' }, group: 'books' },
+      ],
+    });
+    const sections = shellSections(assemble(catalog, { origin: ORIGIN, isAdmin: false }));
+    const link = embeddedChip(sections, 'mine.link');
+    assert.partialDeepStrictEqual(link, {
+      title: 'Mine',
+      kind: 'service',
+      href: 'https://books.scout.example.edu/',
+    });
+    // A url heading link isn't routed; it opens in a new tab as before.
+    assert.strictEqual(embeddedChip(sections, 'core.link'), undefined);
+    // The service's own pages still go to their chips; the rest of its host to the link.
+    const owner = (url: string) => chipForUrl(sections, new URL(url))?.id;
+    assert.strictEqual(owner('https://books.scout.example.edu/'), 'mine.link');
+    assert.strictEqual(owner('https://books.scout.example.edu/d/1'), 'draft');
+    assert.strictEqual(owner('https://books.scout.example.edu/p/1'), 'book');
+    // The Books menu lists Mine's chips and its own, not the link, but the link opening
+    // still marks the Books entry current.
+    const { rest } = railSections(sections);
+    const blocks = [...(rest[0].nested ?? []), rest[0]];
+    assert.deepStrictEqual(
+      blocks.flatMap((block) => block.chips.map((chip) => chip.id)),
+      ['draft', 'book'],
+    );
+    assert.deepStrictEqual(
+      routableChips(blocks).map((chip) => chip.id),
+      ['draft', 'mine.link', 'book'],
+    );
   });
 
   it('gives a duplicated id to the first chip in page order', () => {

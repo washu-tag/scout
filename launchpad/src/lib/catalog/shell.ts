@@ -9,6 +9,8 @@ export interface ShellSection {
   chips: RenderChip[];
   // Sections whose chips the rail lists in this one's menu, ahead of its own.
   nested?: ShellSection[];
+  // The section heading's link, when it opens a Scout service: routed like a chip, not listed.
+  link?: RenderChip;
 }
 
 export interface ChipTarget {
@@ -32,7 +34,8 @@ export function shellSections(model: RenderModel): ShellSection[] {
     });
     if (chips.length > 0) {
       const { id, title, icon, audience, railMenu } = group;
-      sections.push({ id, title, icon, audience, railMenu, chips });
+      const link = group.footerLink?.chip.kind === 'service' ? group.footerLink.chip : undefined;
+      sections.push({ id, title, icon, audience, railMenu, chips, ...(link ? { link } : {}) });
     }
   }
   return sections;
@@ -68,6 +71,13 @@ export function railSections(sections: ShellSection[]): {
     rest: others.filter((section) => section.audience !== 'admin'),
     admin: others.filter((section) => section.audience === 'admin'),
   };
+}
+
+// Every chip the shell can open, heading links included.
+export function routableChips(sections: ShellSection[]): RenderChip[] {
+  return sections.flatMap((section) =>
+    section.link ? [...section.chips, section.link] : section.chips,
+  );
 }
 
 export function shellPath(id: string): string {
@@ -146,9 +156,7 @@ export function shellLocation(chip: RenderChip, href: unknown): string | null {
 // for JupyterHub's per-user servers, a host it is a subdomain of), the one whose
 // own path is the longest prefix of the URL's path, else the first.
 export function chipForUrl(sections: ShellSection[], url: URL): RenderChip | undefined {
-  const services = sections
-    .flatMap((section) => section.chips)
-    .filter((chip) => chip.kind === 'service');
+  const services = routableChips(sections).filter((chip) => chip.kind === 'service');
   const sameHost = services.filter((chip) => new URL(chip.href).host === url.host);
   const candidates = sameHost.length
     ? sameHost
@@ -231,7 +239,7 @@ export function openRequest(
   if (typeof href !== 'string' || !canAskToOpen(launchpad, origin) || !onHost(launchpad, href)) {
     return null;
   }
-  const chips = sections.flatMap((section) => section.chips);
+  const chips = routableChips(sections);
   if (chips.some((chip) => chip.sandbox && isChipOrigin(chip, origin))) return null;
   const url = new URL(href);
   const chip = chipForUrl(sections, url);
@@ -245,7 +253,5 @@ export function recentApps(recent: string[], id: string, max: number): string[] 
 }
 
 export function embeddedChip(sections: ShellSection[], id: string): RenderChip | undefined {
-  return sections
-    .flatMap((section) => section.chips)
-    .find((chip) => chip.id === id && chip.kind === 'service');
+  return routableChips(sections).find((chip) => chip.id === id && chip.kind === 'service');
 }

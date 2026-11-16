@@ -148,7 +148,9 @@ describe('assemble on the classic page', () => {
       ['chat', 'analytics', 'notebooks'],
     );
     assert.strictEqual(core.columns, 3);
-    assert.strictEqual(core.footerLink?.url, 'https://docs.example.edu');
+    assert.partialDeepStrictEqual(core.footerLink, {
+      chip: { kind: 'external', href: 'https://docs.example.edu', newTab: true },
+    });
     assert.strictEqual(core.chips[0].source, 'test/apps.yaml');
     const admin = model.rows[1].groups[1];
     assert.strictEqual(admin.layout, 'tiles');
