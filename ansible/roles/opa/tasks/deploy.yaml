@@ -126,6 +126,10 @@
           memory: '{{ opa_memory_limit }}'
       policy:
         rego: "{{ lookup('file', opa_policy_path) }}"
+        # Passed as values (not left to the chart's own files) so an edit changes
+        # the release values and Ansible's helm module upgrades it.
+        authz: "{{ lookup('file', scout_repo_dir + '/helm/scout-opa/files/authz.rego') }}"
+        scout: "{{ lookup('file', scout_repo_dir + '/helm/scout-opa/files/scout.rego') }}"
       data:
         json: '{{ opa_data_json }}'
       config:

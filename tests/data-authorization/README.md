@@ -40,9 +40,8 @@ Two Kubernetes Jobs, scheduled in sequence:
 
 2. **`authz-tests/`** — runs after the seed completes. Uses
    `alpine/curl` + `jq` + `bash` to walk through 8 scenarios that
-   each: set Keycloak user attributes, wait for OPA's `data.users` to
-   reflect the change, issue a Trino query as that user, assert on
-   the response.
+   each: set Keycloak user attributes, then query Trino as that user
+   until the response reflects the change.
    * `run.sh` — the test scenarios
    * `job.yaml` — the Kubernetes Job manifest (templated; the
      workflow inlines `run.sh` and the admin/service-principal
@@ -61,9 +60,10 @@ Two Kubernetes Jobs, scheduled in sequence:
 | 7 | `bypass_hidden_tables=["true"]` | same | not denied at `/allow` (may surface table-not-found in CI, that's fine) |
 | 8 | `enabled=false` | `SELECT 1` | denied |
 
-Each scenario polls OPA's `/v1/data/users/<user>` before issuing the
-Trino query to confirm the bundle propagated; with a 30 s timeout the
-typical case completes in 5-10 s.
+Each scenario retries its Trino query until the assertion holds or 30 s
+pass; the typical case completes in 5-10 s, one OPA bundle poll. OPA's API
+refuses raw `data.users` reads (`helm/scout-opa/files/authz.rego`), so the
+decisions Trino gets are the propagation signal.
 
 ## Why a separate suite
 
