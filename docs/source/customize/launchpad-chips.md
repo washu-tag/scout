@@ -101,8 +101,9 @@ validate; anything else (e.g. `javascript:`) rejects the whole chip. A rooted pa
 means exactly one leading slash — protocol-relative `//host` values, which the browser
 would resolve off-site, are rejected too.
 
-Every chip also appears in the launchpad's navigation rail. A subdomain destination
-opens inside the launchpad, framed next to the rail, so your service must allow the
+Every chip also appears in the launchpad's navigation rail: Core Services' chips at the
+top, then one entry per other group, a menu when it has more than one chip. A subdomain
+destination opens inside the launchpad, framed next to the rail, so your service must allow the
 launchpad to frame it. On-prem, the `security-headers` middleware from
 [service authentication](service-authentication.md) does that. A path destination is a
 launchpad page and renders with the rail. A `url` destination opens on its own,
