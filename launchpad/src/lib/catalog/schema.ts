@@ -98,15 +98,22 @@ const groupBase = {
   width: z.enum(['full', 'half']),
   audience: audienceSchema,
   railMenu: idSchema,
-  footerLink: z.object({
-    text: z.string().trim().min(1).max(TITLE_MAX),
-    url: z
-      .string()
-      .refine(
-        (v) => ROOTED_PATH_RE.test(v) || httpUrlSchema.safeParse(v).success,
-        'must be an http(s) URL or a rooted path',
-      ),
-  }),
+  footerLink: z
+    .object({
+      text: z.string().trim().min(1).max(TITLE_MAX),
+      url: z
+        .string()
+        .refine(
+          (v) => ROOTED_PATH_RE.test(v) || httpUrlSchema.safeParse(v).success,
+          'must be an http(s) URL or a rooted path',
+        )
+        .optional(),
+      link: linkSchema.optional(),
+    })
+    .refine(
+      (footer) => !footer.url !== !footer.link,
+      'footerLink needs exactly one of url or link',
+    ),
 };
 
 // Known-key lists for the forward-compatibility warning, derived from the

@@ -10,9 +10,16 @@ export interface ChipLink {
   url?: string;
 }
 
+// A section heading's link: `url` opens in a new tab; `link` is a chip destination.
 export interface FooterLink {
   text: string;
-  url: string;
+  url?: string;
+  link?: ChipLink;
+}
+
+export interface RenderFooterLink {
+  text: string;
+  chip: RenderChip;
 }
 
 // A chip as validated and normalized from a catalog document (ADR 0034).
@@ -100,7 +107,7 @@ export interface RenderGroup {
   audience: Audience;
   railMenu?: string;
   chips: RenderChip[];
-  footerLink?: FooterLink;
+  footerLink?: RenderFooterLink;
 }
 
 // One visual band of the page: a single full-width group, or two half-width

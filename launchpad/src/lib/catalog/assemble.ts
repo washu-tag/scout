@@ -133,7 +133,26 @@ export function assemble(catalog: Catalog, options: AssembleOptions): RenderMode
         width: group.width,
         audience: group.audience,
         railMenu: group.railMenu,
-        footerLink: group.footerLink,
+        footerLink: group.footerLink && {
+          text: group.footerLink.text,
+          // A chip id can't contain ".", so this never collides with one.
+          chip: {
+            source: group.source,
+            id: `${group.id}.link`,
+            title: group.title,
+            description: '',
+            icon: group.icon,
+            tone: 'slate',
+            sandbox: false,
+            ...(group.footerLink.link
+              ? {
+                  kind: chipKind(group.footerLink.link),
+                  href: resolveHref(group.footerLink.link, origin),
+                  newTab: true,
+                }
+              : { kind: 'external', href: group.footerLink.url ?? '/', newTab: true }),
+          },
+        },
         chips: chips.map((chip) => ({
           source: chip.source,
           id: chip.id,

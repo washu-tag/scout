@@ -18,6 +18,7 @@ import {
   openRequest,
   railSections,
   recentApps,
+  routableChips,
   shellLocation,
   type ShellSection,
 } from '@/lib/catalog/shell';
@@ -355,9 +356,7 @@ export default function ShellClient({
   const menuBlocks = (section: ShellSection) => [...(section.nested ?? []), section];
 
   const groupButton = (section: ShellSection) => {
-    const currentChip = menuBlocks(section)
-      .flatMap((block) => block.chips)
-      .find(isCurrent);
+    const currentChip = routableChips(menuBlocks(section)).find(isCurrent);
     const isOpen = menu?.id === section.id;
     const GroupIcon = ICONS[section.icon] ?? ICONS[DEFAULT_ICON];
     return (

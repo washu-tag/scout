@@ -123,15 +123,13 @@ const GroupSection = ({ group, half }: { group: RenderGroup; half: boolean }) =>
         {group.description && <span className={`text-sm ${MUTED}`}>{group.description}</span>}
       </div>
       {group.footerLink && (
-        <a
-          href={group.footerLink.url}
-          target="_blank"
-          rel="noopener noreferrer"
+        <ChipAnchor
+          chip={group.footerLink.chip}
           className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-700 dark:text-indigo-300 hover:text-indigo-900 dark:hover:text-indigo-200 no-underline"
         >
           {group.footerLink.text}
           <HiArrowRight />
-        </a>
+        </ChipAnchor>
       )}
     </div>
 
