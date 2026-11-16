@@ -1,10 +1,14 @@
-import type { RenderChip, RenderModel } from './types';
+import type { Audience, RenderChip, RenderModel } from './types';
 
 export interface ShellSection {
   id: string;
   title: string;
   icon: string;
+  audience: Audience;
+  railMenu?: string;
   chips: RenderChip[];
+  // Sections whose chips the rail lists in this one's menu, ahead of its own.
+  nested?: ShellSection[];
 }
 
 export interface ChipTarget {
@@ -27,22 +31,43 @@ export function shellSections(model: RenderModel): ShellSection[] {
       return true;
     });
     if (chips.length > 0) {
-      sections.push({ id: group.id, title: group.title, icon: group.icon, chips });
+      const { id, title, icon, audience, railMenu } = group;
+      sections.push({ id, title, icon, audience, railMenu, chips });
     }
   }
   return sections;
 }
 
 // The rail lists Core Services' chips first, wherever group weights put that group on
-// the page, and every other section after it in page order.
+// the page, then the other sections in page order, admin-only ones last. A section
+// whose railMenu names another listed section goes in that section's menu instead,
+// one level deep.
 const RAIL_GROUP = 'core';
 
 export function railSections(sections: ShellSection[]): {
   pinned?: ShellSection;
   rest: ShellSection[];
+  admin: ShellSection[];
 } {
   const pinned = sections.find((section) => section.id === RAIL_GROUP) ?? sections[0];
-  return { pinned, rest: sections.filter((section) => section !== pinned) };
+  const byId = new Map(sections.map((section) => [section.id, section]));
+  const hostOf = (section: ShellSection) => {
+    const host = section.railMenu ? byId.get(section.railMenu) : undefined;
+    return section !== pinned && host && host !== section && host !== pinned && !host.railMenu
+      ? host
+      : undefined;
+  };
+  const others = sections
+    .filter((section) => section !== pinned && !hostOf(section))
+    .map((section) => {
+      const nested = sections.filter((other) => hostOf(other) === section);
+      return nested.length > 0 ? { ...section, nested } : section;
+    });
+  return {
+    pinned,
+    rest: others.filter((section) => section.audience !== 'admin'),
+    admin: others.filter((section) => section.audience === 'admin'),
+  };
 }
 
 export function shellPath(id: string): string {

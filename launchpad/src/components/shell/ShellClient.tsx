@@ -48,7 +48,7 @@ const MENU_ITEM =
 const MENU_ICON = 'text-base text-slate-500 dark:text-slate-400';
 
 function railItemClass(highlighted: boolean) {
-  return `flex w-[70px] flex-col items-center gap-1 rounded-xl py-1.5 no-underline transition-colors cursor-pointer ${
+  return `flex w-16 flex-col items-center gap-1 rounded-xl px-1 py-1.5 no-underline transition-colors cursor-pointer ${
     highlighted ? 'bg-slate-100 dark:bg-slate-800' : 'hover:bg-slate-100 dark:hover:bg-slate-800'
   }`;
 }
@@ -324,8 +324,8 @@ export default function ShellClient({
   }
 
   const user = session?.user;
-  const { pinned: primary, rest } = railSections(sections);
-  const openSection = rest.find((section) => section.id === menu?.id);
+  const { pinned: primary, rest, admin } = railSections(sections);
+  const openSection = [...rest, ...admin].find((section) => section.id === menu?.id);
   const isCurrent = (chip: RenderChip) => {
     const target = chipTarget(chip);
     return target.internal && (pathname === target.href || pathname.startsWith(`${target.href}/`));
@@ -352,8 +352,12 @@ export default function ShellClient({
     );
   };
 
+  const menuBlocks = (section: ShellSection) => [...(section.nested ?? []), section];
+
   const groupButton = (section: ShellSection) => {
-    const currentChip = section.chips.find(isCurrent);
+    const currentChip = menuBlocks(section)
+      .flatMap((block) => block.chips)
+      .find(isCurrent);
     const isOpen = menu?.id === section.id;
     const GroupIcon = ICONS[section.icon] ?? ICONS[DEFAULT_ICON];
     return (
@@ -395,7 +399,7 @@ export default function ShellClient({
             <img src="/scout.svg" alt="" className="h-9 w-9 block dark:hidden" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/scout-dark.svg" alt="" className="h-9 w-9 hidden dark:block" />
-            <span className="max-w-16 truncate text-[10px] leading-tight text-slate-400 dark:text-slate-500">
+            <span className="line-clamp-2 w-16 px-1 text-center text-[10px] leading-tight text-slate-400 dark:text-slate-500">
               {environment}
             </span>
           </Link>
@@ -406,12 +410,20 @@ export default function ShellClient({
             </div>
           )}
 
-          {rest.length > 0 && (
-            <div className="flex w-full flex-col items-center gap-1 border-t border-slate-200 pt-2 dark:border-slate-800">
-              {rest.map((section) =>
-                section.chips.length === 1 ? railChip(section.chips[0]) : groupButton(section),
-              )}
-            </div>
+          {[rest, admin].map(
+            (block, index) =>
+              block.length > 0 && (
+                <div
+                  key={index}
+                  className="flex w-full flex-col items-center gap-1 border-t border-slate-200 pt-2 dark:border-slate-800"
+                >
+                  {block.map((section) =>
+                    section.chips.length === 1 && !section.nested
+                      ? railChip(section.chips[0])
+                      : groupButton(section),
+                  )}
+                </div>
+              ),
           )}
 
           <div className="mt-auto flex w-full flex-col items-center border-t border-slate-200 pt-2 dark:border-slate-800">
@@ -443,40 +455,54 @@ export default function ShellClient({
             className={MENU}
             style={{ top: menu.top }}
           >
-            <p className="px-2.5 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-              {openSection.title}
-            </p>
-            {openSection.chips.map((chip) => {
-              const tone = TONES[chip.tone];
-              const current = isCurrent(chip);
-              return (
-                <ChipAnchor
-                  key={chip.id}
-                  chip={chip}
-                  role="menuitem"
-                  onClick={() => setMenu(null)}
-                  aria-current={current ? 'page' : undefined}
-                  className={`${MENU_ITEM} ${current ? 'bg-slate-100 dark:bg-slate-800' : ''}`}
-                >
-                  <span
-                    className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border text-base ${tone.iconBg} ${tone.icon}`}
-                  >
-                    <ChipIcon chip={chip} className="text-base" />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium">{chip.title}</span>
-                    {chip.description && (
-                      <span className="line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
-                        {chip.description}
+            {menuBlocks(openSection).map((block, index) => (
+              <div
+                key={block.id}
+                role="group"
+                aria-label={block.title}
+                className={
+                  index > 0 ? 'mt-1 border-t border-slate-200 pt-1 dark:border-slate-700' : ''
+                }
+              >
+                <p className="px-2.5 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                  {block.title}
+                </p>
+                {block.chips.map((chip) => {
+                  const tone = TONES[chip.tone];
+                  const current = isCurrent(chip);
+                  return (
+                    <ChipAnchor
+                      key={chip.id}
+                      chip={chip}
+                      role="menuitem"
+                      onClick={() => setMenu(null)}
+                      aria-current={current ? 'page' : undefined}
+                      className={`${MENU_ITEM} ${current ? 'bg-slate-100 dark:bg-slate-800' : ''}`}
+                    >
+                      <span
+                        className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border text-base ${tone.iconBg} ${tone.icon}`}
+                      >
+                        <ChipIcon chip={chip} className="text-base" />
                       </span>
-                    )}
-                  </span>
-                  {!chipTarget(chip).internal && (
-                    <HiOutlineExternalLink className={MENU_ICON} aria-label="Opens in a new tab" />
-                  )}
-                </ChipAnchor>
-              );
-            })}
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-medium">{chip.title}</span>
+                        {chip.description && (
+                          <span className="line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
+                            {chip.description}
+                          </span>
+                        )}
+                      </span>
+                      {!chipTarget(chip).internal && (
+                        <HiOutlineExternalLink
+                          className={MENU_ICON}
+                          aria-label="Opens in a new tab"
+                        />
+                      )}
+                    </ChipAnchor>
+                  );
+                })}
+              </div>
+            ))}
           </div>
         )}
 

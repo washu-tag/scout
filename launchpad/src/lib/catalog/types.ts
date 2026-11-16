@@ -45,6 +45,7 @@ export interface Group {
   maxColumns: number;
   width: GroupWidth;
   audience: Audience;
+  railMenu?: string;
   footerLink?: FooterLink;
   source: string;
   // Lower ranks win when two documents define the same group id. The mounted
@@ -98,6 +99,8 @@ export interface RenderGroup {
   layout: GroupLayout;
   columns: number;
   width: GroupWidth;
+  audience: Audience;
+  railMenu?: string;
   chips: RenderChip[];
   footerLink?: FooterLink;
 }

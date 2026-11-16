@@ -81,26 +81,28 @@ describe('shellSections', () => {
     );
   });
 
-  it('pins Core Services to the top of the rail, else the first section', () => {
+  it('pins Core Services to the top of the rail and admin-only sections to the end', () => {
     const withMine = catalogFrom({
       groups: [
         { id: 'core', title: 'Core', weight: 10 },
         { id: 'mine', title: 'Mine', weight: 5 },
+        { id: 'admin', title: 'Admin', weight: 15, audience: 'admin' },
         { id: 'docs', title: 'Docs', weight: 20 },
       ],
       chips: [
         { id: 'chat', title: 'Chat', link: { subdomain: 'chat' }, group: 'core' },
         { id: 'draft', title: 'Draft', link: { subdomain: 'drafts' }, group: 'mine' },
+        { id: 'users', title: 'Users', link: { path: '/admin/users' }, group: 'admin' },
         { id: 'guide', title: 'Guide', link: { url: 'https://docs.example.edu' }, group: 'docs' },
       ],
     });
-    const { pinned, rest } = railSections(
-      shellSections(assemble(withMine, { origin: ORIGIN, isAdmin: false })),
+    const { pinned, rest, admin } = railSections(
+      shellSections(assemble(withMine, { origin: ORIGIN, isAdmin: true })),
     );
     assert.strictEqual(pinned?.id, 'core');
     assert.deepStrictEqual(
-      rest.map((section) => section.id),
-      ['mine', 'docs'],
+      [rest.map((section) => section.id), admin.map((section) => section.id)],
+      [['mine', 'docs'], ['admin']],
     );
 
     const noCore = catalogFrom({
@@ -112,7 +114,26 @@ describe('shellSections', () => {
     const fallback = railSections(
       shellSections(assemble(noCore, { origin: ORIGIN, isAdmin: false })),
     );
-    assert.deepStrictEqual([fallback.pinned?.id, fallback.rest], ['docs', []]);
+    assert.deepStrictEqual([fallback.pinned?.id, fallback.rest, fallback.admin], ['docs', [], []]);
+  });
+
+  it("lists a railMenu section in the named section's menu, else on its own", () => {
+    const groups = [
+      { id: 'core', title: 'Core', weight: 10 },
+      { id: 'mine', title: 'Mine', weight: 5, railMenu: 'books' },
+      { id: 'books', title: 'Books', weight: 20 },
+    ];
+    const chat = { id: 'chat', title: 'Chat', link: { subdomain: 'chat' }, group: 'core' };
+    const draft = { id: 'draft', title: 'Draft', link: { subdomain: 'drafts' }, group: 'mine' };
+    const book = { id: 'book', title: 'Book', link: { subdomain: 'books' }, group: 'books' };
+    const railFor = (chips: Record<string, unknown>[]) =>
+      railSections(
+        shellSections(assemble(catalogFrom({ groups, chips }), { origin: ORIGIN, isAdmin: false })),
+      ).rest.map((section) => [section.id, (section.nested ?? []).map((n) => n.id)]);
+
+    assert.deepStrictEqual(railFor([chat, draft, book]), [['books', ['mine']]]);
+    // Without a visible Books section, Mine gets its own entry.
+    assert.deepStrictEqual(railFor([chat, draft]), [['mine', []]]);
   });
 
   it('gives a duplicated id to the first chip in page order', () => {
