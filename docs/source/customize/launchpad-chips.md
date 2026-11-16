@@ -102,7 +102,8 @@ means exactly one leading slash — protocol-relative `//host` values, which the
 would resolve off-site, are rejected too.
 
 Every chip also appears in the launchpad's navigation rail: Core Services' chips at the
-top, then one entry per other group, a menu when it has more than one chip. A subdomain
+top, then one entry per other group, a menu when it has more than one chip, with
+admin-only groups last. A group with `railMenu` is listed in that group's menu instead. A subdomain
 destination opens inside the launchpad, framed next to the rail, so your service must allow the
 launchpad to frame it. On-prem, the `security-headers` middleware from
 [service authentication](service-authentication.md) does that. A path destination is a
@@ -194,6 +195,7 @@ groups:
 | `maxColumns`  | no       | `cards` 3, `tiles` 2, `rows` 1 | Rendered columns = `min(visible chips, maxColumns)`.                                                |
 | `width`       | no       | `full`                         | Consecutive `half` groups pair side by side; an unpaired `half` renders full.                       |
 | `audience`    | no       | `user`                         | A group also hides automatically whenever it has no visible chips.                                  |
+| `railMenu`    | no       | —                              | Another group's id: the rail lists this group in that group's menu, under its own heading, rather than as its own entry. Ignored when that group isn't shown. |
 | `footerLink`  | no       | —                              | `{text, url}` rendered as an inline link under the group's grid.                                   |
 
 Several documents may define the same group id (two services can both put chips in

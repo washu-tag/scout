@@ -131,6 +131,8 @@ export function assemble(catalog: Catalog, options: AssembleOptions): RenderMode
         layout: group.layout,
         columns: Math.max(1, Math.min(chips.length, group.maxColumns)),
         width: group.width,
+        audience: group.audience,
+        railMenu: group.railMenu,
         footerLink: group.footerLink,
         chips: chips.map((chip) => ({
           source: chip.source,

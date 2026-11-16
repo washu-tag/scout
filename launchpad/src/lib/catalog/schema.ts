@@ -97,6 +97,7 @@ const groupBase = {
   maxColumns: z.number().int().min(1).max(4),
   width: z.enum(['full', 'half']),
   audience: audienceSchema,
+  railMenu: idSchema,
   footerLink: z.object({
     text: z.string().trim().min(1).max(TITLE_MAX),
     url: z
@@ -212,6 +213,7 @@ const groupSchema = z.object({
   // Fail closed, as for chips: a definition that cannot state its audience
   // is dropped (member chips still render via their own audience).
   audience: groupBase.audience.default(GROUP_FALLBACKS.audience),
+  railMenu: caughtOptional('railMenu', groupBase.railMenu),
   footerLink: caughtOptional('footerLink', groupBase.footerLink),
 });
 
