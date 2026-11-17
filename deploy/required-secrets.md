@@ -158,7 +158,7 @@ defaults to SSE-KMS, each role also needs `kms:Decrypt` (+ `kms:GenerateDataKey`
 | `-trino-rw` | `${scout_extractor_namespace}` | `trino-rw` | lake read/write |
 | `-hl7log-extractor` | `${scout_extractor_namespace}` | `hl7log-extractor` | HL7 source read; lake + scratch read/write |
 | `-hl7-transformer` | `${scout_extractor_namespace}` | `hl7-transformer` | lake read/write; scratch read |
-| `-opa-bundle-writer` | `${keycloak_namespace}` | `keycloak-opa-bundle-writer` | OPA bundle bucket write |
+| `-opa-bundle-writer` | `${keycloak_namespace}` | `keycloak-opa-bundle-writer` | OPA bundle bucket write; `rds-db:connect` for `keycloak_iam` under [RDS IAM auth](#rds-iam-database-auth-aws-opt-in) |
 | `-opa-bundle-reader` | `${scout_analytics_namespace}` | `opa-trino` | OPA bundle bucket read |
 
 `hive-metastore-readonly` carries the writer annotation but does no S3 I/O (no storage
@@ -201,11 +201,13 @@ flips it as below.
   typically), and never make the master a member of an `R_iam`. RDS makes any login role
   that reaches `rds_iam` through membership IAM-only, so the master would lose its password
   login. On PG 16+ that includes a grant held only `WITH ADMIN OPTION` (no INHERIT, no SET).
+  Unlike vanilla PG 16+, RDS gives the master no grant on the roles it creates, so the
+  recipe above leaves it out.
   `SELECT pg_has_role('<master>', 'rds_iam', 'MEMBER')` must stay false.
 - **TLS.** RDS accepts IAM tokens over TLS only. Clients use `sslmode=verify-full` against a
-  site-provided ConfigMap `rds-ca-bundle` (key `ca.pem`: the regional RDS bundle for the
-  instance's region, e.g. `https://truststore.pki.rds.amazonaws.com/us-east-1/us-east-1-bundle.pem`)
-  in each namespace with a flipped client, mounted at `/etc/rds-ca`.
+  site-provided ConfigMap `rds-global-bundle` (key `global-bundle.pem`, from
+  `https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem`) in each namespace with
+  a flipped client, mounted at `/etc/rds`.
 - **IRSA.** The client's ServiceAccount role needs `rds-db:connect` on
   `arn:aws:rds-db:<region>:<account>:dbuser:<DbiResourceId>/R_iam`.
 
@@ -214,7 +216,7 @@ flips it as below.
 | Keycloak | `keycloak_iam` | `keycloak-opa-bundle-writer` (`${keycloak_namespace}`) | `keycloak-db-secret` `username: keycloak_iam` + the CR patch below |
 
 ### Keycloak
-The scout keycloak image ships the AWS Advanced JDBC Wrapper and the SDK `rds` module in
+The scout keycloak image ships the AWS Advanced JDBC Wrapper in
 `providers/`, unused unless `db-driver` selects the wrapper. `db-driver` is a build-time
 option, so the CR also needs `startOptimized: false`: Keycloak re-augments at each start
 (a few seconds; `/opt/keycloak/lib` must stay writable, as in the stock image). Left on
@@ -229,7 +231,7 @@ patch to the `keycloak-instance` Flux Kustomization's `spec.patches`:
       value: false
     - op: add
       path: /spec/db/url
-      value: jdbc:aws-wrapper:postgresql://${postgres_host}:5432/keycloak?wrapperPlugins=iam&sslmode=verify-full&sslrootcert=/etc/rds-ca/ca.pem
+      value: jdbc:aws-wrapper:postgresql://${postgres_host}:5432/keycloak?wrapperPlugins=iam&sslmode=verify-full&sslrootcert=/etc/rds/global-bundle.pem
     - op: remove
       path: /spec/db/passwordSecret
     - op: add
@@ -237,10 +239,10 @@ patch to the `keycloak-instance` Flux Kustomization's `spec.patches`:
       value: {name: db-driver, value: software.amazon.jdbc.Driver}
     - op: add
       path: /spec/unsupported/podTemplate/spec/volumes
-      value: [{name: rds-ca, configMap: {name: rds-ca-bundle}}]
+      value: [{name: rds-ca, configMap: {name: rds-global-bundle}}]
     - op: add
       path: /spec/unsupported/podTemplate/spec/containers
-      value: [{name: keycloak, volumeMounts: [{name: rds-ca, mountPath: /etc/rds-ca, readOnly: true}]}]
+      value: [{name: keycloak, volumeMounts: [{name: rds-ca, mountPath: /etc/rds, readOnly: true}]}]
 ```
 
 - `db.url` overrides the CR's host/port/database. `${postgres_host}` resolves in that
