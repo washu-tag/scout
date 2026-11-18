@@ -34,6 +34,14 @@ heartbeats internally and could coalesce or drop heartbeats if they are too freq
 ```
 - `deltaIngestTimeout`: timeout in minutes for the activity and transforms the HL7 and uploads to the delta lake. Ansible equivalent: `hl7_transformer_timeout` 
 
+## Scheduled ingest
+
+Scout can run the ingest workflow on a schedule, using the default inputs above, so that
+new log files are picked up automatically. The schedule is off by default. To turn it on,
+set `scheduled_ingest_enabled: true` in the inventory. It runs daily at
+`scheduled_ingest_hour` (UTC, default 6); set `scheduled_ingest_cron` for any other
+schedule. Turning the setting back off deletes the schedule on the next deploy.
+
 ## admintools container
 
 From the Kubernetes cluster, you can trigger an ingest job through Temporal's admintools container. An example invocation could look like:

@@ -16,7 +16,9 @@ temporal_resources_default:
     cpu: 2
     memory: 2Gi
 
-# Scheduled workflow configuration
+# Daily IngestHl7LogWorkflow run. Off by default (dev clusters ingest on demand);
+# disabling deletes an existing schedule.
+scheduled_ingest_enabled: false
 scheduled_ingest_hour: 6 # Alternatively, full schedule can be specified with scheduled_ingest_cron
 
 # Temporal namespace configuration

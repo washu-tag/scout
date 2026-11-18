@@ -61,6 +61,8 @@
   "s3_region": "us-east-1",
   "s3_sse_type": "NONE",
   "s3_username": "minio",
+  "scheduled_ingest_cron": "0 6 * * *",
+  "scheduled_ingest_enabled": "false",
   "scout_analytics_namespace": "scout-analytics",
   "scout_core_namespace": "scout-core",
   "scout_data_namespace": "scout-data",

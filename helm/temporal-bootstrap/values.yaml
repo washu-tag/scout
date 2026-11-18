@@ -1,8 +1,7 @@
 # temporal-bootstrap: one-off, idempotent Temporal setup applied as Helm hook
 # Jobs (post-install,post-upgrade), mirroring the scout-dashboards import model.
-# Today it enforces the default namespace's workflow-history retention
-# (issue #432); future Temporal setup (e.g. the scheduled-ingest schedule,
-# currently a bespoke Ansible Job) can be added as additional hook Jobs here.
+# Enforces the default namespace's workflow-history retention (issue #432) and
+# manages the scheduled ingest.
 
 nameOverride: ''
 fullnameOverride: ''
@@ -27,6 +26,15 @@ namespace:
   # ("3d", "30d", "90d", ...). Modern Temporal has no max-retention cap; the
   # only bound is the minimum (system.namespaceMinRetentionGlobal/Local, ~24h).
   retention: 30d
+
+# Recurring IngestHl7LogWorkflow run with default inputs. Off by default; when
+# off, an existing schedule is deleted. `enabled` accepts a bool or "true"/"false".
+scheduledIngest:
+  enabled: false
+  cron: '0 6 * * *'
+  scheduleId: ScheduledReportIngest
+  taskQueue: ingest-hl7-log
+  workflowType: IngestHl7LogWorkflow
 
 # describe-retry attempts (x2s each) while waiting for the namespace to be
 # created on a fresh install (the temporal chart's create job is create-only
