@@ -1,5 +1,11 @@
 import { useMemo } from 'react';
-import { collapse, evidenceCategory, type EvCategory, type FilterState } from '../../api/client';
+import {
+  collapse,
+  evidenceCategory,
+  EV_CATEGORY_LABEL as CATEGORY_LABEL,
+  type EvCategory,
+  type FilterState,
+} from '../../api/client';
 import { NegationIcon } from './icons';
 
 // Pill-shaped, unlike the 3px evidence chips, so clickable never looks static.
@@ -15,13 +21,6 @@ const pill: React.CSSProperties = {
   cursor: 'pointer',
   whiteSpace: 'nowrap',
   maxWidth: 220,
-};
-
-const CATEGORY_LABEL: Record<EvCategory, string> = {
-  text_and_code: 'text + diagnosis',
-  text: 'report text',
-  diagnosis_code: 'diagnosis',
-  unknown: 'unexplained',
 };
 
 type Tone = 'positive' | 'negative' | 'neutral';
