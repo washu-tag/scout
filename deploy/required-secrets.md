@@ -25,7 +25,7 @@ the secret analog of `required-vars.txt`. Namespaces below are the base's logica
 | --- | --- | --- |
 | `superuser-secret` | `username`, `password` | CNPG `Cluster.superuserSecret` (on-prem only; `username` is exactly `postgres`) |
 | `cnpg-role-{hive,hive-readonly,keycloak,superset,extractor,temporal}` | `username`, `password` | CNPG managed roles (on-prem only; `username` equals the role name: `hive`, `hive_readonly`, `keycloak`, `superset`, `${postgres_user}`, `temporal`) |
-| `keycloak-db-secret` | `username`, `password` | Keycloak CR datasource (= the keycloak role; `keycloak_iam` under [RDS IAM auth](#rds-iam-database-auth-aws-opt-in)) |
+| `keycloak-db-secret` | `username`, `password` | Keycloak CR datasource (= the keycloak role; plus `iam-username` = `keycloak_iam` under [RDS IAM auth](#rds-iam-database-auth-aws-opt-in)) |
 | `keycloak-admin-secret` | `username`, `password` | Keycloak bootstrap admin + config-cli |
 | `keycloak-client-secrets` | `oauth2_proxy`, `superset`, `superset_svc`, `jupyterhub`, `grafana`, `temporal`, `launchpad_client`, `minio`, `open_webui`, `voila_svc`, `report_viewer_svc`, `fragment_reconciler_svc`; `github_client_id`/`github_client_secret` (when `github.enabled`); `microsoft_client_id`/`microsoft_client_secret`/`microsoft_tenant_id` (when `microsoft.enabled`); `xnat` (when `enableXnat`) | config-cli realm import (`envFrom`; keys are the `$(env:...)` var-substitution names). `fragment_reconciler_svc` is also read pod-side by the fragment reconciler, which is the one key with a second consumer |
 | `keycloak-client-secrets-site` | any keys a site IdP document names (`deploy/README.md`) | config-cli realm import, **optional**. Read before `keycloak-client-secrets`, which wins on a name clash, so don't reuse its key names |
@@ -201,8 +201,9 @@ flips it as below.
   typically), and never make the master a member of an `R_iam`. RDS makes any login role
   that reaches `rds_iam` through membership IAM-only, so the master would lose its password
   login. On PG 16+ that includes a grant held only `WITH ADMIN OPTION` (no INHERIT, no SET).
-  Unlike vanilla PG 16+, RDS gives the master no grant on the roles it creates, so the
-  recipe above leaves it out.
+  Unlike vanilla PG 16+, RDS gives the master no grant on the roles it creates, yet the
+  master can still grant them (RDS records the grant as `rdsadmin`'s; the recipe was run as
+  the master on RDS PostgreSQL 18.6), so the recipe above leaves the master out.
   `SELECT pg_has_role('<master>', 'rds_iam', 'MEMBER')` must stay false.
 - **TLS.** RDS accepts IAM tokens over TLS only. Clients use `sslmode=verify-full` against a
   site-provided ConfigMap `rds-global-bundle` (key `global-bundle.pem`, from
@@ -213,7 +214,7 @@ flips it as below.
 
 | client | login role | ServiceAccount (namespace) | flip |
 | --- | --- | --- | --- |
-| Keycloak | `keycloak_iam` | `keycloak-opa-bundle-writer` (`${keycloak_namespace}`) | `keycloak-db-secret` `username: keycloak_iam` + the CR patch below |
+| Keycloak | `keycloak_iam` | `keycloak-opa-bundle-writer` (`${keycloak_namespace}`) | `keycloak-db-secret` key `iam-username: keycloak_iam`, then the CR patch below |
 
 ### Keycloak
 The scout keycloak image ships the AWS Advanced JDBC Wrapper in
@@ -232,6 +233,9 @@ patch to the `keycloak-instance` Flux Kustomization's `spec.patches`:
     - op: add
       path: /spec/db/url
       value: jdbc:aws-wrapper:postgresql://${postgres_host}:5432/keycloak?wrapperPlugins=iam&sslmode=verify-full&sslrootcert=/etc/rds/global-bundle.pem
+    - op: replace
+      path: /spec/db/usernameSecret/key
+      value: iam-username
     - op: remove
       path: /spec/db/passwordSecret
     - op: add
@@ -247,8 +251,8 @@ patch to the `keycloak-instance` Flux Kustomization's `spec.patches`:
 
 - `db.url` overrides the CR's host/port/database. `${postgres_host}` resolves in that
   Kustomization's postBuild (write `$${postgres_host}` if the manifest carrying the patch is
-  itself substituted). The wrapper takes the token's region from the RDS hostname; set
-  `iamHost`/`iamRegion` only when connecting through a CNAME.
+  itself substituted). Use the instance's RDS endpoint, not a CNAME: `verify-full` matches
+  the certificate's RDS hostnames, and the wrapper takes the token's region from it.
 - `op: add` on a list path replaces the list. `/spec/additionalOptions/-` appends to the list
   the base CR always sets; replacing it would drop the metrics and OPA-bundle options. If the
   site already patches `podTemplate.spec.volumes` or `containers` (a keystore, say), append
@@ -258,9 +262,12 @@ patch to the `keycloak-instance` Flux Kustomization's `spec.patches`:
 - The pod runs as `keycloak-opa-bundle-writer`, so the `rds-db:connect` grant for
   `keycloak_iam` goes on that SA's role (`${irsa_role_prefix}-opa-bundle-writer`), next to its
   OPA-bundle S3 grant. The wrapper uses the SDK default credential chain (web identity).
-- Land the `username: keycloak_iam` flip and the patch together; either one alone fails the
-  login. The `password` key in `keycloak-db-secret` goes unused; keep it until the cutover
-  soaks, so rollback is dropping the patch and restoring `username: keycloak`.
-- To stage the flip, first apply the patch with `wrapperPlugins=` (empty), without the
-  `passwordSecret` removal and with `username: keycloak`. That proves the driver swap,
+- Add the `iam-username` key first; nothing reads it yet (the operator restarts Keycloak on
+  any change to the Secret). The flip is then the patch alone, one `keycloak-instance`
+  reconcile, and rollback is dropping it. Changing `username` in place instead can't land
+  atomically with the patch: either alone fails the login, and `keycloak-instance`
+  (`wait: true`) and everything after it stall until both are in. Keep `password` until
+  the cutover soaks.
+- To stage the flip, first apply the patch with `wrapperPlugins=` (empty) and without the
+  `usernameSecret` and `passwordSecret` ops. That proves the driver swap,
   re-augmentation and verify-full TLS on password auth before switching to IAM.
