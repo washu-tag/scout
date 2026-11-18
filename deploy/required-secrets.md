@@ -249,9 +249,10 @@ patch to the `keycloak-instance` Flux Kustomization's `spec.patches`:
   Kustomization's postBuild (write `$${postgres_host}` if the manifest carrying the patch is
   itself substituted). The wrapper takes the token's region from the RDS hostname; set
   `iamHost`/`iamRegion` only when connecting through a CNAME.
-- If the site already patches `podTemplate.spec.volumes` or `containers` (a keystore, say),
-  append to those lists (`/volumes/-`, and the mount on the existing `keycloak` entry)
-  instead: `op: add` on the list path replaces it.
+- `op: add` on a list path replaces the list. `/spec/additionalOptions/-` appends to the list
+  the base CR always sets; replacing it would drop the metrics and OPA-bundle options. If the
+  site already patches `podTemplate.spec.volumes` or `containers` (a keystore, say), append
+  to those lists too (`/volumes/-`, and the mount on the existing `keycloak` entry).
 - Keep `wrapperPlugins=iam` explicit: the wrapper's default plugins target Aurora failover and
   open extra monitoring connections (on Aurora add `failover2`, as Keycloak's docs advise).
 - The pod runs as `keycloak-opa-bundle-writer`, so the `rds-db:connect` grant for
