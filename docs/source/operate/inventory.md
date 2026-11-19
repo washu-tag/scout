@@ -834,11 +834,11 @@ report_viewer_db_password: $(openssl rand -hex 32 | ansible-vault encrypt_string
 
 It also caches each user's search cohorts, charts and accession lists in the cache
 Valkey, as that instance's `report-viewer` user (`valkey_cache_report_viewer_password`,
-see [Valkey](#valkey)), so reopening a search skips the Trino query. A change to the
-user's permissions or the access policy makes older entries unreachable as soon as
-OPA has the change, and a write to any Delta table the query reads does within about
-a minute; otherwise an entry is served for up to `report_viewer_cache_ttl_seconds`.
-Set it to `0` to turn caching off:
+see [Valkey](#valkey)), so reopening a search or clicking one of its action buttons
+skips the Trino query. A change to the user's permissions or the access policy makes
+older entries unreachable as soon as OPA has the change, and a write to any Delta table
+the query reads does within about a minute; otherwise an entry is served for up to
+`report_viewer_cache_ttl_seconds`. Set it to `0` to turn caching off:
 
 ```yaml
 report_viewer_cache_ttl_seconds: 14400  # 4 hours (default); 0 disables the cache

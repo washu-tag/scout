@@ -481,7 +481,9 @@ async def get_search_actions(
 async def invoke_search_action(
     search_id: str,
     action_id: str,
+    request: Request,
     body: ActionInvokeRequest | None = None,
+    progress_id: str | None = Query(default=None),
     user: User = Depends(get_current_user),
     store: SearchStore = Depends(get_store),
 ) -> ActionInvokeResponse:
@@ -533,47 +535,29 @@ async def invoke_search_action(
     # required on every saved search); accession_number rides along as a
     # secondary, nullable, non-unique correlation field - it can repeat
     # across reports (a study read in parts) or be absent, so it can't
-    # stand in as the identifier. Same cap as GET /rows, for the same
-    # reason: a bound already agreed on for "the whole cohort in one
-    # response," not a new one invented for this endpoint.
-    source_sql = ds["sql"]
-    uploaded_ids = ds.get("uploaded_ids")
-    cap = settings.max_cohort_rows
-    ids_sql = (
-        f"SELECT s.primary_report_identifier, s.accession_number "
-        f"FROM ({source_sql}) s LIMIT {cap + 1}"
+    # stand in as the identifier. The same cohort GET /rows serves, so the
+    # click acts on the rows the page showed.
+    _cols, rows, cohort_truncated = await _cohort(
+        request, search_id, ds, user, progress_id, for_action=True
     )
-    try:
-        with metrics.time_trino("invoke_cohort_ids"):
-            # safe: source_sql is persisted validated SQL; ids bind via ?
-            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
-            _cols, id_rows = await trino_client.execute(
-                ids_sql,
-                user=user.sub,
-                params=[uploaded_ids] if uploaded_ids else None,
-            )
-    except Exception as exc:
-        raise _rows_query_error(exc, "invoke cohort ids") from exc
-
-    cohort_truncated = len(id_rows) > cap
-    if cohort_truncated:
-        id_rows = id_rows[:cap]
     reports = [
         {
             "primary_report_identifier": r["primary_report_identifier"],
             "accession_number": r.get("accession_number"),
         }
-        for r in id_rows
+        for r in rows
     ]
 
+    dropped = 0
     if body is not None and body.visible_report_ids is not None:
-        # Intersect against the just-resolved, Trino-authorized cohort -
-        # never trust the submitted ids on their own. An id the caller
-        # sends that isn't in `reports` (tampered request, stale client
-        # state) is silently dropped rather than forwarded unverified;
-        # it was never going to be in the caller's own search either way.
+        # Intersect against the resolved, Trino-authorized cohort - never
+        # trust the submitted ids on their own. An id outside it (the
+        # search's results changed since the page loaded, a truncated
+        # cohort resolved differently, a tampered request) isn't forwarded,
+        # and the caller is told how many weren't.
         visible = set(body.visible_report_ids)
         reports = [r for r in reports if r["primary_report_identifier"] in visible]
+        dropped = len(visible - {r["primary_report_identifier"] for r in reports})
 
     headers = {}
     if invoke_token:
@@ -606,7 +590,7 @@ async def invoke_search_action(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="action returned an unsafe url",
         )
-    return ActionInvokeResponse(url=url)
+    return ActionInvokeResponse(url=url, dropped_report_count=dropped)
 
 
 @router.delete("/{search_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -639,43 +623,31 @@ def _rows_query_error(exc: Exception, stage: str) -> HTTPException:
     )
 
 
-@router.get("/{search_id}/rows", response_model=RowsResponse)
-async def get_search_rows(
-    search_id: str,
+_ID_COLS = ["primary_report_identifier", "accession_number"]
+
+
+async def _cohort(
     request: Request,
-    progress_id: str | None = Query(default=None),
-    user: User = Depends(get_current_user),
-    store: SearchStore = Depends(get_store),
-) -> RowsResponse:
-    """The full cohort in one response, for client-side browsing.
-
-    Runs the saved sql once and returns every matched row (up to
-    settings.max_cohort_rows), with report-body columns stripped - the SPA
-    holds the set in memory and does sort/filter/paginate client-side, and
-    fetches report text per-row via /reports/read on expand. A cohort larger
-    than the cap is truncated with `truncated=true`. One Trino scan; no
-    sort/filter/pagination params."""
-    ds = await store.get_search(search_id, owner_sub=user.sub)
-    if ds is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="search not found",
-        )
-
+    search_id: str,
+    ds: dict[str, Any],
+    user: User,
+    progress_id: str | None,
+    for_action: bool = False,
+) -> tuple[list[str], list[dict[str, Any]], bool]:
+    """The search's cohort as `GET /rows` serves it: columns, rows without report
+    bodies, and whether it was truncated at the cap. An action's click reads the
+    same cache entry, so it acts on the rows the page showed; its IDs are also
+    kept briefly, for a click before the full entry is stored."""
     source_sql = ds["sql"]
     uploaded_ids = ds.get("uploaded_ids")
     cap = settings.max_cohort_rows
     found = await cache.lookup("rows", user.sub, source_sql, uploaded_ids, cap)
-    if found.value is not None:
-        cached = found.value
+    cached = found.value
+    if cached is None and for_action:
+        cached = await cache.get_related(found, "rows-ids")
+    if cached is not None:
         rows = cache.unpack_rows(cached["columns"], cached["rows"])
-        return RowsResponse(
-            id=search_id,
-            columns=cached["columns"],
-            rows=rows,
-            total=len(rows),
-            truncated=cached["truncated"],
-        )
+        return cached["columns"], rows, cached["truncated"]
     # Derived per read, not stored, so the saved search stays a verbatim record
     # of what the model wrote. Falls back to the original sql for any shape it
     # cannot rewrite.
@@ -719,6 +691,16 @@ async def get_search_rows(
     metrics.RESULT_ROWS.labels(op="rows_query").observe(len(rows))
     lean_columns = [c for c in columns if c not in _HEAVY_COLS]
     lean_rows = [{k: v for k, v in r.items() if k not in _HEAVY_COLS} for r in rows]
+    cache.remember_briefly(
+        found,
+        "rows-ids",
+        {
+            "columns": _ID_COLS,
+            "rows": cache.pack_rows(_ID_COLS, lean_rows),
+            "truncated": truncated,
+        },
+        settings.cache_recent_seconds,
+    )
     # A transient failure of the rewrite must not hide the evidence for the whole
     # TTL; only a rewrite Trino rejects as invalid is worth remembering.
     if rewrite_error is None or trino_client.is_user_error(rewrite_error):
@@ -730,11 +712,37 @@ async def get_search_rows(
                 "truncated": truncated,
             },
         )
+    return lean_columns, lean_rows, truncated
+
+
+@router.get("/{search_id}/rows", response_model=RowsResponse)
+async def get_search_rows(
+    search_id: str,
+    request: Request,
+    progress_id: str | None = Query(default=None),
+    user: User = Depends(get_current_user),
+    store: SearchStore = Depends(get_store),
+) -> RowsResponse:
+    """The full cohort in one response, for client-side browsing.
+
+    Runs the saved sql once and returns every matched row (up to
+    settings.max_cohort_rows), with report-body columns stripped - the SPA
+    holds the set in memory and does sort/filter/paginate client-side, and
+    fetches report text per-row via /reports/read on expand. A cohort larger
+    than the cap is truncated with `truncated=true`. One Trino scan; no
+    sort/filter/pagination params."""
+    ds = await store.get_search(search_id, owner_sub=user.sub)
+    if ds is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="search not found",
+        )
+    columns, rows, truncated = await _cohort(request, search_id, ds, user, progress_id)
     return RowsResponse(
         id=search_id,
-        columns=lean_columns,
-        rows=lean_rows,
-        total=len(lean_rows),
+        columns=columns,
+        rows=rows,
+        total=len(rows),
         truncated=truncated,
     )
 

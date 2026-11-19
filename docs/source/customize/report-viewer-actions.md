@@ -138,10 +138,12 @@ report-viewer never inspects what your service actually does with the cohort.
 saved search: if the user has active client-side filters on the results grid, the SPA
 sends only the currently-visible rows' ids, and report-viewer intersects that against
 the real (Trino-resolved) cohort before forwarding — an id the SPA submits that isn't
-actually part of the search is silently dropped, never trusted on its own. Clicking a
-backend-call button always means "these studies" — whatever's currently filtered — the
-same scope Download CSV already exports, not "the entire search" regardless of what's
-on screen.
+actually part of the search is never forwarded or trusted on its own, and the user is
+warned how many weren't sent. Clicking a backend-call button always means "these
+studies" — whatever's currently filtered — the same scope Download CSV already exports,
+not "the entire search" regardless of what's on screen. The cohort comes from the same
+cached result the page loaded, when it's still cached, so a click acts on the rows the
+user is looking at.
 
 There is no values field for a `client`-type action (page-specific frontend logic, like
 Download CSV) — that needs a handler already registered in report-viewer's own
