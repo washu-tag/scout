@@ -48,7 +48,7 @@ env:
 
 jobs:
   changes:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       pull-requests: read
@@ -233,7 +233,7 @@ jobs:
           if-no-files-found: error
           retention-days: 90
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     steps:
@@ -258,7 +258,7 @@ jobs:
     # main still runs it. Checking the event too, since the auto-merge push actor
     # is also dependabot[bot].
     if: ${{ github.event_name != 'pull_request' || (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     steps:
@@ -277,7 +277,7 @@ jobs:
           fi
           echo "cosign.pub matches the derived public key."
   build-and-upload:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: changes
     # Distinct keys preserve outputs from retained successful matrix legs.
     outputs:
@@ -335,7 +335,7 @@ jobs:
           image-name: ${{ matrix.image-name }}
           context: ${{ matrix.context || '' }}
   unit-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     steps:
@@ -355,7 +355,7 @@ jobs:
         shell: bash
         run: cd hl7-listener && ./gradlew test
   hl7-transformer-unit:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     steps:
@@ -381,7 +381,7 @@ jobs:
         # pinned Spark/Delta) resolve from pyproject.toml via pip.
         run: cd extractor/hl7-transformer && python -m pip install '.[test]' && python -m pytest tests/ -v
   ansible-and-python-tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     services:
@@ -497,7 +497,7 @@ jobs:
         shell: bash
         run: cd ansible/roles/scout_common && molecule test -s default
   scan-images:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [changes, build-and-upload]
     env:
       SCOUT_ARTIFACT_ATTEMPT: ${{ needs.changes.outputs.artifact-attempt }}
@@ -534,7 +534,7 @@ jobs:
           scan-published: ${{ needs.changes.outputs.release_pr }}
           allow-vulnerabilities: ${{ matrix.allow-failure == true }}
   prepare-flux-artifacts:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       candidate-id: ${{ steps.candidate.outputs.artifact-id }}
       images-id: ${{ steps.images.outputs.artifact-id }}
@@ -631,7 +631,7 @@ jobs:
       TESTED_SHA: ${{ github.sha }}
       VALUES_MODE: ${{ inputs.values || 'sops' }}
       MANIFEST_REPO: ghcr.io/washu-tag/manifests/scout-manifest
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
     strategy:
       fail-fast: false
@@ -980,7 +980,7 @@ jobs:
           exit $rc
 
   deploy-and-test-e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - changes
       - lint
@@ -1117,7 +1117,7 @@ jobs:
     name: deploy-and-test
     needs: [changes, deploy-and-test-e2e, deploy-and-test-flux]
     if: ${{ always() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: 'Gate on the e2e result'
         shell: bash
@@ -1160,7 +1160,7 @@ jobs:
   # docs-only PR skips them without blocking the merge.
   smoke-test:
     name: smoke-test-${{ matrix.side }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - changes
       - lint
@@ -1475,7 +1475,7 @@ jobs:
           done
   publish:
     if: github.ref_name == 'main' && needs.changes.outputs.publish == 'true' && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -1534,7 +1534,7 @@ jobs:
 
   publish-charts:
     if: github.ref_name == 'main' && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success' && needs.publish.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -1638,7 +1638,7 @@ jobs:
 
   publish-demo:
     if: startsWith(github.ref_name, 'demo') && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -1738,7 +1738,7 @@ jobs:
     # block every publish. Assert the string is in the pinned binary here on every
     # PR, so a bump fails RED up front instead of as a cryptic 0/N on a main build.
     # Runs unconditionally (cheap) so it always reports and is safe to mark required.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     steps:
@@ -1754,7 +1754,7 @@ jobs:
           fi
   publish-haul:
     if: github.ref_name == 'main' && needs.publish.result == 'success' && needs.publish-charts.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - prepare-flux-artifacts
       - changes
@@ -1826,7 +1826,7 @@ jobs:
 
   config-artifact-publish:
     if: github.ref_name == 'main' && needs.publish-haul.result == 'success' && needs.publish-haul.outputs.ready == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - prepare-flux-artifacts
       - changes
@@ -1875,7 +1875,7 @@ jobs:
 
   record-ci-artifacts:
     if: ${{ !cancelled() && github.event_name != 'pull_request' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && needs.prepare-flux-artifacts.result == 'success' && (github.ref_name != 'main' || needs.config-artifact-publish.result == 'success') }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - changes
       - lint
