@@ -34,7 +34,9 @@ spec:
   values:
     replicaCount: 2
     # Same-namespace NetworkPolicy locks OPA's unauthenticated API to the Trino
-    # coordinator and Report Viewer (its cache fingerprint).
+    # coordinator and Report Viewer (its cache fingerprint). Report Viewer must
+    # share OPA's namespace until it's ported here; then select its namespace too,
+    # as the Ansible opa role does.
     networkPolicy:
       enabled: true
       extraFrom:
