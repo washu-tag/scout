@@ -155,6 +155,18 @@ stringData:
   password: ${sq}${valkey_password}${sq}
   password-file: '{"redis://localhost:6379": "${valkey_password}"}'
 ---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: valkey-cache-auth
+  namespace: ${valkey_namespace}
+type: Opaque
+stringData:
+  password: ${sq}${valkey_cache_password}${sq}
+  password-file: '{"redis://localhost:6379": "${valkey_cache_password}"}'
+  report-viewer-password: ${sq}${valkey_cache_report_viewer_password}${sq}
+  superset-password: ${sq}${valkey_cache_superset_password}${sq}
+---
 # The Ansible-installed chart owns this name; keep stops the Flux upgrade deleting it.
 apiVersion: v1
 kind: Secret

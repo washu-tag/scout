@@ -41,6 +41,7 @@ stringData:
   REDIS_PORT: '6379'
   REDIS_PROTO: redis
   REDIS_PASSWORD: ${sq}${valkey_password}${sq}
+  VALKEY_CACHE_PASSWORD: ${sq}${valkey_cache_superset_password}${sq}
   REDIS_DB: '0'
   REDIS_CELERY_DB: '0'
   KEYCLOAK_SUPERSET_CLIENT_SECRET: ${sq}${keycloak_superset_client_secret}${sq}
@@ -57,6 +58,7 @@ metadata:
 type: Opaque
 stringData:
   REDIS_PASSWORD: ${sq}${valkey_password}${sq}
+  VALKEY_CACHE_PASSWORD: ${sq}${valkey_cache_superset_password}${sq}
 ---
 apiVersion: v1
 kind: Secret

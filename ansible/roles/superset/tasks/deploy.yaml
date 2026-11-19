@@ -94,6 +94,7 @@
       type: Opaque
       stringData:
         REDIS_PASSWORD: '{{ valkey_password }}'
+        VALKEY_CACHE_PASSWORD: '{{ valkey_cache_superset_password }}'
 
 - name: Publish launchpad frame-location script
   ansible.builtin.include_role:

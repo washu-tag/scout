@@ -10,6 +10,11 @@ extraEnvRaw:
       secretKeyRef:
         name: superset-valkey-auth
         key: REDIS_PASSWORD
+  - name: VALKEY_CACHE_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: superset-valkey-auth
+        key: VALKEY_CACHE_PASSWORD
 extraSecretEnv:
   SUPERSET_SECRET_KEY: "{{ superset_secret }}"
   # superset_svc client_credentials — used by DB_CONNECTION_MUTATOR (below)
@@ -207,6 +212,21 @@ configOverrides:
     FEATURE_FLAGS = {
         "CACHE_QUERY_BY_USER": True,
     }
+  valkey_cache: |
+    # Query caches go to the evictable cache Valkey; the Celery queue stays on the
+    # shared instance, whose keys must never be evicted.
+    import os
+    from urllib.parse import quote
+
+    CACHE_CONFIG = {
+        "CACHE_TYPE": "RedisCache",
+        "CACHE_DEFAULT_TIMEOUT": 300,
+        "CACHE_KEY_PREFIX": "superset_",
+        "CACHE_REDIS_URL": "redis://superset:{}@{{ valkey_cache_helm_release_name }}.{{ valkey_namespace }}:6379/0".format(
+            quote(os.environ.get("VALKEY_CACHE_PASSWORD", ""), safe="")
+        ),
+    }
+    DATA_CACHE_CONFIG = CACHE_CONFIG
   prometheus_metrics: |
 {{ lookup('file', role_path + '/files/superset_metrics.py') | indent(4, first=True) }}
   trino_auth: |
