@@ -113,6 +113,17 @@ export default function ShellClient({
     : null;
   const active = appId ? embeddedChip(sections, appId) : undefined;
 
+  // The rail's chips come from the layout, which client navigation doesn't re-render,
+  // so an app added to the catalog since the page loaded needs a refresh to open. The
+  // app page sends an id the catalog doesn't have home.
+  const refreshedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (appId && !active && refreshedFor.current !== appId) {
+      refreshedFor.current = appId;
+      router.refresh();
+    }
+  }, [appId, active, router]);
+
   // The page each framed app last reported, so the address bar can follow it.
   const [locations, setLocations] = useState<Record<string, string>>({});
   const frames = useRef(new Map<string, HTMLIFrameElement>());

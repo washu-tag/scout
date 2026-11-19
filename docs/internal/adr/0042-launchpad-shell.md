@@ -108,6 +108,13 @@ Framed services may post two messages to the launchpad (`window.parent` or
 Supporting either message is optional. A service that sends neither still works
 framed; its address bar just stays at the page it was opened on.
 
+XNAT loads the shared script from a plugin jar holding an XNAT header template. The
+jar is the same for every site: instead of a configured launchpad address, it posts
+to the host one label above XNAT's own, the single-label layout `scout:open` already
+assumes. Each Scout release attaches it as `scout-frame-location-X.Y.Z.jar` for
+deployments that install XNAT plugins by URL, and Ansible builds the same jar on the
+control node, so air-gapped sites need no download.
+
 ### Security
 
 **Framing.**
