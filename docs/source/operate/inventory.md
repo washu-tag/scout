@@ -737,6 +737,36 @@ tls_key_path: '/path/to/key.pem'    # Optional TLS key
 minio_volumes_per_server: 2  # Must be >= 2 if minio_hosts has > 1 node
 ```
 
+#### Valkey
+
+Scout runs two Valkey instances. The shared one holds data that must not be
+lost under memory pressure (oauth2-proxy sessions, Superset's Celery queue, Open
+WebUI); it persists to disk and never evicts. The cache instance, `valkey-cache`,
+holds only evictable query results (Report Viewer's cache and Superset's query
+caches); it never writes to disk and evicts least-recently-used entries once
+full. Each needs its passwords, the cache one per ACL user:
+
+```yaml
+valkey_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+valkey_cache_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+valkey_cache_report_viewer_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+valkey_cache_superset_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+```
+
+Size the cache instance with `valkey_cache_resources` (container limit, default
+2Gi) and `valkey_cache_maxmemory` (default `1536mb`; keep it below the limit):
+
+```yaml
+valkey_cache_maxmemory: 3gb
+valkey_cache_resources:
+  limits:
+    memory: 4Gi
+```
+
+Two Grafana alerts watch them: the shared instance above 75% of its memory
+limit (`valkey-high-memory-usage-alert.json.j2`), and the cache instance evicting
+constantly, a sign it is too small (`valkey-cache-evictions-alert.json.j2`).
+
 #### Grafana Alerting
 
 Configure alert notifications via Slack or email:
@@ -800,6 +830,18 @@ Report-viewer requires one secret with no default — the deploy fails without i
 
 ```yaml
 report_viewer_db_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+```
+
+It also caches each user's search cohorts, charts and accession lists in the cache
+Valkey, as that instance's `report-viewer` user (`valkey_cache_report_viewer_password`,
+see [Valkey](#valkey)), so reopening a search skips the Trino query. A change to the
+user's permissions or the access policy makes older entries unreachable as soon as
+OPA has the change, and a write to any Delta table the query reads does within about
+a minute; otherwise an entry is served for up to `report_viewer_cache_ttl_seconds`.
+Set it to `0` to turn caching off:
+
+```yaml
+report_viewer_cache_ttl_seconds: 14400  # 4 hours (default); 0 disables the cache
 ```
 
 The search-detail toolbar (Explain Search, Download CSV, and any site-added buttons) is

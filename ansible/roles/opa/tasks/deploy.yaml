@@ -109,10 +109,15 @@
     helm_chart_namespace: '{{ opa_namespace }}'
     helm_chart_values:
       replicaCount: '{{ opa_replicas }}'
-      # Lock OPA's API down to the Trino coordinator (the chart renders a
-      # NetworkPolicy; see helm/scout-opa/templates/networkpolicy.yaml).
+      # Lock OPA's API down to the Trino coordinator and Report Viewer (the
+      # chart renders a NetworkPolicy; see
+      # helm/scout-opa/templates/networkpolicy.yaml).
       networkPolicy:
         enabled: true
+        extraFrom:
+          - podSelector:
+              matchLabels:
+                app.kubernetes.io/name: report-viewer
       image:
         repository: '{{ opa_image }}'
         tag: '{{ opa_image_tag }}'

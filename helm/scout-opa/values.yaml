@@ -54,3 +54,5 @@ service:
 # bare `helm install` (chart tests, no Trino coordinator) stays reachable.
 networkPolicy:
   enabled: false
+  # Extra NetworkPolicy peers (podSelector etc.) allowed alongside the coordinator.
+  extraFrom: []
