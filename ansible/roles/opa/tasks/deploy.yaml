@@ -115,7 +115,10 @@
       networkPolicy:
         enabled: true
         extraFrom:
-          - podSelector:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: '{{ report_viewer_namespace | default(chatbot_namespace) }}'
+            podSelector:
               matchLabels:
                 app.kubernetes.io/name: report-viewer
       image:

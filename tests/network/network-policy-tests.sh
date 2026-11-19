@@ -154,6 +154,7 @@ fi
 if include_group "opa-trino"; then
   queue_test opa-coordinator-ok    scout-analytics 200 'app.kubernetes.io/name=trino,app.kubernetes.io/component=coordinator' "$OPA_HOST" "$OPA_PORT" "$OPA_PATH"
   queue_test opa-report-viewer-ok  scout-analytics 200 'app.kubernetes.io/name=report-viewer' "$OPA_HOST" "$OPA_PORT" "$OPA_PATH"
+  queue_test opa-report-viewer-elsewhere scout-extractor 000 'app.kubernetes.io/name=report-viewer' "$OPA_HOST" "$OPA_PORT" "$OPA_PATH"
   queue_test opa-analytics-rando   scout-analytics 000 '' "$OPA_HOST" "$OPA_PORT" "$OPA_PATH"
   queue_test opa-extractor-rando   scout-extractor 000 '' "$OPA_HOST" "$OPA_PORT" "$OPA_PATH"
 fi
