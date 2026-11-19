@@ -35,6 +35,17 @@ env:
   # external cert; issuer must match the JWT.
   REPORT_VIEWER_OIDC_ISSUER: "{{ keycloak_realm_url }}"
   REPORT_VIEWER_OIDC_JWKS_URL: "{{ keycloak_internal_url }}/realms/{{ keycloak_realm_name }}/protocol/openid-connect/certs"
+  # Query-result cache (#806).
+  REPORT_VIEWER_CACHE_TTL_SECONDS: "{{ report_viewer_cache_ttl_seconds }}"
+  REPORT_VIEWER_VALKEY_URL: "{{ report_viewer_valkey_url }}"
+  REPORT_VIEWER_VALKEY_USERNAME: report-viewer
+  REPORT_VIEWER_OPA_URL: "{{ report_viewer_opa_url }}"
+  REPORT_VIEWER_CACHE_SETTLE_SECONDS: "{{ report_viewer_cache_settle_seconds }}"
+
+secretEnv:
+  REPORT_VIEWER_VALKEY_PASSWORD:
+    secretName: report-viewer-valkey-auth
+    key: password
 
 databaseUrl: "postgresql://{{ report_viewer_db_user }}:{{ report_viewer_db_password }}@{{ db_host }}:{{ db_port }}/{{ report_viewer_database }}"
 

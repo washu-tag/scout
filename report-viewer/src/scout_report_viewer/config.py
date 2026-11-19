@@ -80,6 +80,21 @@ class Settings(BaseSettings):
     # is truncated and the SPA shows a "showing first N" banner.
     max_cohort_rows: int = 50000
 
+    # Query-result cache (cache.py). An empty valkey_url or opa_url, or a TTL of
+    # 0, turns it off.
+    cache_ttl_seconds: int = 4 * 3600
+    valkey_url: str = ""
+    valkey_username: str = ""
+    valkey_password: str = ""
+    valkey_timeout_seconds: float = 0.5
+    opa_url: str = ""
+    opa_timeout_seconds: float = 2.0
+    # Must exceed how long OPA's replicas can disagree after a permission change:
+    # its bundle polling's max delay.
+    cache_settle_seconds: float = 15.0
+    # How often the Delta versions of a cached query's input tables are re-read.
+    cache_version_refresh_seconds: float = 60.0
+
     @model_validator(mode="after")
     def _issuer_required_with_jwks(self) -> "Settings":
         if self.oidc_jwks_url and not self.oidc_issuer:

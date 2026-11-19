@@ -57,6 +57,12 @@ def is_retryable(exc: BaseException) -> bool:
     return getattr(exc, "error_name", None) not in _NOT_RETRYABLE
 
 
+def is_user_error(exc: BaseException) -> bool:
+    """A failure in the SQL itself, which a rerun would repeat, rather than a
+    transient one (resources, an internal error, an external system)."""
+    return getattr(exc, "error_type", None) == "USER_ERROR"
+
+
 # Separate from asyncio's default pool, which the scans themselves occupy: a
 # cancel queued behind them would wait on the query it is meant to end.
 _CANCEL_POOL = ThreadPoolExecutor(max_workers=4, thread_name_prefix="trino-cancel")
