@@ -14,6 +14,12 @@ import pytest
 
 from scout_report_viewer import cache, trino_client
 from scout_report_viewer.config import settings
+from tests.test_actions import (  # noqa: F401 (fixture)
+    _FakeAsyncClient,
+    _bearer_headers,
+    _create_search,
+    catalog_with_backend_call_action,
+)
 
 
 class _FakeValkey:
@@ -44,7 +50,7 @@ class _Env:
         self.version: str | None = "v1"
 
     async def fingerprint(self, user: str) -> str | None:
-        return self.fingerprints.get(user)
+        return self.fingerprints.get(user, f"fp-{user}")
 
     def data_version(self, user: str, sql: str) -> str | None:
         return self.version
@@ -352,7 +358,7 @@ def test_rows_skip_caching_after_a_transient_rewrite_failure(
     r = client.get(f"/api/searches/{sid}/rows", headers=auth_headers)
     assert r.status_code == 200, r.text
     client.portal.call(cache.wait_pending)
-    assert env.valkey.data == {}
+    assert not [k for k in env.valkey.data if k.startswith("rv:v1:rows:")]
 
 
 def test_rows_cache_the_fallback_when_trino_rejects_the_rewrite(
@@ -368,3 +374,77 @@ def test_rows_cache_the_fallback_when_trino_rejects_the_rewrite(
     again = client.get(f"/api/searches/{sid}/rows", headers=auth_headers)
     assert len(fake_trino.calls) == calls
     assert again.json() == r.json()
+
+
+# --- Action clicks -------------------------------------------------------------
+
+
+_COHORT = [
+    {"primary_report_identifier": "s3://x/1", "accession_number": "ACC1"},
+    {"primary_report_identifier": "s3://x/2", "accession_number": None},
+]
+
+
+def _invoke(client, headers, sid, visible=None):
+    r = client.post(
+        f"/api/searches/{sid}/actions/explore-xnat-demo/invoke",
+        headers=headers,
+        json={"visible_report_ids": visible},
+    )
+    assert r.status_code == 200, r.text
+    return r.json(), _FakeAsyncClient.last_call["json"]
+
+
+def test_action_click_reads_the_pages_cohort(
+    client, keypair, fake_trino, env, catalog_with_backend_call_action
+):
+    headers = _bearer_headers(keypair[0])
+    sid = _create_search(client, headers, fake_trino)
+    fake_trino(["primary_report_identifier", "accession_number"], _COHORT)
+    assert client.get(f"/api/searches/{sid}/rows", headers=headers).status_code == 200
+    client.portal.call(cache.wait_pending)
+    calls = len(fake_trino.calls)
+
+    body, sent = _invoke(client, headers, sid, ["s3://x/2", "s3://x/9"])
+    assert len(fake_trino.calls) == calls
+    assert sent["reports"] == [_COHORT[1]]
+    assert body["dropped_report_count"] == 1
+
+
+def test_action_click_reads_brief_ids_before_the_full_entry_lands(
+    client, keypair, fake_trino, env, catalog_with_backend_call_action, monkeypatch
+):
+    monkeypatch.setattr(cache, "remember", lambda *_: None)
+    headers = _bearer_headers(keypair[0])
+    sid = _create_search(client, headers, fake_trino)
+    fake_trino(["primary_report_identifier", "accession_number"], _COHORT)
+    client.get(f"/api/searches/{sid}/rows", headers=headers)
+    client.portal.call(cache.wait_pending)
+    calls = len(fake_trino.calls)
+
+    (key,) = env.valkey.data
+    assert key.startswith("rv:v1:rows-ids:")
+    assert env.valkey.ttls[key] == settings.cache_recent_seconds
+    _body, sent = _invoke(client, headers, sid)
+    assert len(fake_trino.calls) == calls
+    assert sent["reports"] == _COHORT
+
+    fake_trino(["primary_report_identifier", "accession_number"], _COHORT)
+    client.get(f"/api/searches/{sid}/rows", headers=headers)
+    assert len(fake_trino.calls) == calls + 1, "a page load never reads them"
+
+
+def test_action_click_on_a_miss_runs_the_pages_query(
+    client, keypair, fake_trino, env, catalog_with_backend_call_action
+):
+    headers = _bearer_headers(keypair[0])
+    sid = _create_search(client, headers, fake_trino)
+    fake_trino(["primary_report_identifier", "accession_number"], _COHORT)
+    _body, sent = _invoke(client, headers, sid)
+    client.portal.call(cache.wait_pending)
+    assert sent["reports"] == _COHORT
+
+    calls = len(fake_trino.calls)
+    r = client.get(f"/api/searches/{sid}/rows", headers=headers)
+    assert len(fake_trino.calls) == calls, "the click's result serves the page"
+    assert r.json()["rows"] == _COHORT

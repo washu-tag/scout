@@ -360,7 +360,10 @@ def test_invoke_backend_call_action_returns_url(
         headers=bearer_headers,
     )
     assert r.status_code == 200, r.text
-    assert r.json() == {"url": "https://xnat.example.org?t=123"}
+    assert r.json() == {
+        "url": "https://xnat.example.org?t=123",
+        "dropped_report_count": 0,
+    }
 
     # Forwarded the shared secret and the resolved cohort - concrete
     # per-report ids, not the raw sql alone - never the token itself back
@@ -409,8 +412,8 @@ def test_invoke_backend_call_action_ignores_unauthorized_visible_ids(
     client, keypair, fake_trino, catalog_with_backend_call_action
 ):
     """A submitted id that isn't in the Trino-resolved cohort (tampered
-    request, stale client state) is silently dropped, never forwarded -
-    the submitted ids are never trusted on their own."""
+    request, stale client state) is never forwarded - the submitted ids
+    are never trusted on their own - and the caller is told how many."""
     priv, _ = keypair
     bearer_headers = _bearer_headers(priv)
     search_id = _create_search(client, bearer_headers, fake_trino)
@@ -425,6 +428,7 @@ def test_invoke_backend_call_action_ignores_unauthorized_visible_ids(
         json={"visible_report_ids": ["s3://not-in-cohort"]},
     )
     assert r.status_code == 200, r.text
+    assert r.json()["dropped_report_count"] == 1
     call = _FakeAsyncClient.last_call
     assert call["json"]["reports"] == []
 

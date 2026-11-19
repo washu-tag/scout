@@ -255,9 +255,11 @@ class ActionInvokeRequest(BaseModel):
 class ActionInvokeResponse(BaseModel):
     """The result URL a backend-call action's own endpoint_url returned,
     ready for the same open/copy-fallback handling as an open-url
-    action."""
+    action, and how many of the submitted visible_report_ids weren't in the
+    resolved cohort and so weren't forwarded."""
 
     url: str
+    dropped_report_count: int = 0
 
 
 class PlotDetail(BaseModel):

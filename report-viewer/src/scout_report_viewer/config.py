@@ -92,6 +92,9 @@ class Settings(BaseSettings):
     # Must exceed how long OPA's replicas can disagree after a permission change:
     # its bundle polling's max delay.
     cache_settle_seconds: float = 15.0
+    # How long a page load's cohort IDs are kept for its action buttons, covering
+    # the settle wait before the full entry is stored.
+    cache_recent_seconds: int = 60
     # How often the Delta versions of a cached query's input tables are re-read.
     cache_version_refresh_seconds: float = 60.0
 

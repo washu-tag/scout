@@ -70,10 +70,18 @@ class Lookup:
     op: str
     user: str
     # None when this request runs uncached (cache off or a dependency unavailable).
-    key: str | None = None
+    digest: str | None = None
     fingerprint: str | None = None
     started: float = 0.0
     value: Any = None
+
+    @property
+    def key(self) -> str | None:
+        return self.key_for(self.op)
+
+    def key_for(self, op: str) -> str | None:
+        """The key another `op` stores for this same query and user."""
+        return None if self.digest is None else f"{_PREFIX}{op}:{self.digest}"
 
 
 def enabled() -> bool:
@@ -231,9 +239,9 @@ async def _refresh_versions(user: str, tables: list[_Table]) -> None:
         _refreshing.difference_update(tables)
 
 
-def _key(op: str, *parts: Any) -> str:
+def _digest(*parts: Any) -> str:
     raw = json.dumps(parts, separators=(",", ":"), default=str)
-    return f"{_PREFIX}{op}:{hashlib.sha256(raw.encode()).hexdigest()}"
+    return hashlib.sha256(raw.encode()).hexdigest()
 
 
 def pack_rows(columns: list[str], rows: list[dict[str, Any]]) -> list[list[Any]]:
@@ -264,7 +272,7 @@ async def lookup(op: str, user: str, sql: str, *parts: Any) -> Lookup:
             metrics.CACHE_LOOKUPS.labels(op=op, result="unavailable").inc()
         else:
             found.fingerprint = fingerprint
-            found.key = _key(op, user, fingerprint, version, sql, *parts)
+            found.digest = _digest(user, fingerprint, version, sql, *parts)
             found.value = await _get(op, found.key)
     found.started = time.monotonic()
     return found
@@ -296,14 +304,33 @@ async def _confirm_and_put(found: Lookup, value: Any) -> None:
     if await _fingerprint(found.user) != found.fingerprint:
         metrics.CACHE_WRITES.labels(op=found.op, result="unsettled").inc()
         return
+    await _put(found.op, found.key, value, settings.cache_ttl_seconds)
+
+
+async def _put(op: str, key: str, value: Any, ttl: int) -> None:
     try:
         blob = await asyncio.to_thread(_encode, value)
-        await _valkey_client().set(found.key, blob, ex=settings.cache_ttl_seconds)
+        await _valkey_client().set(key, blob, ex=ttl)
     except Exception:
         log.warning("cache: write failed", exc_info=True)
-        metrics.CACHE_WRITES.labels(op=found.op, result="error").inc()
+        metrics.CACHE_WRITES.labels(op=op, result="error").inc()
         return
-    metrics.CACHE_WRITES.labels(op=found.op, result="stored").inc()
+    metrics.CACHE_WRITES.labels(op=op, result="stored").inc()
+
+
+def remember_briefly(found: Lookup, op: str, value: Any, ttl: int) -> None:
+    """Store `value` under `op`'s key for the same query right away, without the
+    settle check. Only for a reader that acts on rows this user was just shown,
+    so a result computed under permissions about to change exposes nothing new."""
+    key = found.key_for(op)
+    if key is not None:
+        _spawn(_put(op, key, value, ttl))
+
+
+async def get_related(found: Lookup, op: str) -> Any | None:
+    """What `op` stored for the same query and user, if anything."""
+    key = found.key_for(op)
+    return None if key is None else await _get(op, key)
 
 
 async def wait_pending() -> None:
