@@ -317,6 +317,10 @@ k3s_cluster:
     # Valkey
     #---------------------------------------------------------------------------
     valkey_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # Cache instance (evictable query results): one password per ACL user.
+    valkey_cache_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    valkey_cache_report_viewer_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    valkey_cache_superset_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     #---------------------------------------------------------------------------
     # OAuth2 Proxy

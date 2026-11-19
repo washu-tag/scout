@@ -327,6 +327,21 @@ spec:
         FEATURE_FLAGS = {
             "CACHE_QUERY_BY_USER": True,
         }
+      valkey_cache: |
+        # Query caches go to the evictable cache Valkey; the Celery queue stays on the
+        # shared instance, whose keys must never be evicted.
+        import os
+        from urllib.parse import quote
+
+        CACHE_CONFIG = {
+            "CACHE_TYPE": "RedisCache",
+            "CACHE_DEFAULT_TIMEOUT": 300,
+            "CACHE_KEY_PREFIX": "superset_",
+            "CACHE_REDIS_URL": "redis://superset:{}@valkey-cache.${valkey_namespace}:6379/0".format(
+                quote(os.environ.get("VALKEY_CACHE_PASSWORD", ""), safe="")
+            ),
+        }
+        DATA_CACHE_CONFIG = CACHE_CONFIG
       statsd_logging: |
         from superset.stats_logger import StatsdStatsLogger
         STATS_LOGGER = StatsdStatsLogger(

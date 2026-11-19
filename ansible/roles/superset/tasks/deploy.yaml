@@ -80,6 +80,7 @@
       type: Opaque
       stringData:
         REDIS_PASSWORD: '{{ valkey_password }}'
+        VALKEY_CACHE_PASSWORD: '{{ valkey_cache_superset_password }}'
 
 - name: Parse Superset Helm values
   ansible.builtin.set_fact:
