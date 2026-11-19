@@ -494,6 +494,11 @@ singleuser:
         mountPath: /usr/local/bin/scout-set-key
         subPath: scout-set-key
         readOnly: true
+      gateway-key-login:
+        name: gateway-key
+        mountPath: /etc/profile.d/scout-codex-key.sh
+        subPath: codex-key.sh
+        readOnly: true
       tmux-conf:
         name: tmux-conf
         mountPath: /etc/tmux.conf

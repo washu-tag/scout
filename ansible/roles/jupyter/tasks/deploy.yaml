@@ -114,6 +114,10 @@
     file_type: file
   register: _jupyter_sample_files
 
+- name: Initialize quickstart samples data
+  ansible.builtin.set_fact:
+    _jupyter_samples_data: {}
+
 # Samples in the repo link to the latest docs; rewrite those links to
 # scout_docs_url so deployed copies can point at a pinned docs version.
 - name: Build quickstart samples data
@@ -145,12 +149,11 @@
       metadata:
         name: claude-code-managed
         namespace: '{{ jupyter_namespace }}'
-      data:
-        managed-settings.json: >-
-          {{ jupyter_claude_managed_settings
-             | combine({'availableModels': jupyter_claude_available_models} if jupyter_claude_available_models else {})
-             | to_nice_json }}
-        CLAUDE.md: "{{ _jupyter_samples_data['CLAUDE.md'] }}"
+      data: >-
+        {{ {'managed-settings.json': jupyter_claude_managed_settings
+              | combine({'availableModels': jupyter_claude_available_models} if jupyter_claude_available_models else {})
+              | to_nice_json}
+           | combine({'CLAUDE.md': _jupyter_samples_data['CLAUDE.md']} if 'CLAUDE.md' in _jupyter_samples_data else {}) }}
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
 - name: Build starter files for user home directories

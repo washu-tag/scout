@@ -95,8 +95,9 @@ an LLM gateway your organization provides. Their settings live in your home dire
 so they persist across server restarts.
 
 **Adding your key.** Claude Code and Codex share one gateway key. When VS Code opens
-and your key isn't set yet, it asks for it: click **Add Key** and paste the key. To
-change it later, run **Scout: Set AI Gateway Key** from the Command Palette, or run
+and your key isn't set yet, it asks for it: click **Add Key** and paste the key. Until
+the key is set, new terminals also print a reminder to run `scout-set-key`. To change it
+later, run **Scout: Set AI Gateway Key** from the Command Palette, or run
 `scout-set-key` in a terminal. Either saves the key to `~/.claude/settings.json` and
 `~/.codex/auth.json`, readable only by you. Then reload the VS Code window and open a new
 terminal.
