@@ -886,7 +886,8 @@
           "profile",
           "roles",
           "basic",
-          "email"
+          "email",
+          "kc-admin-api"
         ]
       }{{- if eq (.Values.enableXnat | toString) "true" }},
       {
