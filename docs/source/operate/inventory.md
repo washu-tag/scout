@@ -588,6 +588,9 @@ jupyter_hub_resources:
 # air-gapped requirements.
 jupyter_singleuser_environment:
   ANTHROPIC_BASE_URL: 'https://llm-gateway.example.org/anthropic'
+  ANTHROPIC_DEFAULT_OPUS_MODEL: 'claude-opus-5-5-direct'
+  ANTHROPIC_DEFAULT_SONNET_MODEL: 'claude-sonnet-5-direct'
+  ANTHROPIC_DEFAULT_HAIKU_MODEL: 'claude-haiku-4-5-direct'
 
 # Optional Claude Code model allowlist, written to the managed settings as
 # availableModels, which users cannot override. Entries match by prefix. This limits
@@ -600,15 +603,13 @@ jupyter_claude_available_models:
 # Optional starter files for each user's home directory, keyed by path relative to home.
 # Each is copied in at pod start only when the user has no file at that path, so users
 # own it after that: changes here reach new users only. Dicts and lists are written as
-# JSON, strings as-is. Users replace the key placeholders with their own keys.
+# JSON, strings as-is. Users replace the key placeholders with their own keys. Put
+# shared values such as the gateway URL in jupyter_singleuser_environment instead: a
+# user's settings.json overrides the pod environment, so values copied here never update.
 jupyter_user_starter_files:
   .claude/settings.json:
     env:
-      ANTHROPIC_BASE_URL: 'https://llm-gateway.example.org/anthropic'
       ANTHROPIC_AUTH_TOKEN: 'REPLACE_WITH_YOUR_GATEWAY_KEY'
-      ANTHROPIC_DEFAULT_OPUS_MODEL: 'claude-opus-5-5-direct'
-      ANTHROPIC_DEFAULT_SONNET_MODEL: 'claude-sonnet-5-direct'
-      ANTHROPIC_DEFAULT_HAIKU_MODEL: 'claude-haiku-4-5-direct'
   .codex/config.toml: |
     model = "gpt-5.4-mini"
     model_provider = "gateway"

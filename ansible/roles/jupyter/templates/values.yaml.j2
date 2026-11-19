@@ -278,6 +278,11 @@ singleuser:
               done < $starter/manifest
             fi
 
+            codex_key_hook='[ -r /opt/scout/gateway-key/codex-key.sh ] && . /opt/scout/gateway-key/codex-key.sh'
+            if ! grep -qsF "$codex_key_hook" /home/$NB_USER/.bashrc; then
+              printf '\n%s\n' "$codex_key_hook" >> /home/$NB_USER/.bashrc
+            fi
+
             # #496: surface branding into ~/.jupyter/custom via symlink instead
             # of mounting there. A subPath mount under ~/.jupyter makes kubelet
             # create the dir as root on first spawn, blocking ~/.jupyter/lab and
@@ -404,11 +409,16 @@ singleuser:
         configMap:
           name: scout-user-starter-files
           defaultMode: 0644
-      code-server-logout:
-        name: code-server-logout
+      code-server-extension:
+        name: code-server-extension
         configMap:
-          name: scout-code-server-logout
+          name: scout-code-server-extension
           defaultMode: 0644
+      gateway-key:
+        name: gateway-key
+        configMap:
+          name: scout-gateway-key
+          defaultMode: 0755
       tmux-conf:
         name: tmux-conf
         configMap:
@@ -465,15 +475,24 @@ singleuser:
         name: user-starter
         mountPath: /opt/scout/user-starter
         readOnly: true
-      code-server-logout-package:
-        name: code-server-logout
-        mountPath: /usr/lib/code-server/lib/vscode/extensions/scout-logout/package.json
+      code-server-extension-package:
+        name: code-server-extension
+        mountPath: /usr/lib/code-server/lib/vscode/extensions/scout/package.json
         subPath: package.json
         readOnly: true
-      code-server-logout-main:
-        name: code-server-logout
-        mountPath: /usr/lib/code-server/lib/vscode/extensions/scout-logout/extension.js
+      code-server-extension-main:
+        name: code-server-extension
+        mountPath: /usr/lib/code-server/lib/vscode/extensions/scout/extension.js
         subPath: extension.js
+        readOnly: true
+      gateway-key:
+        name: gateway-key
+        mountPath: /opt/scout/gateway-key
+        readOnly: true
+      gateway-key-command:
+        name: gateway-key
+        mountPath: /usr/local/bin/scout-set-key
+        subPath: scout-set-key
         readOnly: true
       tmux-conf:
         name: tmux-conf

@@ -94,10 +94,17 @@ The Claude Code extension, the Claude Code CLI (`claude`), and the
 an LLM gateway your organization provides. Their settings live in your home directory,
 so they persist across server restarts.
 
+**Adding your key.** Claude Code and Codex share one gateway key. When VS Code opens
+and your key isn't set yet, it asks for it: click **Add Key** and paste the key. To
+change it later, run **Scout: Set AI Gateway Key** from the Command Palette, or run
+`scout-set-key` in a terminal. Either saves the key to `~/.claude/settings.json` and
+`~/.codex/auth.json`, readable only by you. Then reload the VS Code window and open a new
+terminal.
+
 **Claude Code.** Your settings live in `~/.claude/settings.json`. If your site provides
-a starter file, Scout creates it the first time your server starts, with the gateway and
-models filled in. Replace `REPLACE_WITH_YOUR_GATEWAY_KEY` with your key and start a new
-`claude` session. Otherwise, create the file with the gateway URL and your key:
+a starter file, Scout creates it the first time your server starts, and your server
+already points Claude Code at the gateway, so you only need to add your key. Otherwise,
+create the file with the gateway URL and your key:
 
 ```json
 {
@@ -109,9 +116,10 @@ models filled in. Replace `REPLACE_WITH_YOUR_GATEWAY_KEY` with your key and star
 ```
 
 **Codex.** Codex reads the gateway from `~/.codex/config.toml` and your key from the
-environment variable named by `env_key` in that file. If your site provides a starter
-file, it exists the first time your server starts; otherwise, add the gateway as a
-provider in `~/.codex/config.toml`:
+environment variable named by `env_key` in that file. New terminals set that variable
+from the key saved in `~/.codex/auth.json`. If your site provides a starter file, it
+exists the first time your server starts; otherwise, add the gateway as a provider in
+`~/.codex/config.toml`:
 
 ```toml
 model = "gpt-5.4-mini"
@@ -124,11 +132,7 @@ env_key = "LLM_GATEWAY_KEY"
 wire_api = "responses"
 ```
 
-Then export your key under that name in `~/.bashrc` and open a new terminal:
-
-```bash
-export LLM_GATEWAY_KEY="your-key"
-```
+Then add your key with `scout-set-key` and open a new terminal.
 
 To use another model the gateway serves, run `codex -m gpt-5.4`, or pick one with
 `/model` inside Codex.

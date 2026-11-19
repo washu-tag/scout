@@ -621,10 +621,10 @@ k3s_cluster:
     #   - claude-haiku-4-5-direct
 
     # Starter files for users' home directories, copied in at pod start only when missing.
+    # Keep shared values in jupyter_singleuser_environment; users' copies never update.
     # jupyter_user_starter_files:
     #   .claude/settings.json:
     #     env:
-    #       ANTHROPIC_BASE_URL: 'https://llm-gateway.example.org/anthropic'
     #       ANTHROPIC_AUTH_TOKEN: 'REPLACE_WITH_YOUR_GATEWAY_KEY'
     #   .codex/config.toml: |
     #     model = "gpt-5.4-mini"

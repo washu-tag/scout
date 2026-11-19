@@ -30,7 +30,7 @@ module.exports = tseslint.config(
     }
   },
   {
-    files: ["ansible/roles/jupyter/files/code-server-logout/**/*.js"],
+    files: ["ansible/roles/jupyter/files/code-server-scout/**/*.js"],
     rules: {
       "@typescript-eslint/no-require-imports": "off"
     }

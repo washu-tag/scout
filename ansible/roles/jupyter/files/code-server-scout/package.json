@@ -1,9 +1,9 @@
 {
-  "name": "scout-logout",
-  "displayName": "Scout Log Out",
-  "description": "Stop your notebook server and log out of Scout.",
+  "name": "scout",
+  "displayName": "Scout",
+  "description": "Log out of Scout and set up your AI gateway key.",
   "publisher": "scout",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "engines": {
     "vscode": "^1.80.0"
   },
@@ -18,6 +18,12 @@
         "title": "Log Out",
         "category": "Scout",
         "icon": "$(sign-out)"
+      },
+      {
+        "command": "scout.setGatewayKey",
+        "title": "Set AI Gateway Key",
+        "category": "Scout",
+        "icon": "$(key)"
       }
     ]
   }
