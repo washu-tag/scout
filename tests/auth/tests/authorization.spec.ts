@@ -13,6 +13,15 @@ const unauthorizedUser: TestUser = {
   password: process.env.TEST_USER_PASSWORD!,
 };
 
+// AUTH_TEST_SUBDOMAINS (comma-separated) limits the run to the services a deployment has;
+// unset runs them all. The launchpad and the nonexistent host are always tested.
+const deployed = process.env.AUTH_TEST_SUBDOMAINS?.split(',').map((sub) => sub.trim());
+function isDeployed(url: string): boolean {
+  const host = new URL(url).hostname;
+  if (!deployed || host === hostname || host === `nonexistent.${hostname}`) return true;
+  return deployed.includes(host.slice(0, -(hostname.length + 1)));
+}
+
 // Unauthorized user, no scout-user group membership, 403 Access Pending everywhere
 
 const protectedServices = [
@@ -39,7 +48,7 @@ const protectedServices = [
 ];
 
 test.describe('Unauthorized User', () => {
-  for (const { name, url } of protectedServices) {
+  for (const { name, url } of protectedServices.filter((service) => isDeployed(service.url))) {
     test(`${name} returns 403 Access Pending`, async ({ page }) => {
       // OAuth2 Proxy denies the callback without saving a session, so capture that response
       // rather than reloading a one-use callback.
@@ -84,6 +93,7 @@ test.describe('Authorized Non-Admin User', () => {
 
   test('Temporal denies access', async ({ page }) => {
     const url = `https://temporal.${hostname}/`;
+    test.skip(!isDeployed(url), 'not deployed');
     await signInToScout(page, url, authorizedUser);
 
     // Set up response listeners before navigating so we capture the 403 authorization
@@ -109,6 +119,7 @@ test.describe('Authorized Non-Admin User', () => {
 
   test('MinIO denies access', async ({ page }) => {
     const url = `https://minio.${hostname}/`;
+    test.skip(!isDeployed(url), 'not deployed');
     await signInToScout(page, url, authorizedUser);
 
     // Trigger MinIO SSO via the login page's SSO button (use loose selector, not exact text)
@@ -123,6 +134,7 @@ test.describe('Authorized Non-Admin User', () => {
 
   test('Grafana datasources API returns 403', async ({ page }) => {
     const url = `https://grafana.${hostname}/`;
+    test.skip(!isDeployed(url), 'not deployed');
     await signInToScout(page, url, authorizedUser);
 
     // Grafana allows entry to the UI but gives the user no permissions, so we hit the
