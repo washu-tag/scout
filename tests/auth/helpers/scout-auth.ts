@@ -52,13 +52,17 @@ async function acceptScoutTermsIfPresent(page: Page): Promise<void> {
 }
 
 /**
- * Load a service page in a frame on the signed-in launchpad page.
+ * Load a service page in a frame on the launchpad's home page.
  *
  * A top-level load of a service URL opens in the launchpad (ADR 0042), which frames only
  * chips the user's audience allows, so a non-admin never reaches an admin service that
- * way. A frame load reaches the service directly.
+ * way. A frame load reaches the service directly. The home page is loaded first so that
+ * no redirect still under way replaces the page and its frame.
  */
 export async function openInFrame(page: Page, url: string): Promise<FrameLocator> {
+  const home = `https://${process.env.SCOUT_HOSTNAME}/`;
+  await page.goto(home, { waitUntil: 'domcontentloaded' });
+  await page.waitForURL(home, { timeout: 60000 });
   await page.getByRole('navigation', { name: 'Scout' }).waitFor({ timeout: 60000 });
   await page.evaluate((src) => {
     const frame = document.createElement('iframe');

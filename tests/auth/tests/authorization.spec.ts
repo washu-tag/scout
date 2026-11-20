@@ -41,14 +41,29 @@ const protectedServices = [
 test.describe('Unauthorized User', () => {
   for (const { name, url } of protectedServices) {
     test(`${name} returns 403 Access Pending`, async ({ page }) => {
-      await signInToScout(page, url, unauthorizedUser);
-      // A top-level page load goes to the launchpad first (ADR 0042), so ask the host itself:
-      // page.request shares the browser's cookies and sends no Sec-Fetch headers. A host with
-      // no route of its own still redirects to the launchpad, which answers 403 too.
-      const response = await page.request.get(url, {
+      // OAuth2 Proxy denies the callback without saving a session, so capture that response
+      // rather than reloading a one-use callback.
+      const callback = page.waitForResponse((response) => {
+        const callbackUrl = new URL(response.url());
+        return (
+          response.request().isNavigationRequest() &&
+          response.frame() === page.mainFrame() &&
+          callbackUrl.origin === `https://auth.${hostname}` &&
+          callbackUrl.pathname === '/oauth2/callback'
+        );
+      });
+      const [, response] = await Promise.all([
+        signInToScout(page, url, unauthorizedUser),
+        callback,
+      ]);
+      expect(response.status()).toBe(403);
+
+      // The host itself still answers with the sign-in page. page.request sends no Sec-Fetch
+      // headers, so the edge doesn't redirect it to the launchpad (ADR 0042).
+      const host = await page.request.get(url, {
         maxRedirects: name === 'Nonexistent Service' ? 20 : 0,
       });
-      expect(response.status()).toBe(403);
+      expect(host.status()).toBe(401);
     });
   }
 });
@@ -107,10 +122,21 @@ test.describe('Authorized Non-Admin User', () => {
   });
 
   test('Grafana datasources API returns 403', async ({ page }) => {
-    await signInToScout(page, `https://grafana.${hostname}/`, authorizedUser);
+    const url = `https://grafana.${hostname}/`;
+    await signInToScout(page, url, authorizedUser);
 
     // Grafana allows entry to the UI but gives the user no permissions, so we hit the
     // datasources API directly and assert the 403 status code instead of loading the UI.
+    // Wait for the frame's Grafana sign-in first: a 401 from Grafana comes back as the
+    // OAuth2 Proxy sign-in page, which clears the Scout session.
+    await openInFrame(page, url);
+    await expect
+      .poll(
+        async () =>
+          (await page.context().cookies(url)).some((cookie) => cookie.name === 'grafana_session'),
+        { timeout: 60000, message: 'Grafana signs the user in' },
+      )
+      .toBe(true);
     const response = await page.request.get(`https://grafana.${hostname}/api/datasources/`);
     expect(response.status()).toBe(403);
   });
