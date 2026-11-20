@@ -55,32 +55,34 @@ const ChipCard = ({ chip, large }: { chip: RenderChip; large: boolean }) => {
   return (
     <ChipAnchor
       chip={chip}
-      className={`group flex items-start no-underline transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${SURFACE} ${tone.hoverBorder} ${tone.hoverShadow} ${
-        large ? 'gap-4 p-5 rounded-2xl shadow-sm' : 'gap-3 p-4 rounded-[14px]'
+      className={`group flex flex-wrap content-between items-start no-underline transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${SURFACE} ${tone.hoverBorder} ${tone.hoverShadow} ${
+        large ? 'gap-x-4 gap-y-3 p-5 rounded-2xl shadow-sm' : 'gap-x-3 gap-y-2.5 p-4 rounded-[14px]'
       }`}
     >
       <ToneIcon
         chip={chip}
         size={large ? 'w-[42px] h-[42px] rounded-xl' : 'w-9 h-9 rounded-[10px]'}
       />
-      <span className="flex min-w-0 flex-col gap-1">
-        <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-          <span
-            className={`inline-flex items-center gap-1.5 font-semibold tracking-tight text-slate-900 dark:text-slate-100 ${large ? 'text-lg' : 'text-[15px]'}`}
-          >
-            {chip.title}
-            {large && (
-              <HiArrowRight
-                className={`text-base ${tone.cta} transition-transform duration-200 group-hover:translate-x-1`}
-              />
-            )}
-          </span>
-          <ChipBadge chip={chip} />
+      <span className="flex min-w-0 flex-1 flex-col gap-1">
+        <span
+          className={`inline-flex items-center gap-1.5 font-semibold tracking-tight text-slate-900 dark:text-slate-100 ${large ? 'text-lg' : 'text-[15px]'}`}
+        >
+          {chip.title}
+          {large && (
+            <HiArrowRight
+              className={`text-base ${tone.cta} transition-transform duration-200 group-hover:translate-x-1`}
+            />
+          )}
         </span>
         <span className={`leading-normal ${MUTED} ${large ? 'text-sm' : 'text-[13px]'}`}>
           {chip.description}
         </span>
       </span>
+      {chip.badge && (
+        <span className="basis-full min-w-0">
+          <ChipBadge chip={chip} />
+        </span>
+      )}
     </ChipAnchor>
   );
 };
