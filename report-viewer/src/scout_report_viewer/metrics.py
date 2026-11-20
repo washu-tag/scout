@@ -31,15 +31,17 @@ TRINO_QUERY_DURATION = Histogram(
 
 CACHE_LOOKUPS = Counter(
     "scout_report_viewer_cache_lookups_total",
-    "Query-result cache lookups (hit, miss, error, or unavailable when the OPA "
-    "fingerprint or input-table versions could not be read).",
+    "Query-result cache lookups (hit, miss, error, unavailable when the OPA "
+    "fingerprint could not be read, or cold when the query's tables or their "
+    "versions aren't known yet and only a write can follow).",
     ["op", "result"],
 )
 
 CACHE_WRITES = Counter(
     "scout_report_viewer_cache_writes_total",
-    "Query-result cache writes (stored, error, or unsettled when the user's "
-    "permissions fingerprint changed while the query ran).",
+    "Query-result cache writes (stored, error, unsettled when the user's "
+    "permissions fingerprint changed while the query ran, or unversioned when "
+    "a table's version wasn't known before the query started).",
     ["op", "result"],
 )
 

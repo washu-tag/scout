@@ -164,6 +164,7 @@ class _FakeDelta:
         self.versions: dict[str, int] = {}
         self.calls: list[str] = []
         self.fail = False
+        self.listed: list[str] = []
 
     async def execute(self, sql: str, user: str | None = None, **_: Any):
         self.calls.append(sql)
@@ -177,6 +178,8 @@ class _FakeDelta:
             ]
             plan = json.dumps({"inputTableColumnInfos": infos})
             return ["Query Plan"], [{"Query Plan": plan}]
+        if "information_schema.tables" in sql:
+            return ["table_name"], [{"table_name": t} for t in self.listed]
         rows = [
             {"i": int(i), "version": self.versions[t], "ts": "2026-11-01"}
             for i, t in re.findall(r'SELECT (\d+) AS i,.*?"([^"]+)\$history"', sql)
@@ -189,7 +192,7 @@ def delta(monkeypatch) -> _FakeDelta:
     d = _FakeDelta()
     monkeypatch.setattr(trino_client, "execute", d.execute)
     monkeypatch.setattr(cache, "_tables", OrderedDict())
-    monkeypatch.setattr(cache, "_resolving", set())
+    monkeypatch.setattr(cache, "_resolving", {})
     monkeypatch.setattr(cache, "_versions", {})
     monkeypatch.setattr(cache, "_checked", {})
     monkeypatch.setattr(cache, "_refreshing", set())
@@ -448,3 +451,101 @@ def test_action_click_on_a_miss_runs_the_pages_query(
     r = client.get(f"/api/searches/{sid}/rows", headers=headers)
     assert len(fake_trino.calls) == calls, "the click's result serves the page"
     assert r.json()["rows"] == _COHORT
+
+
+# --- First-run caching -----------------------------------------------------------
+
+
+@pytest.fixture
+def live(monkeypatch, delta) -> _FakeValkey:
+    """The cache with real table and version lookups against `delta`."""
+    valkey = _FakeValkey()
+    monkeypatch.setattr(settings, "valkey_url", "redis://fake:6379")
+    monkeypatch.setattr(settings, "opa_url", "http://opa:8181")
+    monkeypatch.setattr(settings, "cache_ttl_seconds", 600)
+    monkeypatch.setattr(settings, "cache_settle_seconds", 0)
+    monkeypatch.setattr(cache, "_valkey", valkey)
+
+    async def fingerprint(user: str) -> str:
+        return f"fp-{user}"
+
+    monkeypatch.setattr(cache, "_fingerprint", fingerprint)
+    return valkey
+
+
+def _known(delta: _FakeDelta, **versions: int) -> None:
+    """Versions already read, as by the startup warm-up."""
+    now = time.monotonic()
+    for name, v in versions.items():
+        delta.versions[name] = v
+        cache._versions[("delta", "default", name)] = f"{v}:2026-11-01"
+        cache._checked[("delta", "default", name)] = now
+
+
+def test_first_run_is_cached_when_its_tables_versions_are_known(live, delta):
+    delta.inputs[_VIEW_SQL] = _VIEW_INPUTS
+    _known(delta, reports_latest=2, reports_report_patient_mapping=4)
+
+    async def go():
+        cold = await cache.lookup("rows", "alice", _VIEW_SQL, 10)
+        cache.remember(cold, [1])
+        cache.remember_briefly(cold, "rows-ids", [2], 60)
+        await cache.wait_pending()
+        return cold, await cache.lookup("rows", "alice", _VIEW_SQL, 10)
+
+    cold, warm = asyncio.run(go())
+    assert cold.digest is None and cold.value is None
+    assert warm.value == [1]
+    assert live.ttls[warm.key_for("rows-ids")] == 60
+    assert not any("$history" in c for c in delta.calls)
+
+
+def test_first_run_not_stored_when_a_tables_version_was_unknown(live, delta):
+    delta.inputs[_VIEW_SQL] = _VIEW_INPUTS
+    _known(delta, reports_latest=2)
+    delta.versions["reports_report_patient_mapping"] = 4
+
+    async def go():
+        cold = await cache.lookup("rows", "alice", _VIEW_SQL)
+        cache.remember(cold, [1])
+        await cache.wait_pending()
+        return await cache.lookup("rows", "alice", _VIEW_SQL)
+
+    second = asyncio.run(go())
+    assert live.data == {}
+    assert second.digest is not None, "the missing version was read after EXPLAIN"
+    assert second.value is None
+
+
+def test_warm_up_reads_every_table_and_skips_ones_without_history(live, delta):
+    delta.listed = ["reports_latest", "reports_latest_spark_epic_view"]
+    delta.versions = {"reports_latest": 3}
+
+    async def go():
+        cache.start_warm_up()
+        assert not cache.warmed_up()
+        await cache.wait_pending()
+        return cache.warmed_up()
+
+    assert asyncio.run(go())
+    assert cache._versions == {("delta", "default", "reports_latest"): "3:2026-11-01"}
+
+
+def test_warm_up_stops_holding_readiness_after_its_limit(monkeypatch):
+    class Running:
+        def done(self) -> bool:
+            return False
+
+    monkeypatch.setattr(cache, "_warm_up", Running())
+    monkeypatch.setattr(settings, "cache_warm_up_seconds", 30)
+    monkeypatch.setattr(cache, "_warm_up_started", time.monotonic())
+    assert not cache.warmed_up()
+    monkeypatch.setattr(cache, "_warm_up_started", time.monotonic() - 31)
+    assert cache.warmed_up()
+
+
+def test_readyz_waits_for_the_warm_up(client, monkeypatch):
+    monkeypatch.setattr(cache, "warmed_up", lambda: False)
+    assert client.get("/readyz").status_code == 503
+    monkeypatch.setattr(cache, "warmed_up", lambda: True)
+    assert client.get("/readyz").status_code == 200
