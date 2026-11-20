@@ -48,7 +48,7 @@ env:
 
 jobs:
   changes:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       pull-requests: read
@@ -199,7 +199,7 @@ jobs:
         # the counter and inverts tag order.
         run: echo "version=0.$(date -u +%Y%m%d).${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
       - name: Login to GHCR for the frozen predecessor
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -233,12 +233,12 @@ jobs:
           if-no-files-found: error
           retention-days: 90
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
           cache: 'pip'
@@ -258,7 +258,7 @@ jobs:
     # main still runs it. Checking the event too, since the auto-merge push actor
     # is also dependabot[bot].
     if: ${{ github.event_name != 'pull_request' || (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     steps:
@@ -277,7 +277,7 @@ jobs:
           fi
           echo "cosign.pub matches the derived public key."
   build-and-upload:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: changes
     # Distinct keys preserve outputs from retained successful matrix legs.
     outputs:
@@ -335,7 +335,7 @@ jobs:
           image-name: ${{ matrix.image-name }}
           context: ${{ matrix.context || '' }}
   unit-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     steps:
@@ -355,7 +355,7 @@ jobs:
         shell: bash
         run: cd hl7-listener && ./gradlew test
   hl7-transformer-unit:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     steps:
@@ -370,7 +370,7 @@ jobs:
       # Python pinned to 3.10 to match the runtime image (spark:4.2.0-...-python3),
       # so tests hit the shipping interpreter -- matters for version-sensitive
       # behavior like concurrent.futures TimeoutError (a distinct class before 3.11).
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.10'
           cache: 'pip'
@@ -381,7 +381,7 @@ jobs:
         # pinned Spark/Delta) resolve from pyproject.toml via pip.
         run: cd extractor/hl7-transformer && python -m pip install '.[test]' && python -m pytest tests/ -v
   ansible-and-python-tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     services:
@@ -399,7 +399,7 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
       - name: Install Molecule and dependencies
@@ -497,7 +497,7 @@ jobs:
         shell: bash
         run: cd ansible/roles/scout_common && molecule test -s default
   scan-images:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [changes, build-and-upload]
     env:
       SCOUT_ARTIFACT_ATTEMPT: ${{ needs.changes.outputs.artifact-attempt }}
@@ -517,7 +517,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
       - run: pip install pyyaml
@@ -534,7 +534,7 @@ jobs:
           scan-published: ${{ needs.changes.outputs.release_pr }}
           allow-vulnerabilities: ${{ matrix.allow-failure == true }}
   prepare-flux-artifacts:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       candidate-id: ${{ steps.candidate.outputs.artifact-id }}
       images-id: ${{ steps.images.outputs.artifact-id }}
@@ -553,7 +553,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.12'
       - run: pip install pyyaml
@@ -563,7 +563,7 @@ jobs:
           sudo apt-get clean
           docker system prune -af --volumes
       - name: Login to GHCR
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -631,7 +631,7 @@ jobs:
       TESTED_SHA: ${{ github.sha }}
       VALUES_MODE: ${{ inputs.values || 'sops' }}
       MANIFEST_REPO: ghcr.io/washu-tag/manifests/scout-manifest
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
     strategy:
       fail-fast: false
@@ -649,7 +649,7 @@ jobs:
           sudo apt-get clean
           docker system prune -af --volumes
       - name: Login to GHCR
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -664,7 +664,7 @@ jobs:
         with:
           artifact-ids: ${{ needs.prepare-flux-artifacts.outputs.images-id || '0' }}
           path: candidate/images
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.12'
       - run: pip install pyyaml
@@ -980,7 +980,7 @@ jobs:
           exit $rc
 
   deploy-and-test-e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - changes
       - lint
@@ -1036,7 +1036,7 @@ jobs:
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/k3s.yaml
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ${{ ENV.REGISTRY }}
           username: ${{ github.actor }}
@@ -1117,7 +1117,7 @@ jobs:
     name: deploy-and-test
     needs: [changes, deploy-and-test-e2e, deploy-and-test-flux]
     if: ${{ always() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: 'Gate on the e2e result'
         shell: bash
@@ -1160,7 +1160,7 @@ jobs:
   # docs-only PR skips them without blocking the merge.
   smoke-test:
     name: smoke-test-${{ matrix.side }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - changes
       - lint
@@ -1229,7 +1229,7 @@ jobs:
         shell: bash
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/k3s.yaml
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -1475,7 +1475,7 @@ jobs:
           done
   publish:
     if: github.ref_name == 'main' && needs.changes.outputs.publish == 'true' && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -1491,7 +1491,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.12'
       - run: pip install pyyaml
@@ -1501,7 +1501,7 @@ jobs:
           sudo apt-get clean
           docker system prune -af --volumes
       - name: Login to GHCR
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -1534,7 +1534,7 @@ jobs:
 
   publish-charts:
     if: github.ref_name == 'main' && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success' && needs.publish.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -1605,12 +1605,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.12'
       - run: pip install pyyaml
       - name: Login to GHCR
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -1638,7 +1638,7 @@ jobs:
 
   publish-demo:
     if: startsWith(github.ref_name, 'demo') && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -1649,7 +1649,7 @@ jobs:
       - name: Checkout GitHub Action
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ${{ ENV.REGISTRY }}
           username: ${{ github.actor }}
@@ -1738,7 +1738,7 @@ jobs:
     # block every publish. Assert the string is in the pinned binary here on every
     # PR, so a bump fails RED up front instead of as a cryptic 0/N on a main build.
     # Runs unconditionally (cheap) so it always reports and is safe to mark required.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     steps:
@@ -1754,7 +1754,7 @@ jobs:
           fi
   publish-haul:
     if: github.ref_name == 'main' && needs.publish.result == 'success' && needs.publish-charts.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - prepare-flux-artifacts
       - changes
@@ -1780,21 +1780,21 @@ jobs:
         with:
           name: producer-plan-${{ needs.changes.outputs.artifact-attempt }}
           path: predecessor
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.12'
       - run: pip install pyyaml
       - name: Require the frozen producer plan
         run: python3 tooling/manifest/producer_plan.py validate --snapshot predecessor
       - name: Login to GHCR
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Login to Docker Hub
         if: ${{ env.DH_USER != '' }}
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -1826,7 +1826,7 @@ jobs:
 
   config-artifact-publish:
     if: github.ref_name == 'main' && needs.publish-haul.result == 'success' && needs.publish-haul.outputs.ready == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - prepare-flux-artifacts
       - changes
@@ -1844,12 +1844,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.12'
       - run: pip install pyyaml
       - name: Login to GHCR
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -1875,7 +1875,7 @@ jobs:
 
   record-ci-artifacts:
     if: ${{ !cancelled() && github.event_name != 'pull_request' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && needs.prepare-flux-artifacts.result == 'success' && (github.ref_name != 'main' || needs.config-artifact-publish.result == 'success') }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - changes
       - lint
@@ -1908,7 +1908,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.12'
       - run: pip install pyyaml
