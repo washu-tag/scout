@@ -1,6 +1,6 @@
 {{- if .Values.ingress.enabled }}
 {{- $host := include "forgejo.host" . }}
-{{- $middlewares := .Values.ingress.middlewares }}
+{{- $middlewares := append .Values.ingress.middlewares (printf "%s-forgejo-strip-user@kubernetescrd" .Release.Namespace) }}
 {{- if .Values.ingress.ssoRedirect }}
 {{- $middlewares = append $middlewares (printf "%s-forgejo-sso-redirect@kubernetescrd" .Release.Namespace) }}
 ---

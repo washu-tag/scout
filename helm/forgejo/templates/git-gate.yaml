@@ -1,0 +1,108 @@
+{{- $host := include "forgejo.host" . }}
+{{- $issuer := trimSuffix "/.well-known/openid-configuration" (index .Values.upstream.gitea.oauth 0).autoDiscoverUrl }}
+{{- $existing := lookup "v1" "Secret" .Release.Namespace "forgejo-git-gate" }}
+{{- $cookieSecret := "" }}
+{{- if $existing }}
+{{- $cookieSecret = index $existing.data "cookie-secret" | b64dec }}
+{{- else }}
+{{- $cookieSecret = randAlphaNum 32 }}
+{{- end }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: forgejo-git-gate
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo.labels" . | nindent 4 }}
+type: Opaque
+stringData:
+  cookie-secret: {{ $cookieSecret | quote }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: forgejo-git-gate
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo.labels" . | nindent 4 }}
+data:
+  OAUTH2_PROXY_OIDC_ISSUER_URL: {{ $issuer | quote }}
+  OAUTH2_PROXY_REDIRECT_URL: https://{{ $host }}/oauth2/callback
+  OAUTH2_PROXY_CLIENT_ID: {{ .Values.clientId | quote }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: forgejo-git-gate
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo.labels" . | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/name: forgejo
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  ports:
+    - name: git-gate
+      port: 4180
+      targetPort: git-gate
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: forgejo-strip-user
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo.labels" . | nindent 4 }}
+spec:
+  headers:
+    customRequestHeaders:
+      X-Auth-Request-Preferred-Username: ''
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: forgejo-git-gate
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo.labels" . | nindent 4 }}
+spec:
+  forwardAuth:
+    address: http://forgejo-git-gate.{{ .Release.Namespace }}.svc.cluster.local:4180/oauth2/auth
+    trustForwardHeader: false
+    authResponseHeaders:
+      - X-Auth-Request-Preferred-Username
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: forgejo-strip-authorization
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo.labels" . | nindent 4 }}
+spec:
+  headers:
+    customRequestHeaders:
+      Authorization: ''
+---
+# Git requests carrying a Scout (Keycloak) token. The token is checked by the
+# git-gate sidecar, which names the user; Forgejo trusts that name.
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: forgejo-git-bearer
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo.labels" . | nindent 4 }}
+spec:
+  entryPoints: [websecure]
+  routes:
+    - kind: Rule
+      match: Host(`{{ $host }}`) && HeaderRegexp(`Authorization`, `^Bearer `)
+      priority: 1000
+      middlewares:
+        - name: forgejo-strip-user
+        - name: forgejo-git-gate
+        - name: forgejo-strip-authorization
+      services:
+        - name: {{ include "forgejo.serviceName" . }}
+          port: http

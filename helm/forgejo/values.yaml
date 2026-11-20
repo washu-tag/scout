@@ -55,6 +55,41 @@ upstream:
       mountPath: /data/gitea/templates/custom/header.tmpl
       subPath: header.tmpl
       readOnly: true
+  # Validates Scout tokens on git requests and names the user (templates/git-gate.yaml).
+  extraContainers:
+    - name: git-gate
+      image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.6
+      args:
+        - --provider=keycloak-oidc
+        - --skip-jwt-bearer-tokens=true
+        - --set-xauthrequest=true
+        - --email-domain=*
+        - --upstream=static://202
+        - --http-address=0.0.0.0:4180
+        - --reverse-proxy=true
+      envFrom:
+        - configMapRef:
+            name: forgejo-git-gate
+      env:
+        - name: OAUTH2_PROXY_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef: { name: forgejo-oidc, key: secret }
+        - name: OAUTH2_PROXY_COOKIE_SECRET
+          valueFrom:
+            secretKeyRef: { name: forgejo-git-gate, key: cookie-secret }
+      ports:
+        - name: git-gate
+          containerPort: 4180
+      readinessProbe:
+        httpGet: { path: /ping, port: git-gate }
+      resources:
+        requests: { cpu: 10m, memory: 32Mi }
+        limits: { memory: 128Mi }
+      securityContext:
+        runAsNonRoot: true
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities: { drop: [ALL] }
   persistence:
     size: 20Gi
   resources:
@@ -79,6 +114,10 @@ upstream:
         REQUIRE_SIGNIN_VIEW: true
         ENABLE_NOTIFY_MAIL: false
         DEFAULT_KEEP_EMAIL_PRIVATE: true
+        # Forgejo trusts the username header from any source. Only the git-gate
+        # route may set it; every other route strips it (templates/git-gate.yaml).
+        ENABLE_REVERSE_PROXY_AUTHENTICATION: true
+        ENABLE_REVERSE_PROXY_AUTO_REGISTRATION: false
       oauth2_client:
         ENABLE_AUTO_REGISTRATION: true
         USERNAME: nickname
@@ -100,6 +139,7 @@ upstream:
         ALLOW_LOCALNETWORKS: false
       security:
         DISABLE_WEBHOOKS: true
+        REVERSE_PROXY_AUTHENTICATION_USER: X-Auth-Request-Preferred-Username
       packages:
         ENABLED: true
       actions:

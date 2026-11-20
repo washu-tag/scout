@@ -70,6 +70,8 @@ lifespans:
   trinoServiceToken: '14400'
 # Provision the XNAT client, role, and group binding.
 enableXnat: 'false'
+# Add aud=forgejo to JupyterHub tokens, so notebooks can push to Forgejo as the user.
+forgejoAudience: 'false'
 # Identity providers (creds come via envFrom; see required-secrets.md). The browser
 # flow redirects to defaultProvider (an enabled IdP); empty shows the login page with every IdP.
 github:
