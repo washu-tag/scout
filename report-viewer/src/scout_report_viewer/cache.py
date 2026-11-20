@@ -57,21 +57,32 @@ _pending: set[asyncio.Task] = set()
 _TABLES_MAX = 1024
 _Table = tuple[str, str, str]  # catalog, schema, table
 _tables: OrderedDict[str, tuple[tuple[_Table, ...] | None, float]] = OrderedDict()
-_resolving: set[str] = set()
+_resolving: dict[str, asyncio.Task] = {}
 # Table -> its version, shared by every query reading the table, and when each
 # table was last looked up, successfully or not.
 _versions: dict[_Table, str] = {}
 _checked: dict[_Table, float] = {}
 _refreshing: set[_Table] = set()
 
+# Startup read of every table's version, so a search is cacheable from its first
+# run. Readiness waits for it, but only up to cache_warm_up_seconds.
+_warm_up: asyncio.Task | None = None
+_warm_up_started = 0.0
+
 
 @dataclass
 class Lookup:
     op: str
     user: str
-    # None when this request runs uncached (cache off or a dependency unavailable).
+    sql: str = ""
+    parts: tuple[Any, ...] = ()
+    # None when the key isn't known yet, or this request runs uncached (cache off
+    # or a dependency unavailable).
     digest: str | None = None
     fingerprint: str | None = None
+    # The table versions known at lookup when the key couldn't be built yet: read
+    # before the query started, so safe to key a write on once its tables are known.
+    known: dict[_Table, str] | None = None
     started: float = 0.0
     value: Any = None
 
@@ -81,7 +92,15 @@ class Lookup:
 
     def key_for(self, op: str) -> str | None:
         """The key another `op` stores for this same query and user."""
-        return None if self.digest is None else f"{_PREFIX}{op}:{self.digest}"
+        return None if self.digest is None else _key(op, self.digest)
+
+    @property
+    def writable(self) -> bool:
+        return self.digest is not None or self.known is not None
+
+
+def _key(op: str, digest: str) -> str:
+    return f"{_PREFIX}{op}:{digest}"
 
 
 def enabled() -> bool:
@@ -138,10 +157,11 @@ async def _fingerprint(user: str) -> str | None:
         return None
 
 
-def _spawn(coro: Any) -> None:
+def _spawn(coro: Any) -> asyncio.Task:
     task = asyncio.create_task(coro)
     _pending.add(task)
     task.add_done_callback(_pending.discard)
+    return task
 
 
 def _data_version(user: str, sql: str) -> str | None:
@@ -155,8 +175,7 @@ def _data_version(user: str, sql: str) -> str | None:
     if tables is None:
         retry = now - resolved_at > settings.cache_version_refresh_seconds
         if retry and sql not in _resolving:
-            _resolving.add(sql)
-            _spawn(_resolve_tables(user, sql))
+            _resolving[sql] = _spawn(_resolve_tables(user, sql))
         return None
     stale = [
         t
@@ -167,9 +186,13 @@ def _data_version(user: str, sql: str) -> str | None:
     if stale:
         _refreshing.update(stale)
         _spawn(_refresh_versions(user, stale))
-    if any(t not in _versions for t in tables):
+    return _version_of(tables, _versions)
+
+
+def _version_of(tables: tuple[_Table, ...], versions: dict[_Table, str]) -> str | None:
+    if any(t not in versions for t in tables):
         return None
-    return json.dumps([[*t, _versions[t]] for t in tables])
+    return json.dumps([[*t, versions[t]] for t in tables])
 
 
 def _explainable(sql: str) -> str:
@@ -208,14 +231,20 @@ async def _resolve_tables(user: str, sql: str) -> None:
         _tables.move_to_end(sql)
         if len(_tables) > _TABLES_MAX:
             _tables.popitem(last=False)
-        _resolving.discard(sql)
+        _resolving.pop(sql, None)
+    new = [t for t in tables or () if t not in _versions and t not in _refreshing]
+    if new:
+        _refreshing.update(new)
+        await _refresh_versions(user, new)
 
 
 def _quote(name: str) -> str:
     return '"' + name.replace('"', '""') + '"'
 
 
-async def _refresh_versions(user: str, tables: list[_Table]) -> None:
+async def _refresh_versions(
+    user: str | None, tables: list[_Table], quiet: bool = False
+) -> None:
     def history(i: int, table: _Table) -> str:
         catalog, schema, name = table
         return (
@@ -231,12 +260,53 @@ async def _refresh_versions(user: str, tables: list[_Table]) -> None:
         for row in rows:
             _versions[tables[row["i"]]] = f"{row['version']}:{row['ts']}"
     except Exception:
-        log.warning("cache: input-table version refresh failed", exc_info=True)
+        if not quiet:
+            log.warning("cache: input-table version refresh failed", exc_info=True)
     finally:
         now = time.monotonic()
         for t in tables:
             _checked[t] = now
         _refreshing.difference_update(tables)
+
+
+def start_warm_up() -> None:
+    global _warm_up, _warm_up_started
+    if enabled():
+        _warm_up_started = time.monotonic()
+        _warm_up = _spawn(_read_all_versions())
+
+
+def warmed_up() -> bool:
+    """Whether the startup read has finished, failed, or run out of time."""
+    return (
+        _warm_up is None
+        or _warm_up.done()
+        or time.monotonic() - _warm_up_started > settings.cache_warm_up_seconds
+    )
+
+
+async def _read_all_versions() -> None:
+    """Every table's version in the configured schema, as Report Viewer's own
+    identity. One query per table, since the schema also lists Spark views that
+    have no Delta history and would fail a combined query."""
+    catalog, schema = settings.trino_catalog, settings.trino_schema
+    try:
+        _cols, rows = await trino_client.execute(
+            f"SELECT table_name FROM {_quote(catalog)}.information_schema.tables "
+            "WHERE table_schema = ? AND table_type = 'BASE TABLE'",
+            params=[schema],
+        )
+    except Exception:
+        log.warning("cache: table list unavailable; starting cold", exc_info=True)
+        return
+    limit = asyncio.Semaphore(8)
+
+    async def one(table: _Table) -> None:
+        async with limit:
+            await _refresh_versions(None, [table], quiet=True)
+
+    await asyncio.gather(*(one((catalog, schema, r["table_name"])) for r in rows))
+    log.info("cache: read %d of %d table versions", len(_versions), len(rows))
 
 
 def _digest(*parts: Any) -> str:
@@ -264,18 +334,39 @@ async def lookup(op: str, user: str, sql: str, *parts: Any) -> Lookup:
     """Find a cached result for this user's `sql`; `parts` covers anything else
     the result depends on. Call just before running the query: `started` is the
     reference point for the settle wait."""
-    found = Lookup(op=op, user=user)
+    found = Lookup(op=op, user=user, sql=sql, parts=parts)
     if enabled():
-        fingerprint = await _fingerprint(user)
+        found.fingerprint = await _fingerprint(user)
         version = _data_version(user, sql)
-        if fingerprint is None or version is None:
+        if found.fingerprint is None:
             metrics.CACHE_LOOKUPS.labels(op=op, result="unavailable").inc()
+        elif version is None:
+            found.known = dict(_versions)
+            metrics.CACHE_LOOKUPS.labels(op=op, result="cold").inc()
         else:
-            found.fingerprint = fingerprint
-            found.digest = _digest(user, fingerprint, version, sql, *parts)
+            found.digest = _digest(user, found.fingerprint, version, sql, *parts)
             found.value = await _get(op, found.key)
     found.started = time.monotonic()
     return found
+
+
+async def _digest_late(found: Lookup) -> str | None:
+    """The key's digest for a lookup that couldn't build one: once the query's
+    tables are known, from the versions known at lookup. None if any of them
+    wasn't known then, since a version read after the query started could be
+    newer than the data it read."""
+    if found.digest is not None:
+        return found.digest
+    if found.known is None:
+        return None
+    task = _resolving.get(found.sql)
+    if task is not None:
+        await asyncio.wait([task])
+    tables, _ = _tables.get(found.sql, (None, 0.0))
+    version = None if tables is None else _version_of(tables, found.known)
+    if version is None:
+        return None
+    return _digest(found.user, found.fingerprint, version, found.sql, *found.parts)
 
 
 async def _get(op: str, key: str) -> Any | None:
@@ -293,7 +384,7 @@ async def _get(op: str, key: str) -> Any | None:
 
 def remember(found: Lookup, value: Any) -> None:
     """Store `value` under the lookup's key once the settle check passes."""
-    if found.key is not None:
+    if found.writable:
         _spawn(_confirm_and_put(found, value))
 
 
@@ -304,7 +395,15 @@ async def _confirm_and_put(found: Lookup, value: Any) -> None:
     if await _fingerprint(found.user) != found.fingerprint:
         metrics.CACHE_WRITES.labels(op=found.op, result="unsettled").inc()
         return
-    await _put(found.op, found.key, value, settings.cache_ttl_seconds)
+    await _put_late(found, found.op, value, settings.cache_ttl_seconds)
+
+
+async def _put_late(found: Lookup, op: str, value: Any, ttl: int) -> None:
+    digest = await _digest_late(found)
+    if digest is None:
+        metrics.CACHE_WRITES.labels(op=op, result="unversioned").inc()
+        return
+    await _put(op, _key(op, digest), value, ttl)
 
 
 async def _put(op: str, key: str, value: Any, ttl: int) -> None:
@@ -322,9 +421,8 @@ def remember_briefly(found: Lookup, op: str, value: Any, ttl: int) -> None:
     """Store `value` under `op`'s key for the same query right away, without the
     settle check. Only for a reader that acts on rows this user was just shown,
     so a result computed under permissions about to change exposes nothing new."""
-    key = found.key_for(op)
-    if key is not None:
-        _spawn(_put(op, key, value, ttl))
+    if found.writable:
+        _spawn(_put_late(found, op, value, ttl))
 
 
 async def get_related(found: Lookup, op: str) -> Any | None:

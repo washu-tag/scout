@@ -97,6 +97,8 @@ class Settings(BaseSettings):
     cache_recent_seconds: int = 60
     # How often the Delta versions of a cached query's input tables are re-read.
     cache_version_refresh_seconds: float = 60.0
+    # How long readiness waits for the startup read of every table's version.
+    cache_warm_up_seconds: float = 30.0
 
     @model_validator(mode="after")
     def _issuer_required_with_jwks(self) -> "Settings":
