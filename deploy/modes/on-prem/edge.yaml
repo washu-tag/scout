@@ -1,7 +1,6 @@
 # on-prem ingress/auth edge: the oauth2-proxy Traefik forwardAuth Middlewares and the
 # launchpad deep-link route (Traefik CRDs an aws cluster has no controller for).
-# dependsOn oauth2-proxy since the Middlewares route to its Service, and launchpad so
-# no link is sent to a launchpad that can't serve /open yet.
+# dependsOn oauth2-proxy since the Middlewares route to its Service.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -22,4 +21,3 @@ spec:
         name: cluster-vars
   dependsOn:
     - name: oauth2-proxy
-    - name: launchpad
