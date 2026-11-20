@@ -13,8 +13,11 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
+// Rendered per request so every page's scripts carry the content security policy's nonce.
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
-  title: 'Scout Launchpad',
+  title: 'Scout',
   description:
     "A clinical insights platform brought to you by the Mallinckrodt Institute of Radiology's Translational AI Group (TAG) at Washington University.",
   icons: {

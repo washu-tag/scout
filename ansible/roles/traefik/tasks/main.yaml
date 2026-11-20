@@ -121,17 +121,44 @@
         headers:
           stsSeconds: 31536000
           stsIncludeSubdomains: true
+          # frame-ancestors admits only the launchpad, which frames Scout services.
+          # Browsers ignore X-Frame-Options when frame-ancestors is present.
           frameDeny: true
           contentTypeNosniff: true
+          referrerPolicy: strict-origin-when-cross-origin
           contentSecurityPolicy: >-
             default-src 'self';
             script-src 'self' 'unsafe-inline' 'unsafe-eval';
             style-src 'self' 'unsafe-inline';
             img-src 'self' data: blob:;
             font-src 'self' data:;
-            connect-src 'self' ws: wss: {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
+            connect-src 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
             form-action 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
-            frame-ancestors 'none'
+            frame-ancestors https://{{ server_hostname }}
+          customResponseHeaders:
+            Permissions-Policy: 'camera=(), microphone=(), geolocation=(), payment=()'
+            Cross-Origin-Opener-Policy: 'same-origin'
+            X-Powered-By: ''
+            Server: ''
+
+# The global headers without a Content-Security-Policy, for an app that sends its
+# own: the launchpad sets a per-request nonce policy that a fixed header would replace.
+- name: Apply security headers middleware for apps that set their own CSP
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: traefik.io/v1alpha1
+      kind: Middleware
+      metadata:
+        name: security-headers-app-csp
+        namespace: '{{ traefik_namespace }}'
+      spec:
+        headers:
+          stsSeconds: 31536000
+          stsIncludeSubdomains: true
+          frameDeny: true
+          contentTypeNosniff: true
+          referrerPolicy: strict-origin-when-cross-origin
           customResponseHeaders:
             Permissions-Policy: 'camera=(), microphone=(), geolocation=(), payment=()'
             Cross-Origin-Opener-Policy: 'same-origin'
@@ -154,13 +181,14 @@
           stsIncludeSubdomains: true
           frameDeny: false
           contentTypeNosniff: true
+          referrerPolicy: strict-origin-when-cross-origin
           contentSecurityPolicy: >-
             default-src 'self';
             script-src 'self' 'unsafe-inline' 'unsafe-eval';
             style-src 'self' 'unsafe-inline';
             img-src 'self' data: blob:;
             font-src 'self' data:;
-            connect-src 'self' ws: wss: {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
+            connect-src 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
             form-action 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
             frame-ancestors {{ traefik_embeddable_frame_ancestors }}
           customResponseHeaders:
@@ -170,8 +198,8 @@
             Server: ''
 
 # Same-origin framing: for services whose own UI frames itself in an iframe
-# (e.g. XNAT). Identical to security-headers but allows same-origin framing —
-# frame-ancestors 'self' + X-Frame-Options SAMEORIGIN instead of 'none'/DENY.
+# (e.g. XNAT). Identical to security-headers but also allows same-origin
+# framing: frame-ancestors 'self' + X-Frame-Options SAMEORIGIN.
 - name: Apply same-origin security headers middleware
   kubernetes.core.k8s:
     state: present
@@ -188,49 +216,33 @@
           frameDeny: false
           customFrameOptionsValue: SAMEORIGIN
           contentTypeNosniff: true
+          referrerPolicy: strict-origin-when-cross-origin
           contentSecurityPolicy: >-
             default-src 'self';
             script-src 'self' 'unsafe-inline' 'unsafe-eval';
             style-src 'self' 'unsafe-inline';
             img-src 'self' data: blob:;
             font-src 'self' data:;
-            connect-src 'self' ws: wss: {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
+            connect-src 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
             form-action 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
-            frame-ancestors 'self'
+            frame-ancestors {{ traefik_sameorigin_frame_ancestors }}
           customResponseHeaders:
             Permissions-Policy: 'camera=(), microphone=(), geolocation=(), payment=()'
             Cross-Origin-Opener-Policy: 'same-origin'
             X-Powered-By: ''
             Server: ''
 
-# Same-origin framing + popup-friendly COOP: this is the one real consumer
-# this repo builds and deploys (examples/xnat-explore-poc's landing page) -
-# XNAT itself was decoupled from needing this (#739's "Explore in XNAT"
-# action points at xnat-explore-poc's own self-hosted landing page, not
-# real XNAT - see examples/xnat-explore-poc's README). Split out from
-# security-headers-sameorigin above, per that middleware's own earlier
-# note, rather than weakening every -sameorigin consumer's COOP for one
-# example app's sake.
+# Same-origin framing with COOP 'unsafe-none', for examples/xnat-explore-poc's
+# landing page, which #739's "Explore in XNAT" action opens in a new tab. A
+# sandboxed opener without allow-popups-to-escape-sandbox can open only a page
+# whose COOP is unsafe-none (github.com/whatwg/html/pull/5817). Inside chat,
+# report-viewer's frame doesn't allow popups at all, so there the action can't open
+# the page whatever this sends (ADR 0042). The page loses COOP's cross-origin
+# isolation; report-viewer's openResult.ts opens it with rel="noopener noreferrer",
+# so no window.opener is kept.
 #
-# COOP is 'unsafe-none', not a relaxed-but-still-isolating value like
-# 'same-origin-allow-popups' - per the WHATWG HTML spec's navigation
-# algorithm (github.com/whatwg/html/pull/5817, matching Chromium's
-# "blocked from loading in a popup opened by a sandboxed iframe because
-# this document specified a cross-origin opener policy"), the check a
-# sandboxed opener without allow-popups-to-escape-sandbox hits is a
-# binary "is the target's COOP unsafe-none, or not" - same-origin and
-# same-origin-allow-popups both fail it identically, only unsafe-none
-# passes. OWUI's iframe sandbox attribute isn't something Scout
-# controls, so unsafe-none is the only workable value from this side.
-# Tradeoff accepted: this page loses COOP's cross-origin-isolation
-# hardening (mainly Spectre-class process isolation). The more commonly-
-# cited COOP relaxation risk - reverse tabnabbing via a retained
-# window.opener - is separately neutralized regardless of this value,
-# since report-viewer's openResult.ts always sets rel="noopener
-# noreferrer" on the anchor it opens this with.
-#
-# Otherwise identical to security-headers-sameorigin above: frame-ancestors
-# 'self' + X-Frame-Options SAMEORIGIN instead of 'none'/DENY.
+# Otherwise identical to security-headers-sameorigin above, except that the
+# launchpad cannot frame it.
 - name: Apply same-origin, popup-friendly security headers middleware
   kubernetes.core.k8s:
     state: present
@@ -247,13 +259,14 @@
           frameDeny: false
           customFrameOptionsValue: SAMEORIGIN
           contentTypeNosniff: true
+          referrerPolicy: strict-origin-when-cross-origin
           contentSecurityPolicy: >-
             default-src 'self';
             script-src 'self' 'unsafe-inline' 'unsafe-eval';
             style-src 'self' 'unsafe-inline';
             img-src 'self' data: blob:;
             font-src 'self' data:;
-            connect-src 'self' ws: wss: {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
+            connect-src 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
             form-action 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
             frame-ancestors 'self'
           customResponseHeaders:

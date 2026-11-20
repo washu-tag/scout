@@ -117,7 +117,9 @@ Partial draft/promotion: re-dispatch Release with the same version.
    selected, reset `main` to dev placeholders and verify the reset. Recovery
    refuses to change a later release stamp; an already completed reset is a
    no-op. The release record and its signature remain durable GitHub Release
-   assets.
+   assets. The release also attaches `scout-frame-location-X.Y.Z.jar`, the XNAT
+   plugin that loads the launchpad frame-location script (ADR 0042), built from the
+   stamped source.
 
 Release runs are serialized, including retries. Legacy tags remain mutable
 while `main` is stamped; a digest mismatch stops promotion rather than accepting

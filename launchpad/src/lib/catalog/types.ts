@@ -10,9 +10,16 @@ export interface ChipLink {
   url?: string;
 }
 
+// A section heading's link: `url` opens in a new tab; `link` is a chip destination.
 export interface FooterLink {
   text: string;
-  url: string;
+  url?: string;
+  link?: ChipLink;
+}
+
+export interface RenderFooterLink {
+  text: string;
+  chip: RenderChip;
 }
 
 // A chip as validated and normalized from a catalog document (ADR 0034).
@@ -25,6 +32,7 @@ export interface Chip {
   tone: ToneName;
   link: ChipLink;
   newTab: boolean;
+  sandbox: boolean;
   group: string;
   weight: number;
   audience: Audience;
@@ -42,6 +50,7 @@ export interface Group {
   maxColumns: number;
   width: GroupWidth;
   audience: Audience;
+  railMenu?: string;
   footerLink?: FooterLink;
   source: string;
   // Lower ranks win when two documents define the same group id. The mounted
@@ -65,6 +74,10 @@ export interface Catalog {
   diagnostics: Diagnostic[];
 }
 
+// Where a chip leads: a Scout service on its own subdomain, a launchpad page,
+// or an outside URL.
+export type ChipKind = 'service' | 'page' | 'external';
+
 // The client-serializable render model: names instead of components, hrefs
 // instead of link descriptors, already audience-filtered and laid out.
 export interface RenderChip {
@@ -77,8 +90,10 @@ export interface RenderChip {
   icon: string;
   iconData?: string;
   tone: ToneName;
+  kind: ChipKind;
   href: string;
   newTab: boolean;
+  sandbox: boolean;
 }
 
 export interface RenderGroup {
@@ -89,8 +104,10 @@ export interface RenderGroup {
   layout: GroupLayout;
   columns: number;
   width: GroupWidth;
+  audience: Audience;
+  railMenu?: string;
   chips: RenderChip[];
-  footerLink?: FooterLink;
+  footerLink?: RenderFooterLink;
 }
 
 // One visual band of the page: a single full-width group, or two half-width

@@ -478,6 +478,17 @@ jobs:
           fi
           gh release create "v$VERSION" --repo "$REPO" --title "Scout v$VERSION" --generate-notes
 
+      - name: Attach the XNAT frame-location plugin
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+          VERSION: ${{ inputs.version }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          jar="$RUNNER_TEMP/scout-frame-location-$VERSION.jar"
+          python3 tooling/deploy/xnat_frame_location_jar.py "$jar"
+          gh release upload "v$VERSION" "$jar" --repo "$REPO" --clobber
+
       - name: Clear the release PR's pending label
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}

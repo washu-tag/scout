@@ -80,6 +80,7 @@ const chipBase = {
   tone: z.enum(TONE_NAMES),
   link: linkSchema,
   newTab: z.boolean(),
+  sandbox: z.boolean(),
   group: idSchema,
   weight: z.number(),
   audience: audienceSchema,
@@ -96,15 +97,23 @@ const groupBase = {
   maxColumns: z.number().int().min(1).max(4),
   width: z.enum(['full', 'half']),
   audience: audienceSchema,
-  footerLink: z.object({
-    text: z.string().trim().min(1).max(TITLE_MAX),
-    url: z
-      .string()
-      .refine(
-        (v) => ROOTED_PATH_RE.test(v) || httpUrlSchema.safeParse(v).success,
-        'must be an http(s) URL or a rooted path',
-      ),
-  }),
+  railMenu: idSchema,
+  footerLink: z
+    .object({
+      text: z.string().trim().min(1).max(TITLE_MAX),
+      url: z
+        .string()
+        .refine(
+          (v) => ROOTED_PATH_RE.test(v) || httpUrlSchema.safeParse(v).success,
+          'must be an http(s) URL or a rooted path',
+        )
+        .optional(),
+      link: linkSchema.optional(),
+    })
+    .refine(
+      (footer) => !footer.url !== !footer.link,
+      'footerLink needs exactly one of url or link',
+    ),
 };
 
 // Known-key lists for the forward-compatibility warning, derived from the
@@ -120,6 +129,7 @@ const CHIP_FALLBACKS = {
   icon: DEFAULT_ICON,
   tone: DEFAULT_TONE,
   newTab: true,
+  sandbox: false,
   group: DEFAULT_GROUP,
   weight: 100,
   audience: 'user',
@@ -187,6 +197,9 @@ const chipSchema = z.object({
   tone: caught('tone', chipBase.tone, CHIP_FALLBACKS.tone),
   link: chipBase.link,
   newTab: caught('newTab', chipBase.newTab, CHIP_FALLBACKS.newTab),
+  // Fails closed like audience: an invalid value rejects the chip rather than
+  // dropping the sandbox.
+  sandbox: chipBase.sandbox.default(CHIP_FALLBACKS.sandbox),
   group: caught('group', chipBase.group, CHIP_FALLBACKS.group),
   weight: caught('weight', chipBase.weight, CHIP_FALLBACKS.weight),
   // Visibility fails closed: no .catch() here, so an invalid value rejects
@@ -207,6 +220,7 @@ const groupSchema = z.object({
   // Fail closed, as for chips: a definition that cannot state its audience
   // is dropped (member chips still render via their own audience).
   audience: groupBase.audience.default(GROUP_FALLBACKS.audience),
+  railMenu: caughtOptional('railMenu', groupBase.railMenu),
   footerLink: caughtOptional('footerLink', groupBase.footerLink),
 });
 

@@ -3,6 +3,7 @@ import { defaultColumns } from './schema';
 import type {
   Catalog,
   Chip,
+  ChipKind,
   ChipLink,
   Diagnostic,
   Group,
@@ -29,6 +30,11 @@ export function resolveHref(link: ChipLink, origin: Origin): string {
     return `${origin.protocol}://${link.subdomain}.${origin.host}${link.path ?? ''}`;
   }
   return link.path ?? '/';
+}
+
+export function chipKind(link: ChipLink): ChipKind {
+  if (link.url) return 'external';
+  return link.subdomain ? 'service' : 'page';
 }
 
 function byWeightTitleId(a: { weight: number; title: string; id: string }, b: typeof a): number {
@@ -72,6 +78,7 @@ export function assemble(catalog: Catalog, options: AssembleOptions): RenderMode
   }
 
   const visibleChips = catalog.chips.filter((chip) => chip.enabled && audienceOk(chip.audience));
+  const chipIds = new Set(visibleChips.map((chip) => chip.id));
 
   const membership = new Map<string, Chip[]>();
   for (const chip of visibleChips) {
@@ -125,7 +132,29 @@ export function assemble(catalog: Catalog, options: AssembleOptions): RenderMode
         layout: group.layout,
         columns: Math.max(1, Math.min(chips.length, group.maxColumns)),
         width: group.width,
-        footerLink: group.footerLink,
+        audience: group.audience,
+        railMenu: group.railMenu,
+        footerLink: group.footerLink && {
+          text: group.footerLink.text,
+          // Routed at /app/<group id>; a chip id can't contain ".", so the fallback for a
+          // group named like a chip never collides with one.
+          chip: {
+            source: group.source,
+            id: chipIds.has(group.id) ? `${group.id}.link` : group.id,
+            title: group.title,
+            description: '',
+            icon: group.icon,
+            tone: 'slate',
+            sandbox: false,
+            ...(group.footerLink.link
+              ? {
+                  kind: chipKind(group.footerLink.link),
+                  href: resolveHref(group.footerLink.link, origin),
+                  newTab: true,
+                }
+              : { kind: 'external', href: group.footerLink.url ?? '/', newTab: true }),
+          },
+        },
         chips: chips.map((chip) => ({
           source: chip.source,
           id: chip.id,
@@ -134,8 +163,10 @@ export function assemble(catalog: Catalog, options: AssembleOptions): RenderMode
           icon: chip.icon,
           iconData: chip.iconData,
           tone: chip.tone,
+          kind: chipKind(chip.link),
           href: resolveHref(chip.link, origin),
           newTab: chip.newTab,
+          sandbox: chip.sandbox,
         })),
       };
     });

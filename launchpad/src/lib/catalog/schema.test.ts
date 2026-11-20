@@ -31,6 +31,7 @@ describe('validateDocument', () => {
       icon: 'app',
       tone: 'indigo',
       newTab: true,
+      sandbox: false,
       group: 'more',
       weight: 100,
       audience: 'user',
@@ -188,10 +189,39 @@ describe('validateDocument', () => {
     assert.match(result.diagnostics[0].message, /invalid footerLink/);
   });
 
+  it('takes a footerLink with a chip destination instead of a url, not both', () => {
+    const footer = (footerLink: Record<string, unknown>) =>
+      validateDocument(doc({ groups: [{ id: 'a', title: 'A', footerLink }] }), SOURCE);
+    const ok = footer({ text: 'All', link: { subdomain: 'books', path: '/' } });
+    assert.deepStrictEqual(ok.diagnostics, []);
+    assert.deepStrictEqual(ok.groups[0].footerLink?.link, { subdomain: 'books', path: '/' });
+    for (const invalid of [
+      { text: 'All' },
+      { text: 'All', url: '/x', link: { path: '/x' } },
+      { text: 'All', link: { subdomain: 'Books' } },
+    ]) {
+      const result = footer(invalid);
+      assert.strictEqual(result.groups[0].footerLink, undefined, JSON.stringify(invalid));
+      assert.match(result.diagnostics[0].message, /invalid footerLink/);
+    }
+  });
+
   it('rejects a chip whose enabled or audience is invalid (visibility fails closed)', () => {
     for (const overrides of [{ enabled: 'no' }, { enabled: 0 }, { audience: 'adminstrator' }]) {
       const result = validateDocument(doc({ chips: [chip(overrides)] }), SOURCE);
       assert.strictEqual(result.chips.length, 0, JSON.stringify(overrides));
+      assert.match(result.diagnostics[0].message, /chip skipped/);
+    }
+  });
+
+  it('keeps a sandbox request and rejects a chip whose sandbox is invalid (fails closed)', () => {
+    assert.strictEqual(
+      validateDocument(doc({ chips: [chip({ sandbox: true })] }), SOURCE).chips[0].sandbox,
+      true,
+    );
+    for (const sandbox of ['yes', 1]) {
+      const result = validateDocument(doc({ chips: [chip({ sandbox })] }), SOURCE);
+      assert.strictEqual(result.chips.length, 0, JSON.stringify(sandbox));
       assert.match(result.diagnostics[0].message, /chip skipped/);
     }
   });

@@ -2,8 +2,6 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSession, signIn } from 'next-auth/react';
-import TopBar from '@/components/TopBar';
-import Brand from '@/components/Brand';
 import { subdomainUrl } from '@/lib/subdomainUrl';
 import {
   HiCheckCircle,
@@ -701,9 +699,8 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'admin', label: 'Admins' },
 ];
 
-export default function UsersClient({ scoutEnv, docsUrl }: { scoutEnv?: string; docsUrl: string }) {
+export default function UsersClient() {
   const { data: session, status } = useSession();
-  const environment = scoutEnv ?? 'local';
   const [schema, setSchema] = useState<AttrSchema[]>([]);
   const [tab, setTab] = useState<Tab>('pending');
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -842,36 +839,29 @@ export default function UsersClient({ scoutEnv, docsUrl }: { scoutEnv?: string; 
   const actionLabel = tab === 'pending' ? 'Review' : 'Manage';
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-indigo-50/40 dark:from-slate-950 dark:via-slate-950 dark:to-indigo-950/30">
-      {/* Header */}
-      <div className="border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 backdrop-blur">
-        <div className="max-w-content mx-auto px-6 py-6 flex items-center justify-between">
-          <Brand crumbs={[environment, 'Users']} />
-          <div className="flex items-center gap-4">
-            {kcConsole && (
-              <a
-                href={kcConsole}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hidden sm:inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
-              >
-                <HiExternalLink className="text-base" />
-                Open in Keycloak
-              </a>
-            )}
-            <TopBar docsUrl={docsUrl} />
+    <div className="min-h-full w-full bg-gradient-to-br from-slate-50 via-white to-indigo-50/40 dark:from-slate-950 dark:via-slate-950 dark:to-indigo-950/30">
+      <main className="max-w-content content-2xl:max-w-content-wide mx-auto px-4 py-8 content-md:px-6 content-lg:px-8">
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight">
+              User administration
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+              Approve access requests, edit data-access attributes, manage admins, and offboard
+              users.
+            </p>
           </div>
-        </div>
-      </div>
-
-      <main className="max-w-content mx-auto px-6 py-10">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight">
-            User administration
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Approve access requests, edit data-access attributes, manage admins, and offboard users.
-          </p>
+          {kcConsole && (
+            <a
+              href={kcConsole}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:inline-flex items-center gap-1.5 mt-1 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+            >
+              <HiExternalLink className="text-base" />
+              Open in Keycloak
+            </a>
+          )}
         </div>
 
         {status === 'loading' || !session ? (

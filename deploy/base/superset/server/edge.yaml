@@ -58,11 +58,12 @@ data:
                 "font-src": "'self' data:",
                 "connect-src": "'self' ws: wss: https://keycloak.${server_hostname}",
                 "form-action": "'self' https://keycloak.${server_hostname}",
-                "frame-ancestors": "'none'",
+                "frame-ancestors": "https://${server_hostname}",
             },
         }
         HTTP_HEADERS = {
             "X-Content-Type-Options": "nosniff",
             "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
             "Cross-Origin-Opener-Policy": "same-origin",
+            "Referrer-Policy": "strict-origin-when-cross-origin",
         }

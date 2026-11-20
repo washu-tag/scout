@@ -18,5 +18,9 @@ scout_env: ''
 # line. Empty hides the line and only the "Powered by Scout" credit shows.
 deployer_name: ''
 
+# On envs where Traefik serves a self-signed cert (CI), the launchpad's server
+# needs to trust it to reach Keycloak over HTTPS. Off on envs with public certs.
+launchpad_trust_traefik_ca: false
+
 # Launchpad nextauth cookie secret, override from inventory for production
 launchpad_nextauth_secret: changeme-nextauth-secret
