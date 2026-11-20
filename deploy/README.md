@@ -81,6 +81,10 @@ apply it from a site Kustomization (with `decryption` for SOPS) that the Kustomi
 reconciling `./flux` and `./modes/on-prem` dependsOn. Generate it with
 `tooling/deploy/gen_secret_values.py`.
 
+On-prem, the `security-headers*` Traefik Middlewares in `kube-system` that the base's
+routes name come from Ansible's `make config-traefik`, not from this artifact. Re-run it
+when a release adds or changes one: Traefik drops a route whose Middleware is missing.
+
 Those two Kustomizations (the site roots) live in `flux-system`, next to `cluster-vars`
 and the `scout-config` source, because Flux substitutes only from its own namespace.
 The `scout-config` OCIRepository must select its `application/gzip` layer with
