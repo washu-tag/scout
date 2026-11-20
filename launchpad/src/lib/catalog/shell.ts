@@ -80,6 +80,16 @@ export function routableChips(sections: ShellSection[]): RenderChip[] {
   );
 }
 
+export function isCurrentChip(chip: RenderChip, pathname: string): boolean {
+  const target = chipTarget(chip);
+  return target.internal && (pathname === target.href || pathname.startsWith(`${target.href}/`));
+}
+
+// The chip the launchpad page at `pathname` shows, heading links included.
+export function currentChip(sections: ShellSection[], pathname: string): RenderChip | undefined {
+  return routableChips(sections).find((chip) => isCurrentChip(chip, pathname));
+}
+
 export function shellPath(id: string): string {
   return `/app/${id}`;
 }
