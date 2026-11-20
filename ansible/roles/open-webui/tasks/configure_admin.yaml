@@ -72,7 +72,7 @@
       scoutModels: '{{ scout_models | default([]) }}'
       scoutDefaults:
         systemPromptFile: '{{ open_webui_scout_system_prompt_file }}'
-        profileImageFile: scout-logo-128.png.b64
+        profileImageFile: scout-avatar-256.png.b64
         toolIds: '{{ open_webui_scout_tool_ids }}'
         suggestionPrompts: '{{ open_webui_scout_default_suggestion_prompts }}'
         capabilities: '{{ open_webui_scout_default_capabilities }}'
