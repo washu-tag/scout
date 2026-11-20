@@ -165,9 +165,13 @@ class _FakeDelta:
         self.calls: list[str] = []
         self.fail = False
         self.listed: list[str] = []
+        self.views: list[str] = []
+        self.filtered: set[str] = set()
+        self.users: list[str | None] = []
 
     async def execute(self, sql: str, user: str | None = None, **_: Any):
         self.calls.append(sql)
+        self.users.append(user)
         if self.fail:
             raise RuntimeError("trino down")
         if sql.startswith("EXPLAIN"):
@@ -180,8 +184,14 @@ class _FakeDelta:
             return ["Query Plan"], [{"Query Plan": plan}]
         if "information_schema.tables" in sql:
             return ["table_name"], [{"table_name": t} for t in self.listed]
+        if "information_schema.views" in sql:
+            return ["view_definition"], [{"view_definition": v} for v in self.views]
         rows = [
-            {"i": int(i), "version": self.versions[t], "ts": "2026-11-01"}
+            {
+                "i": int(i),
+                "version": None if t in self.filtered else self.versions[t],
+                "ts": None if t in self.filtered else "2026-11-01",
+            }
             for i, t in re.findall(r'SELECT (\d+) AS i,.*?"([^"]+)\$history"', sql)
         ]
         return ["i", "version", "ts"], rows
@@ -231,6 +241,7 @@ def test_data_version_covers_every_input_table(delta):
     assert len(explains) == 1 and len(histories) == 1
     assert '"reports_latest$history"' in histories[0]
     assert '"reports_report_patient_mapping$history"' in histories[0]
+    assert delta.users[delta.calls.index(histories[0])] is None, "as Report Viewer"
 
     delta.versions["reports_report_patient_mapping"] = 5
     assert _version(_VIEW_SQL) == first, "re-read only once the refresh is due"
@@ -517,9 +528,21 @@ def test_first_run_not_stored_when_a_tables_version_was_unknown(live, delta):
     assert second.value is None
 
 
+def test_filtered_history_is_never_recorded_as_a_version(delta):
+    delta.inputs[_VIEW_SQL] = _VIEW_INPUTS
+    delta.versions = {"reports_latest": 2}
+    delta.filtered = {"reports_report_patient_mapping"}
+    assert _version(_VIEW_SQL) is None
+    assert ("delta", "default", "reports_report_patient_mapping") not in cache._versions
+
+
 def test_warm_up_reads_every_table_and_skips_ones_without_history(live, delta):
     delta.listed = ["reports_latest", "reports_latest_spark_epic_view"]
-    delta.versions = {"reports_latest": 3}
+    delta.views = [
+        "WITH p AS (SELECT * FROM reports_report_patient_mapping) "
+        "SELECT r.* FROM reports_latest r JOIN p ON true"
+    ]
+    delta.versions = {"reports_latest": 3, "reports_report_patient_mapping": 5}
 
     async def go():
         cache.start_warm_up()
@@ -528,7 +551,11 @@ def test_warm_up_reads_every_table_and_skips_ones_without_history(live, delta):
         return cache.warmed_up()
 
     assert asyncio.run(go())
-    assert cache._versions == {("delta", "default", "reports_latest"): "3:2026-11-01"}
+    assert cache._versions == {
+        ("delta", "default", "reports_latest"): "3:2026-11-01",
+        ("delta", "default", "reports_report_patient_mapping"): "5:2026-11-01",
+    }
+    assert set(delta.users) == {None}
 
 
 def test_warm_up_stops_holding_readiness_after_its_limit(monkeypatch):
