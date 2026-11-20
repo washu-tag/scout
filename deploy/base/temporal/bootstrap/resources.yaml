@@ -1,7 +1,8 @@
 # temporal-bootstrap: idempotent Temporal setup as Helm-hook Jobs (post-install/
 # upgrade). Enforces the `default` namespace's workflow-history retention (#432);
-# the chart's create-only namespace job never updates retention. Talks to the
-# internal frontend (bypasses public-frontend authz). dependsOn temporal-server.
+# the chart's create-only namespace job never updates retention. Also manages the
+# scheduled ingest. Talks to the internal frontend (bypasses public-frontend authz).
+# dependsOn temporal-server.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -32,3 +33,7 @@ spec:
       name: default
       # Workflow-history retention (CLI duration form); overlays tune.
       retention: 30d
+    # Off unless the site opts in; arrives as a string, the chart gates on "true".
+    scheduledIngest:
+      enabled: '${scheduled_ingest_enabled:=false}'
+      cron: '${scheduled_ingest_cron:=0 6 * * *}'

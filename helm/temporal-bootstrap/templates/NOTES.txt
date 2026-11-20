@@ -2,6 +2,7 @@ temporal-bootstrap installed.
 
 Idempotent Temporal setup runs as Helm post-install/post-upgrade hook Jobs:
   - namespace "{{ .Values.namespace.name }}" retention -> {{ .Values.namespace.retention }}
+  - schedule "{{ .Values.scheduledIngest.scheduleId }}" -> {{ if eq (toString .Values.scheduledIngest.enabled | lower) "true" }}{{ .Values.scheduledIngest.cron }}{{ else }}disabled{{ end }}
 
 Inspect the most recent hook Job:
   kubectl -n {{ .Release.Namespace }} get jobs -l app.kubernetes.io/name={{ include "temporal-bootstrap.name" . }}
