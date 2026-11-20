@@ -1,0 +1,78 @@
+{{- $existing := lookup "v1" "Secret" .Release.Namespace "forgejo-oidc" }}
+{{- $secret := "" }}
+{{- if $existing }}
+{{- $secret = index $existing.data "secret" | b64dec }}
+{{- else }}
+{{- $secret = randAlphaNum 40 }}
+{{- end }}
+{{- $host := include "forgejo.host" . }}
+{{- if not (index .Values.upstream.gitea.oauth 0).autoDiscoverUrl }}
+{{- fail "upstream.gitea.oauth[0].autoDiscoverUrl is required" }}
+{{- end }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: forgejo-oidc
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo.labels" . | nindent 4 }}
+type: Opaque
+stringData:
+  key: {{ .Values.clientId | quote }}
+  secret: {{ $secret | quote }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: forgejo-keycloak
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo.labels" . | nindent 4 }}
+    keycloak.scout.xnat.org/fragment: 'true'
+data:
+  fragment.yaml: |
+    apiVersion: keycloak.scout.xnat.org/v1alpha1
+    kind: KeycloakFragment
+    clients:
+      - clientId: {{ .Values.clientId }}
+        displayName: {{ .Values.launchpad.title }}
+        description: {{ .Values.launchpad.description }}
+        appUrl: https://{{ $host }}
+        redirectUris:
+          - https://{{ $host }}/user/oauth2/Scout/callback
+        roles: [forgejo-user, forgejo-admin]
+        grants:
+          scout-user: [forgejo-user]
+          scout-admin: [forgejo-user, forgejo-admin]
+        secretRef:
+          name: forgejo-oidc
+          key: secret
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: forgejo-keycloak-secret-reader
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ['']
+    resources: ['secrets']
+    verbs: ['get']
+    resourceNames: [forgejo-oidc]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: forgejo-keycloak-secret-reader
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: forgejo-keycloak-secret-reader
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.reconcilerServiceAccount }}
+    namespace: {{ .Values.reconcilerNamespace }}

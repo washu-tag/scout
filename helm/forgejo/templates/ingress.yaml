@@ -1,0 +1,47 @@
+{{- if .Values.ingress.enabled }}
+{{- $host := include "forgejo.host" . }}
+{{- $middlewares := .Values.ingress.middlewares }}
+{{- if .Values.ingress.ssoRedirect }}
+{{- $middlewares = append $middlewares (printf "%s-forgejo-sso-redirect@kubernetescrd" .Release.Namespace) }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: forgejo-sso-redirect
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo.labels" . | nindent 4 }}
+spec:
+  redirectRegex:
+    regex: ^https?://[^/]+/user/login/?(\?.*)?$
+    replacement: https://{{ $host }}/user/oauth2/{{ (index .Values.upstream.gitea.oauth 0).name }}${1}
+{{- end }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: forgejo
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo.labels" . | nindent 4 }}
+  annotations:
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- with $middlewares }}
+    traefik.ingress.kubernetes.io/router.middlewares: {{ join ", " . | quote }}
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - host: {{ $host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "forgejo.serviceName" . }}
+                port:
+                  name: http
+{{- end }}

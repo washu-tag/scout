@@ -1,0 +1,135 @@
+---
+# Forgejo answers at `<subdomain>.<domain>`. The container registry needs the root of a
+# host, so Forgejo cannot live under a path. `domain` has no default; pass the site's.
+domain: ''
+subdomain: git
+
+clientId: forgejo
+
+reconcilerServiceAccount: scout-keycloak-fragment-reconciler
+reconcilerNamespace: scout-core
+
+database:
+  host: ''
+  port: 5432
+  name: forgejo
+  user: forgejo
+  sslMode: require
+
+launchpad:
+  title: Git
+  description: Code repositories, container images and build pipelines
+  icon: cube
+  tone: slate
+
+ingress:
+  enabled: true
+  className: traefik
+  annotations: {}
+  middlewares:
+    - kube-system-security-headers@kubernetescrd
+  # Sends /user/login straight to Scout sign-in, so users never see Forgejo's login page.
+  ssoRedirect: true
+
+# Where Sign Out lands after Forgejo ends its own session, e.g. Scout's
+# https://auth.<domain>/oauth2/sign_out. Empty keeps Forgejo's default.
+signOutUrl: ''
+
+networkPolicy:
+  enabled: true
+  traefikNamespace: kube-system
+
+upstream:
+  nameOverride: forgejo
+  fullnameOverride: forgejo
+  test:
+    enabled: false
+  strategy:
+    type: Recreate
+  extraVolumes:
+    - name: scout-templates
+      configMap:
+        name: forgejo-scout-templates
+  extraContainerVolumeMounts:
+    - name: scout-templates
+      mountPath: /data/gitea/templates/custom/header.tmpl
+      subPath: header.tmpl
+      readOnly: true
+  persistence:
+    size: 20Gi
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 1Gi }
+  gitea:
+    # app.ini. A site overrides single keys here; the host and database come from
+    # `domain` and `database` above.
+    config:
+      APP_NAME: Scout Git
+      server:
+        DISABLE_SSH: true
+        START_SSH_SERVER: false
+        OFFLINE_MODE: true
+        LFS_START_SERVER: true
+        LANDING_PAGE: login
+      service:
+        DISABLE_REGISTRATION: false
+        ALLOW_ONLY_EXTERNAL_REGISTRATION: true
+        ENABLE_INTERNAL_SIGNIN: false
+        SHOW_REGISTRATION_BUTTON: false
+        REQUIRE_SIGNIN_VIEW: true
+        ENABLE_NOTIFY_MAIL: false
+        DEFAULT_KEEP_EMAIL_PRIVATE: true
+      oauth2_client:
+        ENABLE_AUTO_REGISTRATION: true
+        USERNAME: nickname
+        ACCOUNT_LINKING: auto
+        UPDATE_AVATAR: false
+      openid:
+        ENABLE_OPENID_SIGNIN: false
+        ENABLE_OPENID_SIGNUP: false
+      repository:
+        DEFAULT_PRIVATE: private
+        ENABLE_PUSH_CREATE_USER: true
+        ENABLE_PUSH_CREATE_ORG: true
+        DISABLE_MIGRATIONS: true
+      mirror:
+        ENABLED: false
+        DISABLE_NEW_PULL: true
+        DISABLE_NEW_PUSH: true
+      migrations:
+        ALLOW_LOCALNETWORKS: false
+      security:
+        DISABLE_WEBHOOKS: true
+      packages:
+        ENABLED: true
+      actions:
+        ENABLED: true
+        DEFAULT_ACTIONS_URL: self
+      picture:
+        DISABLE_GRAVATAR: true
+        ENABLE_FEDERATED_AVATAR: false
+    # A site sets autoDiscoverUrl to its realm's
+    # https://keycloak.<domain>/realms/scout/.well-known/openid-configuration.
+    oauth:
+      - name: Scout
+        provider: openidConnect
+        existingSecret: forgejo-oidc
+        autoDiscoverUrl: ''
+        scopes: openid profile email
+        groupClaimName: groups
+        adminGroup: forgejo-admin
+        requiredClaimName: groups
+        requiredClaimValue: forgejo-user
+    admin:
+      username: forgejo-admin
+      email: forgejo-admin@localhost
+      passwordMode: initialOnlyNoReset
+    additionalConfigSources:
+      - secret:
+          secretName: forgejo-scout-config
+    additionalConfigFromEnvs:
+      - name: FORGEJO__DATABASE__PASSWD
+        valueFrom:
+          secretKeyRef:
+            name: forgejo-database
+            key: password

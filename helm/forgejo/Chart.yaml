@@ -1,0 +1,12 @@
+---
+apiVersion: v2
+name: forgejo
+description: Forgejo git hosting, container registry and Actions for Scout users, as a Pluggable App
+type: application
+version: 0.0.0-dev
+appVersion: '15.0.12'
+dependencies:
+  - name: forgejo
+    alias: upstream
+    version: 17.3.3
+    repository: oci://code.forgejo.org/forgejo-helm

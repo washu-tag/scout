@@ -63,3 +63,8 @@ harbor_registry_proxies:
     registry_type: docker-registry
     registry_url: https://apachesuperset.docker.scarf.sh
     project_name: apachesuperset-proxy
+  - public_registry: code.forgejo.org
+    registry_name: forgejo
+    registry_type: docker-registry
+    registry_url: https://code.forgejo.org
+    project_name: forgejo-proxy
