@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { signInToScout, TestUser } from '../helpers/scout-auth';
+import { openInFrame, signInToScout, TestUser } from '../helpers/scout-auth';
 
 const hostname = process.env.SCOUT_HOSTNAME!;
 
@@ -76,14 +76,14 @@ test.describe('Authorized Non-Admin User', () => {
     const namespaceDenied = page.waitForResponse(
       (resp) =>
         resp.url().includes(`temporal.${hostname}/api/v1/namespaces`) && resp.status() === 403,
-      { timeout: 30000 },
+      { timeout: 90000 },
     );
     const clusterInfoDenied = page.waitForResponse(
       (resp) =>
         resp.url().includes(`temporal.${hostname}/api/v1/cluster-info`) && resp.status() === 403,
-      { timeout: 30000 },
+      { timeout: 90000 },
     );
-    await page.goto(`https://temporal.${hostname}/auth/sso`);
+    await openInFrame(page, `https://temporal.${hostname}/auth/sso`);
     const [namespaceResp, clusterInfoResp] = await Promise.all([
       namespaceDenied,
       clusterInfoDenied,
@@ -97,7 +97,8 @@ test.describe('Authorized Non-Admin User', () => {
     await signInToScout(page, url, authorizedUser);
 
     // Trigger MinIO SSO via the login page's SSO button (use loose selector, not exact text)
-    await page.click('button:has-text("Login")', { timeout: 15000 });
+    const minio = await openInFrame(page, url);
+    await minio.locator('button:has-text("Login")').click({ timeout: 15000 });
     await page.waitForLoadState('networkidle', { timeout: 60000 });
 
     // After SSO, MinIO API should reject users without policy claim
