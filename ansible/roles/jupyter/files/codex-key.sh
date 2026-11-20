@@ -14,8 +14,9 @@ unset _scout_var _scout_key
 case $- in
   *i*)
     if [ -z "$_scout_key_reminded" ] && grep -qsF REPLACE_WITH_YOUR_GATEWAY_KEY \
-      "$HOME/.codex/auth.json" "$HOME/.claude/settings.json"; then
-      echo "Claude Code and Codex need your AI gateway key. Run scout-set-key to add it." >&2
+      "$HOME/.codex/auth.json" "$HOME/.claude/settings.json" \
+      "$HOME/.local/share/code-server/User/chatLanguageModels.json"; then
+      echo "Claude Code, Codex, and VS Code chat need your AI gateway key. Run scout-set-key to add it." >&2
       _scout_key_reminded=1
     fi
     ;;

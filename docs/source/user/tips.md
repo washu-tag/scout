@@ -99,8 +99,10 @@ and your key isn't set yet, it asks for it: click **Add Key** and paste the key.
 the key is set, new terminals also print a reminder to run `scout-set-key`. To change it
 later, run **Scout: Set AI Gateway Key** from the Command Palette, or run
 `scout-set-key` in a terminal. Either saves the key to `~/.claude/settings.json` and
-`~/.codex/auth.json`, readable only by you. Then reload the VS Code window and open a new
-terminal.
+`~/.codex/auth.json`, and to the `x-api-key` header of any VS Code chat model in
+`~/.local/share/code-server/User/chatLanguageModels.json` that holds the placeholder or
+your previous key. Each file is readable only by you. Then reload the VS Code window and
+open a new terminal.
 
 **Claude Code.** Your settings live in `~/.claude/settings.json`. If your site provides
 a starter file, Scout creates it the first time your server starts, and your server
