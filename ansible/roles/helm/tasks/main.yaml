@@ -1,17 +1,17 @@
 ---
 # Helm installation tasks
-# This role installs Helm and optionally the helm-diff plugin
+# This role installs the pinned Helm version and optionally the helm-diff plugin
 # Can be used on remote nodes or localhost with appropriate variables
 
-- name: Check if Helm is already installed
+- name: Check the installed Helm version
   ansible.builtin.command:
-    cmd: which helm
+    cmd: helm version --short
   register: helm_check
   changed_when: false
   failed_when: false
 
 - name: Install Helm
-  when: helm_check.rc != 0
+  when: (helm_check.stdout | default('') | trim).split('+')[0] != helm_version
   block:
     - name: Create Helm script directory
       ansible.builtin.file:
@@ -31,6 +31,13 @@
       become: true
       environment:
         DESIRED_VERSION: '{{ helm_version }}'
+
+    - name: Check the pinned Helm version is the one in use
+      ansible.builtin.command:
+        cmd: helm version --short
+      register: helm_installed
+      changed_when: false
+      failed_when: (helm_installed.stdout | trim).split('+')[0] != helm_version
 
 - name: Install Helm Diff plugin
   when: helm_install_diff_plugin | bool
