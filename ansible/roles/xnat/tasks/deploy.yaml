@@ -201,3 +201,6 @@
 - name: Configure the container-service Kubernetes backend
   ansible.builtin.include_tasks: configure_cs.yaml
   when: xnat_container_service | bool
+
+- name: Configure the DICOM SCP receivers
+  ansible.builtin.include_tasks: configure_dicom_scp.yaml
