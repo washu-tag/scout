@@ -5,10 +5,12 @@ import { CATALOG_API_VERSION, CATALOG_KIND, validateDocument } from './schema';
 import {
   chipForUrl,
   chipTarget,
+  currentChip,
   deepPath,
   embeddedChip,
   frameUrl,
   isChipOrigin,
+  isCurrentChip,
   openRequest,
   openTarget,
   railSections,
@@ -201,6 +203,36 @@ describe('shellSections', () => {
       embeddedChip(namedSections, 'books.link')?.href,
       'https://books.scout.example.edu',
     );
+  });
+
+  it("marks a one-chip section's rail entry current while its heading link is open", () => {
+    const catalog = catalogFrom({
+      groups: [
+        { id: 'core', title: 'Core', weight: 10 },
+        {
+          id: 'shelf',
+          title: 'Shelf',
+          weight: 20,
+          footerLink: { text: 'See all', link: { subdomain: 'books' } },
+        },
+      ],
+      chips: [
+        { id: 'chat', title: 'Chat', link: { subdomain: 'chat' }, group: 'core' },
+        { id: 'book', title: 'Book', link: { subdomain: 'books', path: '/p/1' }, group: 'shelf' },
+      ],
+    });
+    const sections = shellSections(assemble(catalog, { origin: ORIGIN, isAdmin: false }));
+    const { pinned, rest } = railSections(sections);
+    const [shelf] = rest;
+    assert.deepStrictEqual(
+      shelf.chips.map((chip) => chip.id),
+      ['book'],
+    );
+    assert.strictEqual(isCurrentChip(shelf.chips[0], '/app/shelf'), false);
+    assert.strictEqual(currentChip([shelf], '/app/shelf/all')?.id, 'shelf');
+    assert.strictEqual(currentChip([shelf], '/app/book')?.id, 'book');
+    assert.strictEqual(currentChip([shelf], '/app/chat'), undefined);
+    assert.strictEqual(currentChip([pinned!], '/app/chat')?.id, 'chat');
   });
 
   it('gives a duplicated id to the first chip in page order', () => {
@@ -485,7 +517,7 @@ describe('openTarget', () => {
 describe('embeddedChip', () => {
   const sections = shellSections(assemble(CATALOG, { origin: ORIGIN, isAdmin: true }));
 
-  it('finds only services, and nothing when embedding is off', () => {
+  it('finds services, not launchpad pages or outside links', () => {
     assert.strictEqual(embeddedChip(sections, 'chat')?.title, 'Chat');
     assert.strictEqual(embeddedChip(sections, 'users'), undefined);
     assert.strictEqual(embeddedChip(sections, 'guide'), undefined);

@@ -83,7 +83,7 @@ A top-level navigation to a service URL goes through the launchpad:
 
 ### Messages between the launchpad and services
 
-Framed services may post two messages to the launchpad (`window.parent` or
+Framed services may post three messages to the launchpad (`window.parent` or
 `window.top`):
 
 - **`scout:location`** reports the service's current address, so the address bar
@@ -94,6 +94,11 @@ Framed services may post two messages to the launchpad (`window.parent` or
   (the shared script drops XNAT's CSRF token). The frame check rejects messages sent
   from content the service nests; it can't tell the service's own code from script
   that same-origin content runs in its page.
+- **`scout:leaving`** names where a navigation in the service's frame is headed,
+  for a destination page that can't report itself (XNAT's viewer). The launchpad
+  checks it like `scout:location` and takes the address only if the frame then loads
+  a new page within 30 seconds; a `scout:location` from that page replaces it. The
+  shared script sends it for link navigations, not form posts or downloads.
 - **`scout:open`** asks the launchpad to open another Scout page in the shell
   instead of a new tab. The launchpad accepts it from its own page or a service on a
   single-label subdomain of its host, but not from a sandboxed chip's origin (its
@@ -105,7 +110,7 @@ Framed services may post two messages to the launchpad (`window.parent` or
   launchpad answers `scout:opened`; without that answer the sender may try a new tab,
   which a sandbox can block.
 
-Supporting either message is optional. A service that sends neither still works
+Supporting any of them is optional. A service that sends none still works
 framed; its address bar just stays at the page it was opened on.
 
 XNAT loads the shared script from a plugin jar holding an XNAT header template. The

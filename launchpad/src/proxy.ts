@@ -19,7 +19,7 @@ export function proxy(request: NextRequest) {
   return response;
 }
 
-// API routes return JSON, and /open sets its own policy for its one inline script.
+// API routes return JSON, and /open only redirects.
 export const config = {
   matcher: [
     {

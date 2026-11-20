@@ -176,11 +176,25 @@ window.parent.postMessage(
 );
 ```
 
-Name the launchpad's origin rather than `'*'`, and send nothing else. The launchpad
+Name the launchpad's origin rather than `'*'`, and send nothing but these messages. The launchpad
 accepts the message only from your chip's frame and only for an address on your
 chip's host or one of its subdomains, so content your page nests from another origin
 cannot move it. It keeps the path, query and fragment, which then appear in the
 launchpad's address bar and history, so don't report addresses with secrets in them.
+
+A page that can't run your script can't report itself. To keep the address bar right
+when a link leads to one, post where a navigation is going just before it leaves:
+
+```js
+window.parent.postMessage(
+  { type: 'scout:leaving', href: destinationUrl },
+  'https://scout.example.edu', // the launchpad's origin
+);
+```
+
+The launchpad checks it like `scout:location` and shows that address only if your
+frame then loads a new page within 30 seconds; a `scout:location` from the new page
+replaces it. Send it for link navigations only, not form posts or downloads.
 
 To send users to another Scout page, for example a button that opens a result in
 another service, ask the launchpad to open it instead of opening a new tab:

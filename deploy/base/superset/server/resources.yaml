@@ -121,6 +121,23 @@ spec:
     # Per-mode ingress + security-headers (ADR 0035); whole-values.yaml merge.
     - kind: ConfigMap
       name: 'superset-edge-${service_mode}'
+    # The templates below are subPath mounts, which never refresh: carrying their
+    # content in pod annotations rolls the pods when it changes.
+    - kind: ConfigMap
+      name: superset-frame-location
+      valuesKey: scout-frame-location.js
+      targetPath: supersetNode.podAnnotations.content/frame-location
+      literal: true
+    - kind: ConfigMap
+      name: superset-frame-location
+      valuesKey: tail_js_custom_extra.html
+      targetPath: supersetNode.podAnnotations.content/frame-location-tail
+      literal: true
+    - kind: ConfigMap
+      name: superset-head-extra
+      valuesKey: head_custom_extra.html
+      targetPath: supersetNode.podAnnotations.content/head-extra
+      literal: true
   values:
     # Scout custom image (build-lane-stamped at publish; literal here).
     image:

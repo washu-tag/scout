@@ -232,31 +232,14 @@
             X-Powered-By: ''
             Server: ''
 
-# Same-origin framing + popup-friendly COOP: this is the one real consumer
-# this repo builds and deploys (examples/xnat-explore-poc's landing page) -
-# XNAT itself was decoupled from needing this (#739's "Explore in XNAT"
-# action points at xnat-explore-poc's own self-hosted landing page, not
-# real XNAT - see examples/xnat-explore-poc's README). Split out from
-# security-headers-sameorigin above, per that middleware's own earlier
-# note, rather than weakening every -sameorigin consumer's COOP for one
-# example app's sake.
-#
-# COOP is 'unsafe-none', not a relaxed-but-still-isolating value like
-# 'same-origin-allow-popups' - per the WHATWG HTML spec's navigation
-# algorithm (github.com/whatwg/html/pull/5817, matching Chromium's
-# "blocked from loading in a popup opened by a sandboxed iframe because
-# this document specified a cross-origin opener policy"), the check a
-# sandboxed opener without allow-popups-to-escape-sandbox hits is a
-# binary "is the target's COOP unsafe-none, or not" - same-origin and
-# same-origin-allow-popups both fail it identically, only unsafe-none
-# passes. OWUI's iframe sandbox attribute isn't something Scout
-# controls, so unsafe-none is the only workable value from this side.
-# Tradeoff accepted: this page loses COOP's cross-origin-isolation
-# hardening (mainly Spectre-class process isolation). The more commonly-
-# cited COOP relaxation risk - reverse tabnabbing via a retained
-# window.opener - is separately neutralized regardless of this value,
-# since report-viewer's openResult.ts always sets rel="noopener
-# noreferrer" on the anchor it opens this with.
+# Same-origin framing with COOP 'unsafe-none', for examples/xnat-explore-poc's
+# landing page, which #739's "Explore in XNAT" action opens in a new tab. A
+# sandboxed opener without allow-popups-to-escape-sandbox can open only a page
+# whose COOP is unsafe-none (github.com/whatwg/html/pull/5817). Inside chat,
+# report-viewer's frame doesn't allow popups at all, so there the action can't open
+# the page whatever this sends (ADR 0042). The page loses COOP's cross-origin
+# isolation; report-viewer's openResult.ts opens it with rel="noopener noreferrer",
+# so no window.opener is kept.
 #
 # Otherwise identical to security-headers-sameorigin above, except that the
 # launchpad cannot frame it.

@@ -1,21 +1,24 @@
 // Tells the launchpad which page this app is on while the launchpad frames it,
 // so its address bar follows. Sends only this page's address, only to the launchpad.
-// Opened on its own (a new tab from inside this app, which the edge doesn't
-// redirect), the page reopens inside the launchpad.
+// Opened on its own on a subdomain of the launchpad's host (a new tab from inside
+// this app, which the edge doesn't redirect), the page reopens inside the launchpad.
+// On any other host (a port-forward, say) it stays where it is.
 (function () {
   var launchpad = 'https://${server_hostname}';
-  if (window.parent === window) {
-    var here = window.location;
-    window.location.replace(
-      launchpad + '/open/' + here.host + here.pathname + here.search + here.hash,
-    );
-    return;
-  }
   function clean(href) {
     var url = new URL(href, window.location.href);
     if (url.origin !== window.location.origin) return null;
     if (url.searchParams.has('XNAT_CSRF')) url.searchParams.delete('XNAT_CSRF');
     return url.href;
+  }
+  if (window.parent === window) {
+    var here = new URL(clean(window.location.href));
+    if (here.hostname.endsWith('.' + new URL(launchpad).hostname)) {
+      window.location.replace(
+        launchpad + '/open/' + here.host + here.pathname + here.search + here.hash,
+      );
+    }
+    return;
   }
   var last = '';
   function report() {

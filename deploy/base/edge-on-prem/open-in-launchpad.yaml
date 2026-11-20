@@ -1,0 +1,42 @@
+# A top-level page load of a Scout service URL goes to the launchpad, which opens it
+# inside the shell at the same page (ADR 0042). Same-origin navigation, frame loads,
+# form posts and API clients (which send no Sec-Fetch headers) reach the service
+# directly. In kube-system beside the Traefik-owned security-headers Middleware the
+# route names. $${1}/$${2} are Traefik regex groups, left literal by Flux substitution.
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: open-in-launchpad
+  namespace: kube-system
+spec:
+  redirectRegex:
+    regex: '^https://([a-z0-9-]+\.${server_hostname//./\.})/(.*)'
+    replacement: 'https://${server_hostname}/open/$${1}/$${2}'
+    permanent: false
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: open-in-launchpad
+  namespace: kube-system
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: >-
+        HostRegexp(`^[a-z0-9-]+\.${server_hostname//./\.}$`)
+        && !Host(`keycloak.${server_hostname}`)
+        && !Host(`${oauth2_proxy_subdomain}.${server_hostname}`)
+        && Method(`GET`)
+        && Header(`Sec-Fetch-Dest`, `document`)
+        && HeaderRegexp(`Sec-Fetch-Site`, `^(none|cross-site|same-site)$`)
+      priority: 10000
+      middlewares:
+        - name: security-headers
+        - name: open-in-launchpad
+      services:
+        - kind: TraefikService
+          name: noop@internal
+  tls: {}

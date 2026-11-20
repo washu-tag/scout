@@ -11,20 +11,21 @@ import { ChipAnchor } from '@/components/shell/ChipAnchor';
 import { DEFAULT_ICON, ICONS } from '@/lib/catalog/icons';
 import {
   chipTarget,
+  currentChip,
   deepPath,
   embeddedChip,
   frameUrl,
   isChipOrigin,
+  isCurrentChip,
   openRequest,
   railSections,
   recentApps,
-  routableChips,
   shellLocation,
   type ShellSection,
 } from '@/lib/catalog/shell';
 import { TONES, type ToneName } from '@/lib/catalog/tones';
 import type { RenderChip } from '@/lib/catalog/types';
-import { edgeSessionGone, sessionRecovery } from '@/lib/sessionRecovery';
+import { edgeSessionGone, sessionGate, sessionRecovery } from '@/lib/sessionRecovery';
 
 interface ShellClientProps {
   sections: ShellSection[];
@@ -139,8 +140,8 @@ export default function ShellClient({
   const { data: session, status } = useSession();
   const railRef = useRef<HTMLDivElement>(null);
   const signingOut = useRef(false);
-  const hadSession = useRef(false);
-  if (session) hadSession.current = true;
+  const lastSession = useRef(session);
+  if (session) lastSession.current = session;
   const [ended, setEnded] = useState(false);
   const endedRef = useRef(false);
   const askToSignIn = useCallback(() => {
@@ -207,15 +208,6 @@ export default function ShellClient({
   const skipAuth =
     process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_SKIP_AUTH === 'true';
 
-  // Sign-in has to happen at the top level: identity-provider login pages
-  // refuse to render inside a frame. Opening the launchpad signs in at once; a
-  // session that ends while the page is open waits for a click (SessionEnded).
-  useEffect(() => {
-    if (skipAuth || signingOut.current || status === 'loading' || session) return;
-    if (hadSession.current) askToSignIn();
-    else signIn('keycloak', { callbackUrl: window.location.href });
-  }, [status, session, skipAuth, askToSignIn]);
-
   // The edge's sign-in when its session is gone (a reload goes through it), else the launchpad's.
   const signInAgain = useCallback(async () => {
     try {
@@ -256,6 +248,18 @@ export default function ShellClient({
     }
     window.location.reload();
   }, [skipAuth, askToSignIn]);
+
+  // Sign-in has to happen at the top level: identity-provider login pages
+  // refuse to render inside a frame. Opening the launchpad signs in at once; a
+  // session that ends while the page is open waits for a click (SessionEnded).
+  const gate = skipAuth
+    ? 'shell'
+    : sessionGate(status, Boolean(session), Boolean(lastSession.current));
+  useEffect(() => {
+    if (signingOut.current) return;
+    if (gate === 'sign-in') signIn('keycloak', { callbackUrl: window.location.href });
+    else if (gate === 'verify') checkSession();
+  }, [gate, checkSession]);
 
   useEffect(() => {
     const onVisible = () => {
@@ -386,24 +390,20 @@ export default function ShellClient({
     window.location.assign('/');
   };
 
-  if (!skipAuth && (status === 'loading' || !session)) {
+  if (gate === 'wait' || gate === 'sign-in') {
     return (
       <div className="min-h-screen w-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
-        {ended ? <SessionEnded onSignIn={signInAgain} /> : <Spinner />}
+        <Spinner />
       </div>
     );
   }
 
-  const user = session?.user;
+  const user = lastSession.current?.user;
   const { pinned: primary, rest, admin } = railSections(sections);
   const openSection = [...rest, ...admin].find((section) => section.id === menu?.id);
-  const isCurrent = (chip: RenderChip) => {
-    const target = chipTarget(chip);
-    return target.internal && (pathname === target.href || pathname.startsWith(`${target.href}/`));
-  };
+  const isCurrent = (chip: RenderChip) => isCurrentChip(chip, pathname);
 
-  const railChip = (chip: RenderChip) => {
-    const current = isCurrent(chip);
+  const railChip = (chip: RenderChip, current = isCurrent(chip)) => {
     return (
       <ChipAnchor
         key={chip.id}
@@ -425,8 +425,12 @@ export default function ShellClient({
 
   const menuBlocks = (section: ShellSection) => [...(section.nested ?? []), section];
 
+  // A section of one chip shows as that chip, current while its heading link is open too.
+  const sectionChip = (section: ShellSection) =>
+    railChip(section.chips[0], currentChip([section], pathname) !== undefined);
+
   const groupButton = (section: ShellSection) => {
-    const currentChip = routableChips(menuBlocks(section)).find(isCurrent);
+    const current = currentChip(menuBlocks(section), pathname);
     const isOpen = menu?.id === section.id;
     const GroupIcon = ICONS[section.icon] ?? ICONS[DEFAULT_ICON];
     return (
@@ -437,13 +441,13 @@ export default function ShellClient({
         aria-expanded={isOpen}
         title={section.title}
         onClick={(event) => toggleMenu(section.id, event)}
-        className={railItemClass(isOpen || currentChip !== undefined)}
+        className={railItemClass(isOpen || current !== undefined)}
       >
         <RailLabel
           icon={<GroupIcon />}
           label={section.title}
-          active={currentChip !== undefined}
-          tone={currentChip?.tone}
+          active={current !== undefined}
+          tone={current?.tone}
         />
       </button>
     );
@@ -475,7 +479,9 @@ export default function ShellClient({
 
           {primary && (
             <div className="flex w-full flex-col items-center gap-1 border-t border-slate-200 pt-2 dark:border-slate-800">
-              {primary.chips.map(railChip)}
+              {primary.chips.length === 1
+                ? sectionChip(primary)
+                : primary.chips.map((chip) => railChip(chip))}
             </div>
           )}
 
@@ -488,7 +494,7 @@ export default function ShellClient({
                 >
                   {block.map((section) =>
                     section.chips.length === 1 && !section.nested
-                      ? railChip(section.chips[0])
+                      ? sectionChip(section)
                       : groupButton(section),
                   )}
                 </div>

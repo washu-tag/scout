@@ -42,8 +42,9 @@ postgresql:
   enabled: false
 supersetNode:
   podAnnotations:
-    # Rolls the pods when the launchpad frame-location script changes (subPath mounts).
+    # Rolls the pods when a subPath-mounted template changes.
     checksum/frame-location: '{{ frame_location_checksum }}'
+    checksum/head-extra: "{{ lookup('file', role_path + '/files/head_custom_extra.html') | hash('sha256') }}"
   command:
     - /bin/sh
     - -c

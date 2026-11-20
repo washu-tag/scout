@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { edgeSessionGone, sessionRecovery } from './sessionRecovery';
+import { edgeSessionGone, sessionGate, sessionRecovery } from './sessionRecovery';
 
 const answer = (status: number, type = 'basic') =>
   ({ status, type }) as Pick<Response, 'status' | 'type'>;
@@ -27,5 +27,24 @@ describe('sessionRecovery', () => {
     assert.equal(edgeSessionGone(answer(0, 'opaqueredirect')), true);
     assert.equal(edgeSessionGone(answer(401)), true);
     assert.equal(edgeSessionGone(answer(440)), false);
+  });
+});
+
+describe('sessionGate', () => {
+  it('waits for the first session, then signs in if there is none', () => {
+    assert.equal(sessionGate('loading', false, false), 'wait');
+    assert.equal(sessionGate('unauthenticated', false, false), 'sign-in');
+    assert.equal(sessionGate('authenticated', true, false), 'shell');
+  });
+
+  it('keeps the shell and its apps when next-auth loses a session it had, and checks /api/session', () => {
+    assert.equal(sessionGate('unauthenticated', false, true), 'verify');
+    assert.equal(sessionGate('loading', false, true), 'verify');
+  });
+
+  it('asks to sign in when /api/session then says the session ended', () => {
+    assert.equal(sessionGate('unauthenticated', false, true), 'verify');
+    assert.equal(sessionRecovery(answer(440)), 'ask');
+    assert.equal(sessionRecovery(answer(204)), 'none');
   });
 });
