@@ -11,7 +11,7 @@
     "docs-assets": "tsx scripts/generate-doc-assets.ts"
   },
   "dependencies": {
-    "next": "^16.4.1",
+    "next": "^16.4.6",
     "next-auth": "^4.24.12",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
