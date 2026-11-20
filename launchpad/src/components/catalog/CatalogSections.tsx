@@ -112,13 +112,17 @@ const ChipTile = ({ chip }: { chip: RenderChip }) => {
     <ChipAnchor
       chip={chip}
       title={chip.description}
-      className={`flex items-center gap-2.5 px-3 py-2.5 rounded-[14px] no-underline transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${SURFACE} ${tone.hoverBorder} ${tone.hoverShadow}`}
+      className={`flex flex-wrap items-center gap-x-2.5 gap-y-2 px-3 py-2.5 rounded-[14px] no-underline transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${SURFACE} ${tone.hoverBorder} ${tone.hoverShadow}`}
     >
       <ToneIcon chip={chip} size="w-[34px] h-[34px] rounded-[9px]" />
-      <span className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">
+      <span className="min-w-0 flex-1 text-[13px] font-semibold text-slate-900 dark:text-slate-100">
         {chip.title}
       </span>
-      <ChipBadge chip={chip} />
+      {chip.badge && (
+        <span className="basis-full min-w-0">
+          <ChipBadge chip={chip} />
+        </span>
+      )}
     </ChipAnchor>
   );
 };

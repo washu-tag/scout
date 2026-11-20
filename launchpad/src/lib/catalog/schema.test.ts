@@ -232,7 +232,7 @@ describe('validateDocument', () => {
     }
   });
 
-  it('accepts a badge, slate by default, and drops an invalid one with a diagnostic', () => {
+  it('accepts a badge, slate by default, and drops one with invalid text with a diagnostic', () => {
     const result = validateDocument(
       doc({
         chips: [
@@ -251,17 +251,32 @@ describe('validateDocument', () => {
       ],
     );
 
-    for (const badge of [
-      'Draft',
-      { text: '' },
-      { text: 'x'.repeat(25) },
-      { text: 'Draft', tone: 'pink' },
-    ]) {
+    for (const badge of ['Draft', { text: '' }, { text: 'x'.repeat(25) }]) {
       const invalid = validateDocument(doc({ chips: [chip({ badge })] }), SOURCE);
       assert.strictEqual(invalid.chips.length, 1, JSON.stringify(badge));
       assert.strictEqual(invalid.chips[0].badge, undefined, JSON.stringify(badge));
       assert.match(invalid.diagnostics[0].message, /badge/);
     }
+  });
+
+  it('falls back to a slate badge for an unknown badge tone, with a diagnostic', () => {
+    const result = validateDocument(
+      doc({ chips: [chip({ badge: { text: 'Draft', tone: 'pink' } })] }),
+      SOURCE,
+    );
+    assert.deepStrictEqual(result.chips[0].badge, { text: 'Draft', tone: 'slate' });
+    assert.strictEqual(result.diagnostics.length, 1);
+    assert.match(result.diagnostics[0].message, /invalid badge\.tone .*default used/);
+  });
+
+  it('warns on unknown fields inside a badge', () => {
+    const result = validateDocument(
+      doc({ chips: [chip({ badge: { text: 'Draft', color: 'amber' } })] }),
+      SOURCE,
+    );
+    assert.deepStrictEqual(result.chips[0].badge, { text: 'Draft', tone: 'slate' });
+    assert.strictEqual(result.diagnostics.length, 1);
+    assert.match(result.diagnostics[0].message, /unknown field "color"/);
   });
 
   it('accepts users in a v1alpha2 document, lowercased', () => {

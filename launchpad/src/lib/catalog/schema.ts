@@ -73,6 +73,11 @@ const linkSchema = z
     'link must be exactly one destination: subdomain (with optional path suffix), path, or url',
   );
 
+const badgeShape = {
+  text: z.string().trim().min(1).max(BADGE_MAX),
+  tone: z.enum(TONE_NAMES),
+};
+
 const chipBase = {
   id: idSchema,
   title: titleSchema,
@@ -83,10 +88,7 @@ const chipBase = {
     .regex(ICON_DATA_RE, 'iconData must be a base64 png/jpeg/svg+xml data URI')
     .max(ICON_DATA_MAX_CHARS, `iconData must be at most ${ICON_DATA_MAX_CHARS} characters`),
   tone: z.enum(TONE_NAMES),
-  badge: z.object({
-    text: z.string().trim().min(1).max(BADGE_MAX),
-    tone: z.enum(TONE_NAMES).default('slate'),
-  }),
+  badge: z.object(badgeShape),
   link: linkSchema,
   newTab: z.boolean(),
   sandbox: z.boolean(),
@@ -131,6 +133,7 @@ const groupBase = {
 const CHIP_KEYS = Object.keys(chipBase);
 const GROUP_KEYS = Object.keys(groupBase);
 const LINK_KEYS = Object.keys(linkShape);
+const BADGE_KEYS = Object.keys(badgeShape);
 
 // Fallback values for the lenient parser, in one table so each default is
 // stated exactly once (the authoring guide's field tables document these).
@@ -144,6 +147,10 @@ const CHIP_FALLBACKS = {
   weight: 100,
   audience: 'user',
   enabled: true,
+} as const;
+
+const BADGE_FALLBACKS = {
+  tone: 'slate',
 } as const;
 
 const GROUP_FALLBACKS = {
@@ -198,6 +205,11 @@ function caughtOptional<T extends z.ZodType>(field: string, base: T) {
   });
 }
 
+const badgeSchema = z.object({
+  text: badgeShape.text,
+  tone: caught('badge.tone', badgeShape.tone, BADGE_FALLBACKS.tone),
+});
+
 const chipSchema = z.object({
   id: chipBase.id,
   title: chipBase.title,
@@ -205,7 +217,7 @@ const chipSchema = z.object({
   icon: caught('icon', chipBase.icon, CHIP_FALLBACKS.icon),
   iconData: caughtOptional('iconData', chipBase.iconData),
   tone: caught('tone', chipBase.tone, CHIP_FALLBACKS.tone),
-  badge: caughtOptional('badge', chipBase.badge),
+  badge: caughtOptional('badge', badgeSchema),
   link: chipBase.link,
   newTab: caught('newTab', chipBase.newTab, CHIP_FALLBACKS.newTab),
   // Fails closed like audience: an invalid value rejects the chip rather than
@@ -362,6 +374,9 @@ export function validateDocument(input: unknown, source: string, sourceRank = 0)
     warnUnknownKeys(raw, CHIP_KEYS, diagnostics, source, subject);
     if (isRecord(raw) && isRecord(raw.link)) {
       warnUnknownKeys(raw.link, LINK_KEYS, diagnostics, source, subject);
+    }
+    if (isRecord(raw) && isRecord(raw.badge)) {
+      warnUnknownKeys(raw.badge, BADGE_KEYS, diagnostics, source, subject);
     }
     if (seenChipIds.has(result.data.id)) {
       diagnostics.push({

@@ -188,6 +188,23 @@ describe('assemble mechanics', () => {
     );
   });
 
+  it('reports a synthesized group to an admin the chip is hidden from', () => {
+    const catalog = validateDocument(
+      {
+        apiVersion: CATALOG_API_VERSION_V1ALPHA2,
+        kind: CATALOG_KIND,
+        chips: [{ id: 'a', title: 'A', link: { path: '/a' }, group: 'mine', users: ['alice'] }],
+      },
+      'test/mine.yaml',
+    );
+    const admin = assemble(catalog, { origin: ORIGIN, isAdmin: true, username: 'carol' });
+    assert.strictEqual(admin.rows.length, 0);
+    assert.ok(
+      admin.diagnostics.some((d) => d.subject === 'a' && d.message.includes('synthesized')),
+      'expected a synthesized-group diagnostic',
+    );
+  });
+
   it('lets the lower source rank win a group id collision', () => {
     const mounted = validateDocument(
       {
