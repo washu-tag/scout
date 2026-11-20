@@ -49,16 +49,18 @@ const ChipCard = ({ chip }: { chip: RenderChip }) => {
     >
       <div className="flex items-center gap-3 mb-4">
         <div
-          className={`w-11 h-11 rounded-xl border flex items-center justify-center transition-colors duration-200 ${tone.iconBg}`}
+          className={`w-11 h-11 rounded-xl border flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${tone.iconBg}`}
         >
           <div className={`text-xl ${tone.icon}`}>
             <ChipIcon chip={chip} className="text-xl" />
           </div>
         </div>
-        <h3 className="text-xl font-semibold text-slate-900 dark:text-white tracking-tight">
-          {chip.title}
-        </h3>
-        <ChipBadge chip={chip} />
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+          <h3 className="text-xl font-semibold text-slate-900 dark:text-white tracking-tight">
+            {chip.title}
+          </h3>
+          <ChipBadge chip={chip} />
+        </div>
       </div>
       <p className="text-base text-slate-500 dark:text-slate-400 mb-4 leading-relaxed font-light">
         {chip.description}
