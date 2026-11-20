@@ -225,7 +225,7 @@
             font-src 'self' data:;
             connect-src 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
             form-action 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
-            frame-ancestors 'self' https://{{ server_hostname }}
+            frame-ancestors {{ traefik_sameorigin_frame_ancestors }}
           customResponseHeaders:
             Permissions-Policy: 'camera=(), microphone=(), geolocation=(), payment=()'
             Cross-Origin-Opener-Policy: 'same-origin'

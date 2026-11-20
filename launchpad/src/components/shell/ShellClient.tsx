@@ -24,6 +24,7 @@ import {
 } from '@/lib/catalog/shell';
 import { TONES, type ToneName } from '@/lib/catalog/tones';
 import type { RenderChip } from '@/lib/catalog/types';
+import { edgeSessionGone, sessionRecovery } from '@/lib/sessionRecovery';
 
 interface ShellClientProps {
   sections: ShellSection[];
@@ -52,6 +53,39 @@ function railItemClass(highlighted: boolean) {
   return `flex w-16 flex-col items-center gap-1 rounded-xl px-1 py-1.5 no-underline transition-colors cursor-pointer ${
     highlighted ? 'bg-slate-100 dark:bg-slate-800' : 'hover:bg-slate-100 dark:hover:bg-slate-800'
   }`;
+}
+
+// Shown when Scout's session ends while the launchpad is open. Sign-in starts on the click, so
+// an attempt never sits waiting on a sign-in page until it has expired.
+function SessionEnded({ onSignIn }: { onSignIn: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4 backdrop-blur-[1px]"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="session-ended-title"
+    >
+      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+        <h2
+          id="session-ended-title"
+          className="text-lg font-semibold text-slate-900 dark:text-slate-100"
+        >
+          Your Scout session ended
+        </h2>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+          Sign in again to keep working. Apps open in Scout reload afterwards.
+        </p>
+        <button
+          type="button"
+          autoFocus
+          onClick={onSignIn}
+          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
+        >
+          Sign in again
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function RailLabel({
@@ -105,6 +139,14 @@ export default function ShellClient({
   const { data: session, status } = useSession();
   const railRef = useRef<HTMLDivElement>(null);
   const signingOut = useRef(false);
+  const hadSession = useRef(false);
+  if (session) hadSession.current = true;
+  const [ended, setEnded] = useState(false);
+  const endedRef = useRef(false);
+  const askToSignIn = useCallback(() => {
+    endedRef.current = true;
+    setEnded(true);
+  }, []);
   const [menu, setMenu] = useState<{ id: string; top: number } | null>(null);
   const [dark, setDark] = useState(false);
 
@@ -166,27 +208,45 @@ export default function ShellClient({
     process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_SKIP_AUTH === 'true';
 
   // Sign-in has to happen at the top level: identity-provider login pages
-  // refuse to render inside a frame.
+  // refuse to render inside a frame. Opening the launchpad signs in at once; a
+  // session that ends while the page is open waits for a click (SessionEnded).
   useEffect(() => {
-    if (!skipAuth && !signingOut.current && status !== 'loading' && !session) {
-      signIn('keycloak', { callbackUrl: window.location.href });
+    if (skipAuth || signingOut.current || status === 'loading' || session) return;
+    if (hadSession.current) askToSignIn();
+    else signIn('keycloak', { callbackUrl: window.location.href });
+  }, [status, session, skipAuth, askToSignIn]);
+
+  // The edge's sign-in when its session is gone (a reload goes through it), else the launchpad's.
+  const signInAgain = useCallback(async () => {
+    try {
+      const response = await fetch('/api/session', { cache: 'no-store', redirect: 'manual' });
+      if (edgeSessionGone(response)) {
+        window.location.reload();
+        return;
+      }
+    } catch {
+      window.location.reload();
+      return;
     }
-  }, [status, session, skipAuth]);
+    signIn('keycloak', { callbackUrl: window.location.href });
+  }, []);
 
   // Scout's sessions can end while an app is open in a frame, where the sign-in
-  // pages cannot render. Check from the top window and send the whole window to
-  // sign in: a 401 is oauth2-proxy and a redirect is a load balancer's OIDC sign-in
-  // (the edge session is gone), a 440 is the launchpad reporting the SSO session gone.
+  // pages cannot render, so the top window checks and recovers (sessionRecovery).
   const checkSession = useCallback(async () => {
-    if (skipAuth || signingOut.current) return;
+    if (skipAuth || signingOut.current || endedRef.current) return;
     let response: Response;
     try {
       response = await fetch('/api/session', { cache: 'no-store', redirect: 'manual' });
     } catch {
       return;
     }
-    const edgeGone = response.status === 401 || response.type === 'opaqueredirect';
-    if (!edgeGone && response.status !== 440) return;
+    const recovery = sessionRecovery(response);
+    if (recovery === 'none') return;
+    if (recovery === 'ask') {
+      askToSignIn();
+      return;
+    }
     try {
       const last = Number(sessionStorage.getItem(RECOVERY_KEY) ?? 0);
       if (Date.now() - last < RECOVERY_BACKOFF_MS) return;
@@ -194,9 +254,8 @@ export default function ShellClient({
     } catch {
       // Without storage there is no loop guard; recover anyway.
     }
-    if (edgeGone) window.location.reload();
-    else signIn('keycloak', { callbackUrl: window.location.href });
-  }, [skipAuth]);
+    window.location.reload();
+  }, [skipAuth, askToSignIn]);
 
   useEffect(() => {
     const onVisible = () => {
@@ -330,7 +389,7 @@ export default function ShellClient({
   if (!skipAuth && (status === 'loading' || !session)) {
     return (
       <div className="min-h-screen w-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
-        <Spinner />
+        {ended ? <SessionEnded onSignIn={signInAgain} /> : <Spinner />}
       </div>
     );
   }
@@ -588,6 +647,7 @@ export default function ShellClient({
         )}
         <div className={`h-full overflow-y-auto ${appId ? 'hidden' : ''}`}>{children}</div>
       </main>
+      {ended && <SessionEnded onSignIn={signInAgain} />}
     </div>
   );
 }
