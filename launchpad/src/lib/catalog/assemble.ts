@@ -75,33 +75,36 @@ export function assemble(catalog: Catalog, options: AssembleOptions): RenderMode
     groupDefs.set(candidate.id, candidate);
   }
 
+  // A chip must always land somewhere: synthesize a group from the id. Over
+  // every enabled chip, so admins see the diagnostic for chips hidden from them.
+  for (const chip of catalog.chips) {
+    if (!chip.enabled || groupDefs.has(chip.group)) continue;
+    groupDefs.set(chip.group, {
+      id: chip.group,
+      title: titleCaseId(chip.group),
+      description: '',
+      icon: DEFAULT_GROUP_ICON,
+      weight: 500,
+      layout: 'cards',
+      maxColumns: defaultColumns('cards'),
+      width: 'full',
+      audience: 'user',
+      source: chip.source,
+      sourceRank: Number.MAX_SAFE_INTEGER,
+    });
+    diagnostics.push({
+      source: chip.source,
+      subject: chip.id,
+      message: `chip references undefined group "${chip.group}"; a default group was synthesized`,
+    });
+  }
+
   const visibleChips = catalog.chips.filter(
     (chip) => chip.enabled && audienceOk(chip.audience) && usersOk(chip.users),
   );
 
   const membership = new Map<string, Chip[]>();
   for (const chip of visibleChips) {
-    if (!groupDefs.has(chip.group)) {
-      // A chip must always land somewhere: synthesize a group from the id.
-      groupDefs.set(chip.group, {
-        id: chip.group,
-        title: titleCaseId(chip.group),
-        description: '',
-        icon: DEFAULT_GROUP_ICON,
-        weight: 500,
-        layout: 'cards',
-        maxColumns: defaultColumns('cards'),
-        width: 'full',
-        audience: 'user',
-        source: chip.source,
-        sourceRank: Number.MAX_SAFE_INTEGER,
-      });
-      diagnostics.push({
-        source: chip.source,
-        subject: chip.id,
-        message: `chip references undefined group "${chip.group}"; a default group was synthesized`,
-      });
-    }
     const members = membership.get(chip.group) ?? [];
     members.push(chip);
     membership.set(chip.group, members);
