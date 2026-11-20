@@ -5,7 +5,9 @@ A key covers the user and query plus the user's permissions fingerprint from OPA
 table the query reads, so a permission, policy or data change makes older
 entries unreachable and the TTL removes them. Trino's planner names the input
 tables (`EXPLAIN (TYPE IO)`, which sees through views); a query reading anything
-outside the Delta catalog has no version to key on and runs uncached.
+outside the Delta catalog has no version to key on and runs uncached. Versions
+are read as Report Viewer's own identity, which OPA exempts from row filters on
+`$history` tables only, so every user's searches key on the same real versions.
 
 OPA's replicas pull the user bundle independently, so just after a permission
 change the fingerprint read here and the policy Trino applies can disagree. A
@@ -33,6 +35,7 @@ from typing import Any
 import httpx
 import redis.asyncio as redis
 import sqlglot
+from sqlglot import exp
 from sqlglot.tokens import TokenType
 
 from . import metrics, trino_client
@@ -185,7 +188,7 @@ def _data_version(user: str, sql: str) -> str | None:
     ]
     if stale:
         _refreshing.update(stale)
-        _spawn(_refresh_versions(user, stale))
+        _spawn(_refresh_versions(stale))
     return _version_of(tables, _versions)
 
 
@@ -235,16 +238,14 @@ async def _resolve_tables(user: str, sql: str) -> None:
     new = [t for t in tables or () if t not in _versions and t not in _refreshing]
     if new:
         _refreshing.update(new)
-        await _refresh_versions(user, new)
+        await _refresh_versions(new)
 
 
 def _quote(name: str) -> str:
     return '"' + name.replace('"', '""') + '"'
 
 
-async def _refresh_versions(
-    user: str | None, tables: list[_Table], quiet: bool = False
-) -> None:
+async def _refresh_versions(tables: list[_Table], quiet: bool = False) -> None:
     def history(i: int, table: _Table) -> str:
         catalog, schema, name = table
         return (
@@ -254,11 +255,13 @@ async def _refresh_versions(
 
     try:
         _cols, rows = await trino_client.execute(
-            " UNION ALL ".join(history(i, t) for i, t in enumerate(tables)),
-            user=user,
+            " UNION ALL ".join(history(i, t) for i, t in enumerate(tables))
         )
+        # Every Delta table has a commit, so no history means the read was
+        # filtered, and a version recorded from it would never change.
         for row in rows:
-            _versions[tables[row["i"]]] = f"{row['version']}:{row['ts']}"
+            if row["version"] is not None:
+                _versions[tables[row["i"]]] = f"{row['version']}:{row['ts']}"
     except Exception:
         if not quiet:
             log.warning("cache: input-table version refresh failed", exc_info=True)
@@ -286,9 +289,10 @@ def warmed_up() -> bool:
 
 
 async def _read_all_versions() -> None:
-    """Every table's version in the configured schema, as Report Viewer's own
-    identity. One query per table, since the schema also lists Spark views that
-    have no Delta history and would fail a combined query."""
+    """The version of every table in the configured schema, plus the tables its
+    views read, which covers tables hidden from listing (the patient mapping).
+    One query per table, since the schema also lists Spark views that have no
+    Delta history and would fail a combined query."""
     catalog, schema = settings.trino_catalog, settings.trino_schema
     try:
         _cols, rows = await trino_client.execute(
@@ -296,17 +300,40 @@ async def _read_all_versions() -> None:
             "WHERE table_schema = ? AND table_type = 'BASE TABLE'",
             params=[schema],
         )
+        _cols, views = await trino_client.execute(
+            f"SELECT view_definition FROM {_quote(catalog)}.information_schema.views "
+            "WHERE table_schema = ?",
+            params=[schema],
+        )
     except Exception:
         log.warning("cache: table list unavailable; starting cold", exc_info=True)
         return
+    tables = {(catalog, schema, r["table_name"]) for r in rows}
+    for v in views:
+        tables |= _view_tables(v["view_definition"] or "", catalog, schema)
     limit = asyncio.Semaphore(8)
 
     async def one(table: _Table) -> None:
         async with limit:
-            await _refresh_versions(None, [table], quiet=True)
+            await _refresh_versions([table], quiet=True)
 
-    await asyncio.gather(*(one((catalog, schema, r["table_name"])) for r in rows))
-    log.info("cache: read %d of %d table versions", len(_versions), len(rows))
+    await asyncio.gather(*(one(t) for t in sorted(tables)))
+    log.info("cache: read %d of %d table versions", len(_versions), len(tables))
+
+
+def _view_tables(definition: str, catalog: str, schema: str) -> set[_Table]:
+    """The tables a view's SQL names, in this catalog, less its CTEs."""
+    try:
+        tree = sqlglot.parse_one(definition, dialect=DIALECT)
+    except Exception:
+        return set()
+    ctes = {cte.alias_or_name for cte in tree.find_all(exp.CTE)}
+    found = set()
+    for t in tree.find_all(exp.Table):
+        name = (t.catalog or catalog, t.db or schema, t.name)
+        if name[0] == catalog and not (not t.db and t.name in ctes):
+            found.add(name)
+    return found
 
 
 def _digest(*parts: Any) -> str:

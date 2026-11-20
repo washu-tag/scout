@@ -987,6 +987,16 @@ test_random_user_cannot_impersonate if {
 	not trino.allow with input as impersonate_input("alice@example.org", "bob@example.org")
 }
 
+test_service_principal_cannot_impersonate_a_service_principal if {
+	not trino.allow with input as impersonate_input("superset_svc", "report_viewer_svc")
+	not trino.allow with input as impersonate_input("voila_svc", "superset_svc")
+}
+
+test_service_principal_cannot_impersonate_a_view_owner if {
+	not trino.allow with input as impersonate_input("superset_svc", "trino")
+		with data.view_owner_principals as fixture_view_owner_principals
+}
+
 test_admin_cannot_impersonate if {
 	# Even scout-admin members can't impersonate from a regular user identity —
 	# only the dedicated service principals are on the allowlist.
@@ -1107,4 +1117,30 @@ test_impersonation_service_principal_allowed_without_bundle_entry if {
 		with data.users as {}
 	trino.allow with input as impersonate_input("superset_svc", "alice@example.org")
 		with data.users as {}
+}
+
+# === Report Viewer's cache version reads ======================================
+# Report Viewer reads each table's latest commit from $history as its own
+# identity; only that read escapes the row filters.
+
+history_filter_check(user, table) := filters if {
+	filters := trino.rowFilters with input as select_input(user, [], "delta", "default", table)
+		with trino.user_attrs as {}
+		with data.attribute_filters as fixture_attribute_filters
+		with data.filtered_tables as [{"catalog": "delta", "schema": "default", "table_prefix": "reports"}]
+}
+
+test_report_viewer_reads_history_unfiltered if {
+	count(history_filter_check("report_viewer_svc", "reports_latest$history")) == 0
+}
+
+test_report_viewer_other_metadata_tables_stay_filtered if {
+	history_filter_check("report_viewer_svc", "reports_latest$files") == {{"expression": "1=0"}}
+	history_filter_check("report_viewer_svc", "reports_latest$partitions") == {{"expression": "1=0"}}
+	history_filter_check("report_viewer_svc", "reports_latest") == {{"expression": "1=0"}}
+}
+
+test_other_identities_history_stays_filtered if {
+	history_filter_check("superset_svc", "reports_latest$history") == {{"expression": "1=0"}}
+	history_filter_check("alice", "reports_latest$history") == {{"expression": "1=0"}}
 }
