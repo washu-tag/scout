@@ -73,16 +73,18 @@ const ChipCard = ({ chip }: { chip: RenderChip }) => {
   );
 };
 
-// Compact chip: the rows idiom (Playbooks) carries a trailing arrow, the
-// tiles idiom (Admin Tools) does not. One component so their chrome cannot
-// drift apart.
+// Compact chip: the rows idiom (Playbooks) carries a trailing arrow and an
+// inline badge; the tiles idiom (Admin Tools) has no arrow and puts the badge
+// on its own row across the tile. One component so their chrome cannot drift
+// apart.
 const ChipCompact = ({ chip, arrow }: { chip: RenderChip; arrow: boolean }) => {
   const tone = TONES[chip.tone];
+  const badgeAtFoot = !arrow && Boolean(chip.badge);
   return (
     <a
       href={chip.href}
       {...linkTarget(chip)}
-      className={`group flex items-center gap-3 p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 no-underline ${tone.hoverBorder} ${tone.hoverShadow}`}
+      className={`group flex items-center gap-3 ${badgeAtFoot ? 'flex-wrap gap-y-2.5' : ''} p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 no-underline ${tone.hoverBorder} ${tone.hoverShadow}`}
     >
       <div
         className={`w-10 h-10 rounded-lg border flex items-center justify-center flex-shrink-0 ${tone.iconBg}`}
@@ -96,7 +98,7 @@ const ChipCompact = ({ chip, arrow }: { chip: RenderChip; arrow: boolean }) => {
           <h3 className="text-sm font-semibold text-slate-900 dark:text-white tracking-tight">
             {chip.title}
           </h3>
-          <ChipBadge chip={chip} />
+          {!badgeAtFoot && <ChipBadge chip={chip} />}
         </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 leading-snug font-light">
           {chip.description}
@@ -106,6 +108,11 @@ const ChipCompact = ({ chip, arrow }: { chip: RenderChip; arrow: boolean }) => {
         <HiArrowRight
           className={`text-base ${tone.cta} group-hover:translate-x-1 transition-transform duration-200 flex-shrink-0`}
         />
+      )}
+      {badgeAtFoot && (
+        <div className="basis-full min-w-0">
+          <ChipBadge chip={chip} />
+        </div>
       )}
     </a>
   );
