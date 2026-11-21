@@ -1,0 +1,39 @@
+# Shared build for Scout repos. A repo opts in with a workflow like:
+#
+#   on:
+#     push:
+#       branches: [main]
+#       tags: ['v*']
+#   jobs:
+#     build:
+#       uses: scout/ci/.forgejo/workflows/build.yml@main
+#       secrets: inherit
+#
+# Pushes to main build <repo>:main, tags build <repo>:<tag>.
+on:
+  workflow_call:
+jobs:
+  build:
+    runs-on: scout-build
+    steps:
+      - name: build and push
+        shell: sh
+        env:
+          TOKEN: ${{ github.token }}
+          REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -eu
+          host="${GITHUB_SERVER_URL#https://}"
+          image="$host/$(echo "$GITHUB_REPOSITORY" | tr A-Z a-z):$GITHUB_REF_NAME"
+          git clone --depth 1 --branch "$GITHUB_REF_NAME" "https://${GITHUB_ACTOR}:${TOKEN}@${host}/${GITHUB_REPOSITORY}.git" src
+          mkdir -p ~/.docker
+          printf '{"auths":{"%s":{"auth":"%s"}}}' "$host" "$(printf '%s:%s' "$OWNER" "$REGISTRY_TOKEN" | base64 | tr -d '\n')" > ~/.docker/config.json
+          set --
+          for arg in PIP_INDEX_URL PIP_TRUSTED_HOST; do
+            eval "value=\${$arg:-}"
+            [ -z "$value" ] || set -- "$@" --opt "build-arg:$arg=$value"
+          done
+          echo "building $image"
+          buildctl-daemonless.sh build --frontend dockerfile.v0 --local context=src --local dockerfile=src "$@" \
+            --output "type=image,name=$image,push=true"

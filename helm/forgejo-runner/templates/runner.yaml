@@ -1,0 +1,93 @@
+{{- define "forgejo-runner.pod" -}}
+metadata:
+  labels:
+    app.kubernetes.io/name: forgejo-runner
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  restartPolicy: Never
+  automountServiceAccountToken: false
+  enableServiceLinks: false
+  {{- with .Values.forgejoAddress }}
+  hostAliases:
+    - ip: {{ . | quote }}
+      hostnames: [{{ get (urlParse $.Values.forgejoUrl) "host" | quote }}]
+  {{- end }}
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    # Rootless BuildKit needs user namespaces, which the default profile blocks.
+    seccompProfile: { type: Unconfined }
+  initContainers:
+    # Registers a one-job runner. The registration token stays in this container,
+    # out of reach of the job.
+    - name: register
+      image: {{ .Values.runnerImage }}
+      command: [sh, -ec]
+      args:
+        - |
+          cp /bin/forgejo-runner /tools/
+          cd /data
+          forgejo-runner register --no-interactive --ephemeral \
+            --instance "$FORGEJO_URL" --token "$REGISTRATION_TOKEN" \
+            --name "$HOSTNAME" --labels {{ .Values.label }}:host
+      env:
+        - name: FORGEJO_URL
+          value: {{ required "forgejoUrl is required" .Values.forgejoUrl | quote }}
+        - name: REGISTRATION_TOKEN
+          valueFrom:
+            secretKeyRef: { name: {{ .Values.registrationSecret }}, key: token }
+      volumeMounts:
+        - { name: tools, mountPath: /tools }
+        - { name: data, mountPath: /data }
+  containers:
+    - name: runner
+      image: {{ .Values.buildkitImage }}
+      command: [/tools/forgejo-runner, one-job, --wait]
+      workingDir: /data
+      env:
+        - { name: HOME, value: /home/user }
+        - { name: BUILDKITD_FLAGS, value: --oci-worker-no-process-sandbox }
+        {{- if .Values.caCert }}
+        - { name: SSL_CERT_DIR, value: /etc/ssl/certs:/etc/forgejo-runner/ca }
+        {{- end }}
+        {{- range $name, $value := .Values.buildEnv }}
+        - { name: {{ $name }}, value: {{ $value | quote }} }
+        {{- end }}
+      resources:
+        {{- toYaml .Values.resources | nindent 8 }}
+      volumeMounts:
+        - { name: tools, mountPath: /tools, readOnly: true }
+        - { name: data, mountPath: /data }
+        - { name: config, mountPath: /home/user/.config/buildkit/buildkitd.toml, subPath: buildkitd.toml }
+        {{- if .Values.caCert }}
+        - { name: ca, mountPath: /etc/forgejo-runner/ca, readOnly: true }
+        {{- end }}
+  volumes:
+    - { name: tools, emptyDir: {} }
+    - { name: data, emptyDir: {} }
+    - name: config
+      configMap: { name: forgejo-runner }
+    {{- if .Values.caCert }}
+    - name: ca
+      configMap:
+        name: forgejo-runner
+        items: [{ key: ca.crt, path: ca.crt }]
+    {{- end }}
+{{- end }}
+{{- $pod := include "forgejo-runner.pod" . }}
+# A Job, not a Deployment, so every job gets a fresh pod. Its pod spec is
+# immutable, so the name changes with it and an upgrade replaces the Job.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: forgejo-runner-{{ $pod | sha256sum | trunc 8 }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo-runner.labels" . | nindent 4 }}
+spec:
+  parallelism: {{ .Values.replicas }}
+  completions: 1000000
+  backoffLimit: 1000000
+  template:
+    {{- $pod | nindent 4 }}

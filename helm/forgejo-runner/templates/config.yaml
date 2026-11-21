@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: forgejo-runner
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo-runner.labels" . | nindent 4 }}
+data:
+  buildkitd.toml: |
+    {{- range $registry, $mirror := .Values.registryMirrors }}
+    [registry.{{ $registry | quote }}]
+      mirrors = [{{ $mirror | quote }}]
+    {{- end }}
+  {{- with .Values.caCert }}
+  ca.crt: |
+    {{- . | nindent 4 }}
+  {{- end }}

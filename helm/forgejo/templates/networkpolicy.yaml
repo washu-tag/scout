@@ -26,13 +26,11 @@ spec:
           port: http
         - protocol: TCP
           port: git-gate
-    {{- if .Values.buildTokens.enabled }}
     - from:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: forgejo-build-tokens
+              app.kubernetes.io/component: api-client
       ports:
         - protocol: TCP
           port: http
-    {{- end }}
 {{- end }}

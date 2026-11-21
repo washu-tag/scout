@@ -27,38 +27,22 @@ spec:
       labels:
         app.kubernetes.io/name: forgejo-build-tokens
         app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: api-client
       annotations:
         checksum/script: {{ .Files.Get "files/build-tokens.sh" | sha256sum }}
     spec:
-      automountServiceAccountToken: false
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 100
-        seccompProfile: { type: RuntimeDefault }
+      {{- include "forgejo.apiClientPod" . | nindent 6 }}
       containers:
         - name: build-tokens
-          image: {{ .Values.buildTokens.image }}
+          image: {{ .Values.apiClientImage }}
           command: [sh, /scripts/build-tokens.sh]
           env:
             - name: INTERVAL_SECONDS
               value: {{ .Values.buildTokens.intervalSeconds | quote }}
-            - name: FORGEJO_URL
-              value: http://{{ include "forgejo.serviceName" . }}:3000
-            - name: ADMIN_USER
-              valueFrom:
-                secretKeyRef: { name: {{ printf "%s-admin" .Values.upstream.fullnameOverride }}, key: username }
-            - name: ADMIN_PASSWORD
-              valueFrom:
-                secretKeyRef: { name: {{ printf "%s-admin" .Values.upstream.fullnameOverride }}, key: password }
+            {{- include "forgejo.apiClientEnv" . | nindent 12 }}
           volumeMounts:
             - { name: scripts, mountPath: /scripts, readOnly: true }
-          resources:
-            requests: { cpu: 5m, memory: 16Mi }
-            limits: { memory: 64Mi }
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities: { drop: [ALL] }
+          {{- include "forgejo.apiClientContainer" . | nindent 10 }}
       volumes:
         - name: scripts
           configMap:

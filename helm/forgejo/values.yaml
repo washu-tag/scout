@@ -39,12 +39,21 @@ networkPolicy:
   enabled: true
   traefikNamespace: kube-system
 
+# Runs the jobs below, which call the Forgejo API as its admin.
+apiClientImage: curlimages/curl:8.23.0
+
 # Gives every user a package-push token as their REGISTRY_TOKEN Actions secret
 # (templates/build-tokens.yaml).
 buildTokens:
   enabled: true
-  image: curlimages/curl:8.23.0
   intervalSeconds: 60
+
+# Keeps files/ci/build.yml in <org>/<repo>, public so any repo can `uses:` it. Its
+# `runs-on` matches the forgejo-runner chart's label.
+sharedWorkflow:
+  enabled: true
+  org: scout
+  repo: ci
 
 upstream:
   nameOverride: forgejo
