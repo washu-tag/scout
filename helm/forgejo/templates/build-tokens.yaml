@@ -1,0 +1,66 @@
+{{- if .Values.buildTokens.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: forgejo-build-tokens
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo.labels" . | nindent 4 }}
+data:
+  build-tokens.sh: {{ .Files.Get "files/build-tokens.sh" | quote }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forgejo-build-tokens
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: forgejo-build-tokens
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: forgejo-build-tokens
+        app.kubernetes.io/instance: {{ .Release.Name }}
+      annotations:
+        checksum/script: {{ .Files.Get "files/build-tokens.sh" | sha256sum }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 100
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: build-tokens
+          image: {{ .Values.buildTokens.image }}
+          command: [sh, /scripts/build-tokens.sh]
+          env:
+            - name: INTERVAL_SECONDS
+              value: {{ .Values.buildTokens.intervalSeconds | quote }}
+            - name: FORGEJO_URL
+              value: http://{{ include "forgejo.serviceName" . }}:3000
+            - name: ADMIN_USER
+              valueFrom:
+                secretKeyRef: { name: {{ printf "%s-admin" .Values.upstream.fullnameOverride }}, key: username }
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: {{ printf "%s-admin" .Values.upstream.fullnameOverride }}, key: password }
+          volumeMounts:
+            - { name: scripts, mountPath: /scripts, readOnly: true }
+          resources:
+            requests: { cpu: 5m, memory: 16Mi }
+            limits: { memory: 64Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+      volumes:
+        - name: scripts
+          configMap:
+            name: forgejo-build-tokens
+{{- end }}
