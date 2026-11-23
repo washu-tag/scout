@@ -22,6 +22,9 @@ function isDeployed(url: string): boolean {
   return deployed.includes(host.slice(0, -(hostname.length + 1)));
 }
 
+// AUTH_TEST_SKIP (comma-separated test keys) skips tests the environment can't support.
+const skipped = process.env.AUTH_TEST_SKIP?.split(',').map((key) => key.trim()) ?? [];
+
 // Unauthorized user, no scout-user group membership, 403 Access Pending everywhere
 
 const protectedServices = [
@@ -120,6 +123,7 @@ test.describe('Authorized Non-Admin User', () => {
   test('MinIO denies access', async ({ page }) => {
     const url = `https://minio.${hostname}/`;
     test.skip(!isDeployed(url), 'not deployed');
+    test.skip(skipped.includes('minio'), 'MinIO console has no SSO button (AUTH_TEST_SKIP)');
     await signInToScout(page, url, authorizedUser);
 
     // Trigger MinIO SSO via the login page's SSO button (use loose selector, not exact text)
@@ -135,6 +139,10 @@ test.describe('Authorized Non-Admin User', () => {
   test('Grafana datasources API returns 403', async ({ page }) => {
     const url = `https://grafana.${hostname}/`;
     test.skip(!isDeployed(url), 'not deployed');
+    test.skip(
+      skipped.includes('grafana-api'),
+      "Grafana doesn't trust Keycloak's certificate (AUTH_TEST_SKIP)",
+    );
     await signInToScout(page, url, authorizedUser);
 
     // Grafana allows entry to the UI but gives the user no permissions, so we hit the

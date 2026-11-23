@@ -1207,6 +1207,7 @@ jobs:
           # Subdomains this side deploys (root scout.test = launchpad)
           {
             echo "127.0.0.1 scout.test"
+            echo "127.0.0.1 nonexistent.scout.test"
             for sub in $(echo "$SUBDOMAINS" | tr ',' ' '); do
               echo "127.0.0.1 ${sub}.scout.test"
             done
@@ -1435,6 +1436,9 @@ jobs:
           AUTHORIZED_USER_USERNAME: scout-authorized-ci-user
           TEST_USER_PASSWORD: ci-test-user-password-1234
           AUTH_TEST_SUBDOMAINS: ${{ matrix.subdomains }}
+          # Grafana's token exchange doesn't trust the CI cert; the Silo MinIO console
+          # puts SSO in a menu the test doesn't drive yet (#1013).
+          AUTH_TEST_SKIP: grafana-api,minio
           SIDE: ${{ matrix.side }}
         run: |
           set -euo pipefail
