@@ -12,6 +12,7 @@ spec:
     frameDeny: false
     customFrameOptionsValue: SAMEORIGIN
     contentTypeNosniff: true
+    referrerPolicy: strict-origin-when-cross-origin
     contentSecurityPolicy: >-
       default-src 'self';
       script-src 'self' 'unsafe-inline' 'unsafe-eval' {{ _vscode_resource }};
@@ -23,7 +24,7 @@ spec:
       worker-src 'self' blob:;
       frame-src 'self' blob:;
       form-action 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
-      frame-ancestors 'self'
+      frame-ancestors 'self' https://{{ server_hostname }}
     customResponseHeaders:
       Permissions-Policy: 'camera=(), microphone=(), geolocation=(), payment=()'
       Cross-Origin-Opener-Policy: 'same-origin'
