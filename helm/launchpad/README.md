@@ -3,10 +3,12 @@
 Scout's landing page. Beyond the Next.js app itself, this chart wires the runtime
 catalog that fills the page (ADR 0034):
 
-- **`templates/configmap-catalog.yaml`** — the launchpad's *own* chips (core/admin
-  section definitions, Analytics, Notebooks, Users), mounted directly into the pod at
-  `/app/config/catalog`. The direct mount is the availability floor: the kubelet
-  guarantees it exists, so the core page renders even when discovery is broken.
+- **`templates/configmap-catalog.yaml`** — the launchpad's *own* chips (the core,
+  imaging, admin and more section definitions, Analytics, Notebooks, Users; the
+  imaging section's title and description come from `catalog.imaging.*`), mounted
+  directly into the pod at `/app/config/catalog`. The direct mount is the
+  availability floor: the kubelet guarantees it exists, so the core page renders
+  even when discovery is broken.
 - **A kiwigrid/k8s-sidecar container** (`catalog.discovery.*` values) — watches
   ConfigMaps labelled `launchpad.scout.xnat.org/catalog: "true"` across namespaces and
   materializes their data keys into an emptyDir at `/app/config/discovered`. This is

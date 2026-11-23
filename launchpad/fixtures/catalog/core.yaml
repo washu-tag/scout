@@ -13,6 +13,12 @@ groups:
     footerLink:
       text: New to Scout? Check out our documentation
       url: https://washu-scout.readthedocs.io/en/latest
+  - id: imaging
+    title: Imaging
+    description: Imaging platforms and data retrieval
+    icon: photograph
+    weight: 15
+    layout: cards
   - id: admin
     title: Admin Tools
     description: Infrastructure and user management

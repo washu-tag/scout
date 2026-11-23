@@ -218,15 +218,26 @@ new tab would inherit the sandbox, as long as that frame keeps your origin.
 
 Chips are grouped on the page into sections called Groups. A chip references a group id;
 if it references an undefined group the launchpad creates a new one with that id.
-But you can also explicitly define a group to control its header, position, and layout:
+
+The launchpad defines these sections itself, so any chip can join one by its id. The ids
+are stable; a site may rename a section, but its id stays the same.
+
+| Group id  | Section       | Weight | For                                                      |
+| --------- | ------------- | ------ | -------------------------------------------------------- |
+| `core`    | Core Services | 10     | Scout's main tools                                       |
+| `imaging` | Imaging       | 15     | XNAT and other imaging services                          |
+| `admin`   | Admin Tools   | 30     | Administrators' tools; the section shows only to admins |
+| `more`    | More          | 40     | Chips that don't name a group                            |
+
+You can also define a group of your own to control its header, position, and layout:
 
 ```yaml
 groups:
-  - id: imaging
-    title: Imaging
-    description: Imaging platforms and data retrieval
-    icon: photograph
-    weight: 15 # Scout's own sections sit at 10 (core) and 30 (admin)
+  - id: research
+    title: Research
+    description: Study management and data requests
+    icon: beaker
+    weight: 25 # between Playbooks (20) and Admin Tools (30)
     layout: cards
 ```
 
@@ -245,7 +256,7 @@ groups:
 | `footerLink`  | no       | —                              | A link in the section heading: `{text, url}`, opened in a new tab, or `{text, link}` with a chip destination (see [links](#links)), so a Scout service opens inside the launchpad under the section's rail entry. A launchpad from before `link` drops a `{text, link}` footerLink with a diagnostic. |
 
 Several documents may define the same group id (two services can both put chips in
-`imaging` and both ship the definition). The launchpad's own catalog wins a definition
+`research` and both ship the definition). The launchpad's own catalog wins a definition
 conflict, then the lowest `weight`, deterministically; chips from all sources land in
 the group regardless.
 

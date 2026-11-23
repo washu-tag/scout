@@ -18,6 +18,12 @@ scout_env: ''
 # line. Empty hides the line and only the "Powered by Scout" credit shows.
 deployer_name: ''
 
+# Title and description of the launchpad's Imaging section, which holds XNAT's
+# chip. Empty keeps the chart's "Imaging" and "Imaging platforms and data
+# retrieval".
+launchpad_imaging_group_title: ''
+launchpad_imaging_group_description: ''
+
 # On envs where Traefik serves a self-signed cert (CI), the launchpad's server
 # needs to trust it to reach Keycloak over HTTPS. Off on envs with public certs.
 launchpad_trust_traefik_ca: false

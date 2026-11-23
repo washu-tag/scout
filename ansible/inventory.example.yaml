@@ -391,6 +391,9 @@ k3s_cluster:
     # Launchpad
     #---------------------------------------------------------------------------
     launchpad_nextauth_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # The section that holds XNAT's chip:
+    # launchpad_imaging_group_title: Imaging
+    # launchpad_imaging_group_description: Imaging platforms and data retrieval
 
     #---------------------------------------------------------------------------
     # XNAT (optional — disabled by default)
@@ -427,6 +430,11 @@ k3s_cluster:
     #   effective_cache_size: '6GB'  # ~3/4 of the memory limit
     #   maintenance_work_mem: '512MB'
     #   work_mem: '16MB'
+    #
+    # The name Scout shows users for this XNAT, and its launchpad chip's
+    # description:
+    # xnat_site_name: XNAT Core Services
+    # xnat_launchpad_description: Store, organize, and process imaging studies
     #
     # First-boot site config. Set a real xnat_admin_email for prod — it is also
     # the From address on XNAT outbound mail (relays may reject the placeholder):

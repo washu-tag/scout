@@ -41,6 +41,13 @@ xnat_volume_sizes:
   archive: 10Gi
   prearchive: 5Gi
 
+# --- Display name ----------------------------------------------------------
+# The name Scout shows users for this XNAT. Unlike xnat_site_id, it may contain
+# spaces.
+xnat_site_name: XNAT Core Services
+# The description on XNAT's launchpad chip, whose title is xnat_site_name.
+xnat_launchpad_description: Store, organize, and process imaging studies
+
 # --- First-boot site config (prefs-init.ini) ------------------------------
 # siteId prefixes XNAT-generated IDs: a letter, then letters, digits and
 # underscores, at most 24 characters.
