@@ -33,7 +33,10 @@ dependency graphs; the full-platform CI cutover from Ansible is still pending. S
   kustomize-controller with `StrictPostBuildSubstitutions` so an undefined `${var}`
   fails the build; without it the var renders empty. aws sites set `s3_sse_type` to
   `S3` when an SCP or bucket policy requires an SSE header on writes, else `NONE`
-  (bucket default, which keeps an SSE-KMS default intact).
+  (bucket default, which keeps an SSE-KMS default intact). The free-text keys
+  `deployer_name` and `launchpad_imaging_group_*` are substituted inside double
+  quotes, so they may not contain `"`, `\` or a control character;
+  `gen_cluster_vars.py` rejects such values.
 - **Chart/image refs** are stamped from the build-lane haul at config-artifact
   publish (placeholder in git, concrete only in the published artifact). Upstream
   chart versions are pinned in `versions.yaml` + Renovate-tracked.

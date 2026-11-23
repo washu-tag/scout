@@ -7,12 +7,14 @@ from pathlib import Path
 import pytest
 
 from gen_cluster_vars import (
+    DOUBLE_QUOTED,
     build,
     check,
     derive,
     load_required,
     main,
     render_configmap,
+    unquotable,
 )
 
 HERE = Path(__file__).resolve().parent
@@ -125,6 +127,29 @@ def test_missing_direct_var_reported(values, required):
     data = build(broken, required)
     missing, extra = check(data, required)
     assert "timezone" in missing
+
+
+def test_double_quoted_matches_the_bases():
+    """DOUBLE_QUOTED lists exactly the keys the deploy/ bases wrap in ${dq}."""
+    wrapped = set()
+    for f in REQUIRED.parent.rglob("*.yaml"):
+        wrapped |= set(re.findall(r"\$\{dq\}\$\{([A-Za-z0-9_]+)", f.read_text()))
+    assert wrapped == set(DOUBLE_QUOTED)
+
+
+def test_yaml_significant_free_text_allowed(values, required):
+    data = build(dict(values, deployer_name="Children's: #1 & 'more'"), required)
+    assert unquotable(data) == []
+
+
+@pytest.mark.parametrize("value", ['Say "hi"', "back\\slash", "two\nlines"])
+def test_unquotable_free_text_fails_closed(values, tmp_path, value):
+    src = tmp_path / "values.json"
+    src.write_text(json.dumps(dict(values, launchpad_imaging_group_title=value)))
+    out = tmp_path / "cluster-vars.yaml"
+    with pytest.raises(SystemExit):
+        main(["--values", str(src), "--required-vars", str(REQUIRED), "-o", str(out)])
+    assert not out.exists()
 
 
 if __name__ == "__main__":

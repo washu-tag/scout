@@ -55,11 +55,12 @@ spec:
           repository: quay.io/kiwigrid/k8s-sidecar
           # renovate: datasource=docker depName=quay.io/kiwigrid/k8s-sidecar
           tag: '2.11.2'
+      # Flux drops template quotes before substituting, so ${dq} quotes free text.
       imaging:
-        title: '${launchpad_imaging_group_title:=}'
-        description: '${launchpad_imaging_group_description:=}'
+        title: ${dq}${launchpad_imaging_group_title:=}${dq}
+        description: ${dq}${launchpad_imaging_group_description:=}${dq}
     scoutEnv: '${scout_env}'
-    deployerName: '${deployer_name}'
+    deployerName: ${dq}${deployer_name}${dq}
     docsUrl: '${scout_docs_url}'
     auth:
       keycloak:
