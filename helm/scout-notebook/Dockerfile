@@ -17,6 +17,8 @@ ARG CODEX_VERSION=0.166.0
 ARG LAZYGIT_VERSION=0.66.2
 
 USER root
+# TeX Live ships its own CA file (tlmgr's LWP downloads) that still holds emSign ECC Root CA - G3;
+# point it at the system bundle.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends --only-upgrade openssl libssl3t64 \
         curl libcurl4t64 libcurl3t64-gnutls ca-certificates apt libapt-pkg7.0 libbrotli1 \
@@ -25,7 +27,9 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends /tmp/code-server.deb ttyd tmux \
         vim ripgrep fd-find jq bubblewrap \
     && ln -s /usr/bin/fdfind /usr/local/bin/fd \
-    && rm -rf /tmp/code-server.deb /var/lib/apt/lists/*
+    && rm -rf /tmp/code-server.deb /var/lib/apt/lists/* \
+    && f=/usr/share/texlive/tlpkg/installer/curl/curl-ca-bundle.crt \
+    && { [ ! -e "$f" ] || ln -sf /etc/ssl/certs/ca-certificates.crt "$f"; }
 
 # The version checks write state to HOME, which must stay out of /home/jovyan.
 RUN export HOME=/tmp/tools-home \

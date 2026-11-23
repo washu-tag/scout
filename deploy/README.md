@@ -74,7 +74,8 @@ A site provides these runtime dependencies before reconciling the artifact: cert
 `dependsOn` must pre-create the scout namespaces; the artifact's copies carry
 `kustomize.toolkit.fluxcd.io/prune: disabled`, and so should the site's.
 
-On-prem additionally needs Flux 2.9.6 or later with `StrictPostBuildSubstitutions`,
+On-prem additionally needs Flux 2.10.0 or later (2.9.x controllers trust the compromised
+eMudhra chain) with `StrictPostBuildSubstitutions`,
 and the `scout-secret-values` Secret in `flux-system` before `secrets-ready` reconciles:
 apply it from a site Kustomization (with `decryption` for SOPS) that the Kustomizations
 reconciling `./flux` and `./modes/on-prem` dependsOn. Generate it with

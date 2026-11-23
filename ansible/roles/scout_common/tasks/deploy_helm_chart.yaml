@@ -31,6 +31,7 @@
 # - helm_chart_create_namespace: Create namespace if missing (default: true)
 # - helm_chart_wait: Wait for resources to be ready (default: true)
 # - helm_chart_timeout: Timeout for wait (default: '5m')
+# - helm_chart_atomic: Roll back a failed upgrade, or uninstall a failed install (default: true)
 # - helm_chart_values: Values dict
 # - helm_chart_values_files: List of values files
 # - helm_chart_state: 'present' (default) or 'absent' to uninstall. On uninstall

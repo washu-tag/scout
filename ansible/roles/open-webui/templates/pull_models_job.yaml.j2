@@ -22,6 +22,8 @@ spec:
 {% if _pull_air_gapped %}
             - name: OLLAMA_MODELS
               value: '{{ ollama_nfs_mount_path }}'
+            - name: OLLAMA_NOPRUNE
+              value: 'true'
 {% else %}
             - name: OLLAMA_HOST
               value: 'http://{{ ollama_name }}.{{ chatbot_namespace }}:11434'

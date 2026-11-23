@@ -64,22 +64,8 @@
 - name: Create Kubernetes Secret for sensitive env vars
   ansible.builtin.include_tasks: create_secret.yaml
 
-# For air-gapped deployments: ensure NFS directory structure exists BEFORE deploying Ollama
-# Production Ollama mounts NFS read-only, so it can't create these directories itself
-- name: Pre-create Ollama directory structure on NFS (air-gapped)
-  block:
-    - name: Create Ollama blobs and manifests directories
-      ansible.builtin.file:
-        path: '{{ ollama_nfs_path }}/{{ item }}'
-        state: directory
-        mode: '0755'
-      loop:
-        - blobs
-        - manifests
-      delegate_to: '{{ (groups["staging"] | default([inventory_hostname]))[0] }}'
-  when:
-    - air_gapped | default(false) | bool
-    - ollama_nfs_path is defined and ollama_nfs_path | length > 0
+- name: Prepare shared Ollama model storage before Helm
+  ansible.builtin.import_tasks: prepare_model_storage.yaml
 
 # Create Traefik middleware for Content Security Policy (CSP)
 # Mitigates LLM data exfiltration attacks where malicious/manipulated model output

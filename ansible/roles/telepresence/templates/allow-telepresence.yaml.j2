@@ -1,0 +1,49 @@
+# Dev clusters only. Lets the Telepresence traffic manager's namespace reach
+# pods that already have network policies. Each podSelector matches an existing
+# policy's exactly, so no pod becomes newly isolated.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-telepresence-trino
+  namespace: '{{ trino_namespace }}'
+  labels:
+    app.kubernetes.io/part-of: telepresence-dev-access
+    app.kubernetes.io/managed-by: ansible
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: trino
+      app.kubernetes.io/name: trino
+      trino.io/network-policy-protection: enabled
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: '{{ telepresence_namespace }}'
+      ports:
+        - port: {{ trino_https_port }}
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-telepresence-report-viewer
+  namespace: '{{ report_viewer_namespace | default(chatbot_namespace) }}'
+  labels:
+    app.kubernetes.io/part-of: telepresence-dev-access
+    app.kubernetes.io/managed-by: ansible
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: '{{ report_viewer_helm_release_name | default("report-viewer") }}'
+      app.kubernetes.io/name: report-viewer
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: '{{ telepresence_namespace }}'
+      ports:
+        - port: 8000
+          protocol: TCP

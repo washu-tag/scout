@@ -1,39 +1,36 @@
 ---
-# Repository trust for coordinate-resolved plugins.
-#
-# The chart resolves each coordinate to a URL and hands it to a stock curl init
-# container, so the repository reaches the deploy as a plain value
-# (plugins.<name>.mavenUrl in templates/values.yaml.j2) rather than a mounted
-# settings.xml. What remains here is the air-gapped preflight and, air-gapped
-# against the self-signed Nexus, the CA the installer trusts.
+# Air-gapped clusters fetch coordinates and s3 plugins from the staging node's
+# Nexus: check each is there before the deploy, and give the installer the CA the
+# self-signed Nexus is served with.
 
-# Air-gapped preflight: every coordinate plugin must resolve through the Nexus
-# group NOW. Catches the common slip of adding a plugin (with a new repo_url) and
-# running the XNAT deploy without re-running install-staging, so the scout-maven
-# group doesn't yet proxy the plugin's repo. We HEAD the artifact via
-# maven_proxy_url — the same path the init container uses — so this also catches
-# an unreachable upstream.
-- name: Preflight - coordinate plugins resolve through the Nexus group (air-gapped)
+- name: Preflight - plugins are in Nexus (air-gapped)
   when: air_gapped | default(false) | bool
   block:
-    - name: HEAD each coordinate plugin artifact through the Nexus group
+    - name: HEAD each plugin at the Nexus URL its init container fetches
       ansible.builtin.uri:
-        url: '{{ maven_proxy_url }}/{{ item.source.coordinates | maven_artifact_path }}'
+        url: >-
+          {{ (maven_proxy_url ~ '/' ~ (item.source.coordinates | maven_artifact_path))
+             if item.source.type == 'coordinates' else
+             (xnat_s3_plugin_mirror_url ~ '/' ~ (item.source.s3_uri | s3_object_path)) }}
         method: HEAD
         ca_path: /etc/pki/ca-trust/source/anchors/staging-ca.crt
         status_code: [200]
-      loop: "{{ xnat_plugins_all | selectattr('source.type', 'equalto', 'coordinates') | list }}"
+      loop: "{{ xnat_plugins_all | selectattr('source.type', 'in', ['coordinates', 's3']) | list }}"
       loop_control:
         label: '{{ item.name }}'
   rescue:
-    - name: Fail with guidance when a plugin repo is not proxied
+    - name: Fail with guidance when a plugin is not in Nexus
+      vars:
+        _missing: >-
+          {{ ansible_failed_result.results | default([])
+             | rejectattr('status', 'equalto', 200)
+             | map(attribute='item.name') | join(', ') }}
       ansible.builtin.fail:
         msg: >-
-          A coordinate XNAT plugin could not be resolved through the Nexus group
-          ({{ maven_proxy_url }}). Its repo is most likely not yet proxied by the
-          scout-maven group. Ensure the plugin is declared in `xnat_plugins` in
-          all.vars, then re-run `make install-staging` (which rebuilds the Nexus
-          Maven proxies from the plugin list) before re-running the XNAT deploy.
+          These XNAT plugins are not in Nexus: {{ _missing or '(see the failed task above)' }}.
+          `make install-staging` puts them there, proxying each coordinates plugin's
+          repo and copying each s3 plugin from S3. Make sure each is declared in
+          all.vars, run `make install-staging`, then re-run the XNAT deploy.
 
 # Staging cert trust (per ADR-0016)
 - name: Create the staging CA Secret for the installer

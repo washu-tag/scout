@@ -53,6 +53,8 @@ server:
       claimMapper: default
 {% endif %}
 web:
+  image:
+    tag: '{{ temporal_ui_image_tag }}'
   ingress:
     enabled: true
     className: traefik

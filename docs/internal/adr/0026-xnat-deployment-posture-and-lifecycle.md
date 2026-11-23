@@ -8,6 +8,10 @@
 > open follow-up, called out inline below: `enable_xnat: false` skips the play
 > rather than actively tearing the workload down (§1).
 
+> **Superseded in part:** §5's statement that `xnat-access` is provisioned but
+> unenforced no longer holds. The openid plugin now requires the role at browser
+> sign-in as well as for bearer tokens (#927); see the XNAT role README.
+
 ## Context
 
 XNAT (the imaging informatics platform — repo

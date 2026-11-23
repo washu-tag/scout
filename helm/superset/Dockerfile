@@ -31,6 +31,10 @@ RUN UV_NATIVE_TLS=1 uv pip install --no-cache \
     statsd \
     'certifi>=2026.10.19'
 
+# The base image's pip (23.0.1, the `pip` on PATH; the venv has none) trusts the compromised chain
+# through its vendored certifi. 26.2.2+ verifies with the system store.
+RUN /usr/local/bin/python -m pip install --no-cache-dir --cert /etc/ssl/certs/ca-certificates.crt -U 'pip>=26.2.2'
+
 # Switch to user that runs Superset
 USER superset
 

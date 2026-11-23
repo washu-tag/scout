@@ -11,7 +11,8 @@ spec:
   headers:
     # Block external resources while allowing app functionality
     # - img-src: blocks external images (quickchart.io, etc.) that could exfiltrate data
-    # - connect-src: allows WebSocket and Keycloak OAuth
+    # - connect-src: fetch, XHR and WebSockets reach only chat itself (its own
+    #   WebSocket included), Keycloak and oauth2-proxy
     # - frame-src: report viewer, plus the login redirect chain the chat tool
     #   follows in a hidden frame to renew a session
     # - script/style: allows inline (required by Open WebUI frontend)
@@ -21,7 +22,7 @@ spec:
       style-src 'self' 'unsafe-inline';
       img-src 'self' data: blob:;
       font-src 'self' data:;
-      connect-src 'self' ws: wss: {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
+      connect-src 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
       frame-src 'self' https://report-viewer.{{ server_hostname }} {{ keycloak_base_url }};
       form-action 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
       frame-ancestors 'none'

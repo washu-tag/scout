@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { HiArrowRight, HiOutlineDocumentText, HiOutlineExclamation } from 'react-icons/hi';
+import { ChipBadge } from '@/components/catalog/ChipBadge';
 import { DEFAULT_ICON, ICONS } from '@/lib/catalog/icons';
 import { TONES } from '@/lib/catalog/tones';
 import type { RenderChip, RenderGroup, RenderModel } from '@/lib/catalog/types';
@@ -48,15 +49,18 @@ const ChipCard = ({ chip }: { chip: RenderChip }) => {
     >
       <div className="flex items-center gap-3 mb-4">
         <div
-          className={`w-11 h-11 rounded-xl border flex items-center justify-center transition-colors duration-200 ${tone.iconBg}`}
+          className={`w-11 h-11 rounded-xl border flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${tone.iconBg}`}
         >
           <div className={`text-xl ${tone.icon}`}>
             <ChipIcon chip={chip} className="text-xl" />
           </div>
         </div>
-        <h3 className="text-xl font-semibold text-slate-900 dark:text-white tracking-tight">
-          {chip.title}
-        </h3>
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+          <h3 className="text-xl font-semibold text-slate-900 dark:text-white tracking-tight">
+            {chip.title}
+          </h3>
+          <ChipBadge chip={chip} />
+        </div>
       </div>
       <p className="text-base text-slate-500 dark:text-slate-400 mb-4 leading-relaxed font-light">
         {chip.description}
@@ -69,16 +73,18 @@ const ChipCard = ({ chip }: { chip: RenderChip }) => {
   );
 };
 
-// Compact chip: the rows idiom (Playbooks) carries a trailing arrow, the
-// tiles idiom (Admin Tools) does not. One component so their chrome cannot
-// drift apart.
+// Compact chip: the rows idiom (Playbooks) carries a trailing arrow and an
+// inline badge; the tiles idiom (Admin Tools) has no arrow and puts the badge
+// on its own row across the tile. One component so their chrome cannot drift
+// apart.
 const ChipCompact = ({ chip, arrow }: { chip: RenderChip; arrow: boolean }) => {
   const tone = TONES[chip.tone];
+  const badgeAtFoot = !arrow && Boolean(chip.badge);
   return (
     <a
       href={chip.href}
       {...linkTarget(chip)}
-      className={`group flex items-center gap-3 p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 no-underline ${tone.hoverBorder} ${tone.hoverShadow}`}
+      className={`group flex items-center gap-3 ${badgeAtFoot ? 'flex-wrap gap-y-2.5' : ''} p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 no-underline ${tone.hoverBorder} ${tone.hoverShadow}`}
     >
       <div
         className={`w-10 h-10 rounded-lg border flex items-center justify-center flex-shrink-0 ${tone.iconBg}`}
@@ -88,9 +94,12 @@ const ChipCompact = ({ chip, arrow }: { chip: RenderChip; arrow: boolean }) => {
         </div>
       </div>
       <div className="flex-1 min-w-0">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-white tracking-tight">
-          {chip.title}
-        </h3>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-white tracking-tight">
+            {chip.title}
+          </h3>
+          {!badgeAtFoot && <ChipBadge chip={chip} />}
+        </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 leading-snug font-light">
           {chip.description}
         </p>
@@ -99,6 +108,11 @@ const ChipCompact = ({ chip, arrow }: { chip: RenderChip; arrow: boolean }) => {
         <HiArrowRight
           className={`text-base ${tone.cta} group-hover:translate-x-1 transition-transform duration-200 flex-shrink-0`}
         />
+      )}
+      {badgeAtFoot && (
+        <div className="basis-full min-w-0">
+          <ChipBadge chip={chip} />
+        </div>
       )}
     </a>
   );

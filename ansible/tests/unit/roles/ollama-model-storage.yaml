@@ -1,0 +1,77 @@
+---
+- name: Verify shared Ollama model storage preparation
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Create isolated model storage
+      ansible.builtin.tempfile:
+        state: directory
+      register: model_store
+
+    - name: Verify the legacy model store and staging pull Job
+      block:
+        - name: Create the legacy directory layout
+          ansible.builtin.file:
+            path: '{{ model_store.path }}/{{ item }}'
+            state: directory
+            mode: '0755'
+          loop: [blobs, manifests]
+
+        - name: Use a local staging writer
+          ansible.builtin.add_host:
+            name: ollama-storage-test-writer
+            groups: staging
+            ansible_connection: local
+            ansible_python_interpreter: '{{ ansible_playbook_python }}'
+
+        - name: Prepare the legacy store with the production task
+          ansible.builtin.include_role:
+            name: open-webui
+            tasks_from: prepare_model_storage
+          vars:
+            air_gapped: true
+            ollama_nfs_path: '{{ model_store.path }}'
+
+        - name: Inspect the required directories
+          ansible.builtin.stat:
+            path: '{{ model_store.path }}/{{ item }}'
+          loop: [blobs, manifests, manifests-v2]
+          register: directories
+
+        - name: Require a readable layout for read-only Ollama
+          ansible.builtin.assert:
+            quiet: true
+            that:
+              - item.stat.isdir
+              - item.stat.mode == '0755'
+          loop: '{{ directories.results }}'
+          loop_control:
+            label: '{{ item.item }}'
+
+        - name: Render the staging model-pull Job
+          ansible.builtin.set_fact:
+            pull_job: '{{ lookup("template", "../../../roles/open-webui/templates/pull_models_job.yaml.j2") | from_yaml }}'
+          vars:
+            _pull_air_gapped: true
+            _pull_job_name: model-storage-test-
+            _pull_namespace: model-storage-test
+            _pull_label: model-storage-test
+            _pull_ttl: 600
+            _pull_backoff: 1
+            ollama_image_repository: ollama/ollama
+            ollama_image_tag: fixture
+            ollama_nfs_mount_path: /models
+            ollama_nfs_path: '{{ model_store.path }}'
+            ollama_models: []
+            scout_model_create: false
+
+        - name: Prevent the writer from pruning directories required by readers
+          ansible.builtin.assert:
+            that:
+              - pull_job.spec.template.spec.containers[0].env | selectattr('name', 'equalto', 'OLLAMA_NOPRUNE') | map(attribute='value') | list == ['true']
+      always:
+        - name: Remove isolated model storage
+          ansible.builtin.file:
+            path: '{{ model_store.path }}'
+            state: absent

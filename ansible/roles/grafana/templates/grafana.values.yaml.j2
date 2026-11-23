@@ -1,3 +1,5 @@
+image:
+  tag: '{{ grafana_image_tag }}'
 grafana.ini:
   auth:
     disable_login_form: true
@@ -23,6 +25,8 @@ grafana.ini:
     wal: true
   security:
     disable_gravatar: true
+  users:
+    default_theme: system
   server:
     root_url: 'https://grafana.{{ server_hostname }}'
   metrics:

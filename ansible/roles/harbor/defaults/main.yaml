@@ -17,9 +17,10 @@ harbor_registry_url: 'https://{{ harbor_hostname }}'
 # List of public registries to proxy through Harbor
 # Each proxy prject name can be overridden in inventory with harbor_<registry_name>_proxy_project variable
 # Harbor pulls from the upstream anonymously unless harbor_<registry_name>_proxy_username and
-# harbor_<registry_name>_proxy_password are set. A proxy project with upstream credentials is
-# private: the nodes pull from it as the harbor_pull_robot_name robot account, whose password is
-# harbor_pull_robot_password. The other proxy projects stay public.
+# harbor_<registry_name>_proxy_password are set, which make that proxy project private. When
+# harbor_pull_robot_password is set, Harbor has a pull-only robot account, harbor_pull_robot_name,
+# that can read every project, and the nodes log in to Harbor as it. Private projects need it,
+# including a Pluggable App's (ADR 0041).
 harbor_pull_robot_name: scout-pull
 harbor_registry_proxies:
   - public_registry: docker.io

@@ -349,6 +349,8 @@ singleuser:
         "@jupyter-server/resource-usage:topbar-item":
           enable: true
           refreshRate: 1000
+        "@jupyterlab/apputils-extension:themes":
+          adaptive-theme: true
 {% if jupyter_extension_manager_mode == 'readonly' %}
 
         # Configure Extension Manager to readonly mode (view installed extensions only)

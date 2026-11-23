@@ -1,0 +1,15 @@
+---
+# Production mounts the model store read-only (ADR 0008).
+- name: Create Ollama model directories on the storage writer
+  ansible.builtin.file:
+    path: '{{ ollama_nfs_path }}/{{ item }}'
+    state: directory
+    mode: '0755'
+  loop:
+    - blobs
+    - manifests
+    - manifests-v2
+  delegate_to: '{{ (groups["staging"] | default([inventory_hostname]))[0] }}'
+  when:
+    - air_gapped | default(false) | bool
+    - ollama_nfs_path is defined and ollama_nfs_path | length > 0

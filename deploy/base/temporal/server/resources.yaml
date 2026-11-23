@@ -43,7 +43,7 @@ spec:
     spec:
       chart: temporal
       # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/ depName=temporal
-      version: '1.7.0'
+      version: '1.8.0'
       sourceRef:
         kind: HelmRepository
         name: temporal
@@ -58,6 +58,11 @@ spec:
     shims:
       dockerize: false
       elasticsearchTool: false
+    web:
+      image:
+        # Pinned in versions.yaml (temporal_ui_image_tag); the chart's default lags the fixed Go.
+        # renovate: datasource=docker depName=temporalio/ui
+        tag: '2.58.1'
     server:
       replicaCount: 1
       # Dev defaults for all server roles; overlays tune.

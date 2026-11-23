@@ -7,15 +7,37 @@
       - pluggable_app.state | default('present') in ['present', 'absent']
       - pluggable_app.state | default('present') == 'absent' or pluggable_app.chart | default('') | length > 0
       - pluggable_app.chart | default('') is not match('oci://') or pluggable_app.version is defined
-      - pluggable_app.registry is not defined or pluggable_app.chart | default('') is match('oci://')
     fail_msg: >-
       Each pluggable_apps entry needs a name and a namespace, a chart unless state is absent,
-      and a version when the chart is an oci:// reference. registry applies only to an oci:// chart.
+      and a version when the chart is an oci:// reference.
     quiet: true
+
+- name: Remove the image policy for {{ pluggable_app.name }}
+  kubernetes.core.k8s:
+    state: absent
+    api_version: admissionregistration.k8s.io/v1
+    kind: '{{ item }}'
+    name: pluggable-app-{{ pluggable_app.name }}
+  loop: [MutatingAdmissionPolicyBinding, MutatingAdmissionPolicy]
+  when: >-
+    pluggable_app.state | default('present') == 'absent' or
+    (pluggable_app.registry is not defined and pluggable_app.registries is not defined)
 
 - name: Prepare {{ pluggable_app.name }}
   when: pluggable_app.state | default('present') == 'present'
+  vars:
+    _pluggable_app_logins: >-
+      {{ {'name': pluggable_app.name, 'chart': pluggable_app.chart,
+          'registry': pluggable_app.registry | default(none),
+          'registries': pluggable_app.registries | default(none)} | pluggable_app_logins }}
+    _pluggable_app_chart_login: '{{ _pluggable_app_logins | pluggable_app_login_for(pluggable_app.chart) }}'
   block:
+    # Not no_log, so a bad declaration's error shows. The errors never include credentials.
+    - name: Check registry logins for {{ pluggable_app.name }}
+      ansible.builtin.assert:
+        that: _pluggable_app_logins is sequence
+        quiet: true
+
     - name: Create namespace for {{ pluggable_app.name }}
       ansible.builtin.include_role:
         name: scout_common
@@ -54,11 +76,46 @@
     - name: Log in to the chart registry for {{ pluggable_app.name }}
       kubernetes.core.helm_registry_auth:
         host: "{{ pluggable_app.chart | regex_replace('^oci://([^/]+)/.*$', '\\1') }}"
-        username: '{{ pluggable_app.registry.username }}'
-        password: '{{ pluggable_app.registry.password }}'
+        username: '{{ _pluggable_app_chart_login.username }}'
+        password: '{{ _pluggable_app_chart_login.password }}'
       delegate_to: localhost
       no_log: true
-      when: pluggable_app.registry is defined
+      when: _pluggable_app_chart_login is not none
+
+    - name: Create the image pull Secret for {{ pluggable_app.name }}
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          type: kubernetes.io/dockerconfigjson
+          metadata:
+            name: '{{ pluggable_app.name }}-registry'
+            namespace: '{{ pluggable_app.namespace }}'
+          data:
+            .dockerconfigjson: '{{ _pluggable_app_logins | pluggable_app_auths | to_json | b64encode }}'
+      no_log: true
+      when:
+        - _pluggable_app_logins | length > 0
+        - not (air_gapped | default(false) | bool)
+
+    - name: Proxy {{ pluggable_app.name }}'s private images through Harbor
+      ansible.builtin.include_role:
+        name: harbor
+        tasks_from: app_projects
+      vars:
+        harbor_app_logins: '{{ _pluggable_app_logins }}'
+        harbor_hostname: '{{ _pluggable_apps_harbor_hostname }}'
+        harbor_admin_password: '{{ _pluggable_apps_staging_vars.harbor_admin_password }}'
+      when:
+        - _pluggable_app_logins | length > 0
+        - air_gapped | default(false) | bool
+
+    - name: Create the image policy for {{ pluggable_app.name }}
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ lookup('ansible.builtin.template', 'image-policy.yaml.j2') | from_yaml_all | list }}"
+      when: _pluggable_app_logins | length > 0
 
 - name: Helm release for {{ pluggable_app.name }}
   ansible.builtin.include_role:

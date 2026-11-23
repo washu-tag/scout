@@ -5,7 +5,7 @@ FROM ${BASE_IMAGE}
 # Debian security patches lag this base image tag; pull them in explicitly
 # until upstream rebuilds. No-op once the base image catches up.
 RUN apt-get update && apt-get install -y --no-install-recommends --only-upgrade \
-        perl-base libsqlite3-0 gzip libpcre2-8-0 \
+        perl-base libsqlite3-0 gzip libpcre2-8-0 zlib1g \
         openssl libssl3t64 openssl-provider-legacy \
     && rm -rf /var/lib/apt/lists/*
 
