@@ -84,9 +84,10 @@ spec:
     customRequestHeaders:
       Authorization: ''
 ---
-# Git requests carrying a Scout (Keycloak) token. The token is checked by the
-# git-gate sidecar, which names the user; Forgejo trusts that name. Only git
-# paths: the container registry sends its own Bearer tokens.
+# Requests carrying a Scout (Keycloak) token: git, and read-only API and job logs
+# for tools like Claude Code. The token is checked by the git-gate sidecar, which
+# names the user; Forgejo trusts that name. Not the container registry, which sends
+# its own Bearer tokens.
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
@@ -98,7 +99,7 @@ spec:
   entryPoints: [websecure]
   routes:
     - kind: Rule
-      match: Host(`{{ $host }}`) && HeaderRegexp(`Authorization`, `^Bearer `) && PathRegexp(`^/[^/]+/[^/]+/(info/refs|git-upload-pack|git-receive-pack|info/lfs/.*)$`)
+      match: Host(`{{ $host }}`) && HeaderRegexp(`Authorization`, `^Bearer `) && (PathRegexp(`^/[^/]+/[^/]+/(info/refs|git-upload-pack|git-receive-pack|info/lfs/.*)$`) || (Method(`GET`) && (PathPrefix(`/api/v1/`) || PathRegexp(`^/[^/]+/[^/]+/actions/runs/[0-9]+/jobs/[0-9]+/attempt/[0-9]+/logs$`))))
       priority: 1000
       middlewares:
         - name: forgejo-strip-user
