@@ -3,6 +3,7 @@
 import React from 'react';
 import { HiArrowRight, HiChevronRight, HiOutlineExclamation } from 'react-icons/hi';
 import { DEFAULT_ICON, ICONS } from '@/lib/catalog/icons';
+import { ChipBadge } from '@/components/catalog/ChipBadge';
 import { ChipAnchor } from '@/components/shell/ChipAnchor';
 import { TONES } from '@/lib/catalog/tones';
 import type { RenderChip, RenderGroup, RenderModel } from '@/lib/catalog/types';
@@ -54,15 +55,15 @@ const ChipCard = ({ chip, large }: { chip: RenderChip; large: boolean }) => {
   return (
     <ChipAnchor
       chip={chip}
-      className={`group flex items-start no-underline transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${SURFACE} ${tone.hoverBorder} ${tone.hoverShadow} ${
-        large ? 'gap-4 p-5 rounded-2xl shadow-sm' : 'gap-3 p-4 rounded-[14px]'
+      className={`group flex flex-wrap content-between items-start no-underline transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${SURFACE} ${tone.hoverBorder} ${tone.hoverShadow} ${
+        large ? 'gap-x-4 gap-y-3 p-5 rounded-2xl shadow-sm' : 'gap-x-3 gap-y-2.5 p-4 rounded-[14px]'
       }`}
     >
       <ToneIcon
         chip={chip}
         size={large ? 'w-[42px] h-[42px] rounded-xl' : 'w-9 h-9 rounded-[10px]'}
       />
-      <span className="flex min-w-0 flex-col gap-1">
+      <span className="flex min-w-0 flex-1 flex-col gap-1">
         <span
           className={`inline-flex items-center gap-1.5 font-semibold tracking-tight text-slate-900 dark:text-slate-100 ${large ? 'text-lg' : 'text-[15px]'}`}
         >
@@ -77,6 +78,11 @@ const ChipCard = ({ chip, large }: { chip: RenderChip; large: boolean }) => {
           {chip.description}
         </span>
       </span>
+      {chip.badge && (
+        <span className="basis-full min-w-0">
+          <ChipBadge chip={chip} />
+        </span>
+      )}
     </ChipAnchor>
   );
 };
@@ -88,7 +94,12 @@ const ChipRow = ({ chip }: { chip: RenderChip }) => (
   >
     <ToneIcon chip={chip} size="w-[34px] h-[34px] rounded-[9px]" />
     <span className="flex flex-1 min-w-0 flex-col gap-0.5">
-      <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{chip.title}</span>
+      <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+          {chip.title}
+        </span>
+        <ChipBadge chip={chip} />
+      </span>
       <span className={`text-[13px] ${MUTED}`}>{chip.description}</span>
     </span>
     <HiChevronRight
@@ -103,12 +114,17 @@ const ChipTile = ({ chip }: { chip: RenderChip }) => {
     <ChipAnchor
       chip={chip}
       title={chip.description}
-      className={`flex items-center gap-2.5 px-3 py-2.5 rounded-[14px] no-underline transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${SURFACE} ${tone.hoverBorder} ${tone.hoverShadow}`}
+      className={`flex flex-wrap items-center gap-x-2.5 gap-y-2 px-3 py-2.5 rounded-[14px] no-underline transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${SURFACE} ${tone.hoverBorder} ${tone.hoverShadow}`}
     >
       <ToneIcon chip={chip} size="w-[34px] h-[34px] rounded-[9px]" />
-      <span className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">
+      <span className="min-w-0 flex-1 text-[13px] font-semibold text-slate-900 dark:text-slate-100">
         {chip.title}
       </span>
+      {chip.badge && (
+        <span className="basis-full min-w-0">
+          <ChipBadge chip={chip} />
+        </span>
+      )}
     </ChipAnchor>
   );
 };

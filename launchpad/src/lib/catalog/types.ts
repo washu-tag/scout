@@ -10,6 +10,11 @@ export interface ChipLink {
   url?: string;
 }
 
+export interface ChipBadge {
+  text: string;
+  tone: ToneName;
+}
+
 // A section heading's link: `url` opens in a new tab; `link` is a chip destination.
 export interface FooterLink {
   text: string;
@@ -30,6 +35,7 @@ export interface Chip {
   icon: string;
   iconData?: string;
   tone: ToneName;
+  badge?: ChipBadge;
   link: ChipLink;
   newTab: boolean;
   sandbox: boolean;
@@ -37,6 +43,8 @@ export interface Chip {
   weight: number;
   audience: Audience;
   enabled: boolean;
+  // Lowercased usernames: when set, only these users see the chip.
+  users?: string[];
   source: string;
 }
 
@@ -91,6 +99,7 @@ export interface RenderChip {
   iconData?: string;
   tone: ToneName;
   kind: ChipKind;
+  badge?: ChipBadge;
   href: string;
   newTab: boolean;
   sandbox: boolean;

@@ -55,7 +55,8 @@ groups: [] # section definitions (only when introducing a section)
 
 A document with any other `apiVersion` or `kind` is skipped. Unknown fields inside a
 known version are ignored (with a logged warning), so a newer document still renders its
-basics on an older launchpad.
+basics on an older launchpad. The one exception is [`users`](#chips-for-named-users),
+which needs `apiVersion: launchpad.scout.xnat.org/v1alpha2`.
 
 ## Chip fields
 
@@ -68,19 +69,50 @@ basics on an older launchpad.
 | `icon`           | no       | `app`     | A name from the [icon registry](#icons-and-tones).                                                                                               |
 | `iconData`       | no       | —         | `data:image/(png\|jpeg\|svg+xml);base64,…`, max 16 KiB. Wins over `icon`.                                                                        |
 | `tone`           | no       | `indigo`  | One of `indigo emerald amber violet rose cyan red orange slate`.                                                                                 |
+| `badge`          | no       | —         | `{text, tone}`: a short status beside the title, such as "Draft". `text` max 24 characters; `tone` as above, default `slate`.                   |
 | `newTab`         | no       | `true`    | Open a `url` destination in a new tab. Other destinations open inside the launchpad — see [links](#links).                                       |
 | `sandbox`        | no       | `false`   | Open the framed app in a sandbox that can't open popups or navigate the launchpad window. For apps that render untrusted content, such as chat. |
 | `group`          | no       | `more`    | Which section the chip renders in.                                                                                                               |
 | `weight`         | no       | `100`     | Lower renders first; ties break by title, then id.                                                                                               |
 | `audience`       | no       | `user`    | `user` (any authenticated user) or `admin`. This is display filtering only — your service must still enforce its own access.                     |
 | `enabled`        | no       | `true`    | Set `false` to hide a shipped chip without deleting the ConfigMap (useful when your chart gates the chip on a value).                            |
+| `users`          | no       | —         | `v1alpha2` documents only. Usernames that see the chip; nobody else does. See [chips for named users](#chips-for-named-users).                  |
 
 Invalid values in the optional presentation fields fall back to their defaults (the
 chip still renders, and the problem is reported — see
 [troubleshooting](#troubleshooting)). A chip without a valid `id`, `title`, and `link`
-is skipped entirely — and so is a chip with an invalid `audience`, `enabled` or `sandbox`:
-visibility and the sandbox fail closed, because a typo there must not widen who sees
-the chip or drop its sandbox.
+is skipped entirely — and so is a chip with an invalid `audience`, `enabled`, `users`
+or `sandbox`: visibility and the sandbox fail closed, because a typo there must not
+widen who sees the chip or drop its sandbox.
+
+### Chips for named users
+
+A chip with `users` shows only to the users it lists, matched against their Scout
+username ignoring case. This suits a service that lists each person's own items, such as
+the drafts they are writing or the ones waiting for their review. An empty list shows
+the chip to nobody, and a section whose chips are all hidden from a viewer disappears
+for them.
+
+```yaml
+apiVersion: launchpad.scout.xnat.org/v1alpha2
+kind: Catalog
+groups:
+  - id: my-drafts
+    title: My drafts
+    weight: 5 # above Core Services
+chips:
+  - id: draft-chest-ct
+    title: Chest CT review
+    link: { subdomain: my-service, path: /drafts/chest-ct }
+    group: my-drafts
+    users: [alice, bob]
+```
+
+`users` is only valid in a `v1alpha2` document: a launchpad from before `users` existed
+skips the whole document instead of showing its chips to everyone, and a `v1alpha1`
+chip that sets `users` is skipped. Keep a service's other chips in a `v1alpha1` document
+(a separate data key) so they still render on older launchpads. Like `audience`, this
+only decides who sees the chip; your service must still check who may open the link.
 
 ### Links
 
@@ -290,8 +322,8 @@ and reports the rest. Checks, in the order problems actually occur:
 2. **YAML syntax error** — the whole document is skipped and the diagnostic includes
    line and column.
 3. **Wrong `apiVersion` or `kind`** — the document is skipped.
-4. **Chip missing `id`/`title`/valid `link`, or with an invalid `audience` or
-   `enabled`** — that chip is skipped.
+4. **Chip missing `id`/`title`/valid `link`, with an invalid `audience`, `enabled` or
+   `users`, or with `users` in a `v1alpha1` document** — that chip is skipped.
 5. **Bad optional presentation field** (unknown icon or tone, overlong text) — the
    chip renders with defaults and the coercion is reported.
 
