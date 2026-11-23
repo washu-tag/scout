@@ -594,7 +594,22 @@ Every notebook server also runs VS Code in the browser
 ([code-server](https://github.com/coder/code-server)) with the Claude Code and Codex
 coding agents. Each profile gets an **Interface** option, JupyterLab (the default),
 VS Code, or Terminal, that picks the page the server opens on. The choices are
-`jupyter_interfaces`.
+`jupyter_interfaces`. To change the default for one profile, override only the
+`default` flags in that profile:
+
+```yaml
+jupyter_profiles:
+  - '{{ jupyter_cpu_profile }}'
+  - display_name: 'GPU'
+    # ...
+    profile_options:
+      interface:
+        choices:
+          jupyterlab:
+            default: false
+          vscode:
+            default: true
+```
 
 Users bring their own LLM keys (see the user docs). To point everyone at a shared
 gateway, set defaults in inventory. Users can override them:

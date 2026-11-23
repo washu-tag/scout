@@ -54,7 +54,8 @@ RUN export HOME=/tmp/tools-home \
     && rm -rf /tmp/tools-home
 
 # Installed as built-in extensions, since the home volume mounts over the user
-# extensions directory. The Claude Code extension bundles the `claude` CLI.
+# extensions directory. The Claude Code extension bundles the `claude` CLI. The Jupyter
+# extension writes widget scripts to its own temp/ at runtime, so that one is user-owned.
 RUN export HOME=/tmp/ext-home \
     && vsix_arch="$(echo "${TARGETARCH}" | sed 's/amd64/x64/')" \
     && curl -fsSL --retry 3 --retry-all-errors -o /tmp/claude-code.vsix \
@@ -65,6 +66,9 @@ RUN export HOME=/tmp/ext-home \
         --install-extension "ms-toolsai.jupyter@${JUPYTER_EXTENSION_VERSION}" \
     && find /tmp/ext -mindepth 1 -maxdepth 1 -type d \
         -exec mv -t /usr/lib/code-server/lib/vscode/extensions/ {} + \
+    && jupyter_ext="$(echo /usr/lib/code-server/lib/vscode/extensions/ms-toolsai.jupyter-*)" \
+    && test -d "${jupyter_ext}" \
+    && install -d -o "${NB_UID}" -g "${NB_GID}" "${jupyter_ext}/temp" \
     && ln -s /usr/lib/code-server/lib/vscode/extensions/anthropic.claude-code-*/resources/native-binary/claude \
         /usr/local/bin/claude \
     && claude --version \

@@ -116,7 +116,8 @@ jupyter_singleuser_no_proxy: >-
   {{ (squid_no_proxy + [server_hostname, '.' ~ server_hostname]
       + ([nexus_host] if package_proxy_mode == 'nexus' and nexus_host else []))
      | unique | join(',') }}
-# Added to every profile in jupyter_profiles: the page a server opens on.
+# Added to every profile in jupyter_profiles: the page a server opens on. A profile's
+# own profile_options.interface is merged over it.
 jupyter_interfaces:
   interface:
     display_name: 'Interface'

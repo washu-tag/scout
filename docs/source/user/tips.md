@@ -83,19 +83,14 @@ The **Terminal** option opens a full-window terminal instead. It runs in a tmux
 session that keeps running if you close the tab, so you can reopen it and pick up
 where you left off.
 
-To log out from VS Code, click **Log out** at the right end of the status bar. In the
-Terminal, open the log out link at the right of the tmux status bar (hold Shift while
-clicking if a plain click doesn't open it). Both stop your server and end your Scout
-session, the same as **File > Log Out** in JupyterLab. The link opens in a new tab;
-close the old one afterward.
-
 The Claude Code extension, the Claude Code CLI (`claude`), and the
 [Codex CLI](https://github.com/openai/codex) (`codex`) are preinstalled. Point them at
 an LLM gateway your organization provides. Their settings live in your home directory,
 so they persist across server restarts.
 
 **Adding your key.** Claude Code and Codex share one gateway key. When VS Code opens
-and your key isn't set yet, it asks for it: click **Add Key** and paste the key. Until
+and your key isn't set yet, it asks for it: click **Add Key** and paste the key. If you
+choose **Later**, click **Add AI Gateway Key** in the status bar when you're ready. Until
 the key is set, new terminals also print a reminder to run `scout-set-key`. To change it
 later, run **Scout: Set AI Gateway Key** from the Command Palette, or run
 `scout-set-key` in a terminal. Either saves the key to `~/.claude/settings.json` and
@@ -148,13 +143,13 @@ configure. Only use a provider your organization has approved for the data you w
 ### Longitudinal Questions with a Coding Agent
 
 A coding agent can answer a question about patients over time by writing and running a
-notebook that saves the result as a CSV. Point it at the samples and state the question
-and what one row of the result should be:
+notebook. Point it at the samples and state the question and what one row of the result
+should be:
 
 ```text
 Read ~/Scout/Quickstart.ipynb. Find patients whose first chest CT mentions a pulmonary
-nodule and any chest CT within 18 months after it. Save one row per patient with the
-index date, follow-up date, and days between, as a CSV.
+nodule and any chest CT within 18 months after it. Return one row per patient with the
+index date, follow-up date, and days between.
 ```
 
 You don't need to list facilities. The agent looks up the facilities you have access to
@@ -163,17 +158,16 @@ any one study's approval, so confirm only the facilities that apply. To skip the
 question, name the facilities in your request (for example, "for BJH and SLCH").
 
 Claude Code and Codex load Scout's agent guide (`~/Scout/CLAUDE.md`) in every session.
-It covers query rules, longitudinal patterns, and output conventions. Codex uses it
-unless you already have your own `~/.codex/AGENTS.md`. The agent writes the notebook and
-CSV to `~/analyses/<name>/`, runs the notebook end to end, and reports the row and
-patient counts and the definitions it chose. Check those definitions, then open the
-notebook to review the rows before you use the CSV. Download the CSV from the file
-browser (right-click, **Download**).
+It covers query rules, longitudinal patterns, and how to handle patient data. Codex uses
+it unless you already have your own `~/.codex/AGENTS.md`. The agent writes the notebook
+to `~/analyses/<name>/`, runs it end to end, and reports the row and patient counts and
+the definitions it chose. Check those definitions, then open the notebook to review the
+rows.
 
 The agent is instructed to inspect results only through counts and summaries, and to
-keep rows out of notebook output, and Claude Code is blocked from opening CSV files in
-your home directory. It still runs queries as you and can see anything you can, so treat
-its session the same way as the data it touches.
+keep rows out of notebook output, and Claude Code's file-reading tool is blocked from
+opening CSV and TSV files in your home directory. It still runs queries as you and can
+see anything you can, so treat its session the same way as the data it touches.
 
 ### Working with Report Sections
 

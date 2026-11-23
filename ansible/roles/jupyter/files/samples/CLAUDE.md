@@ -2,8 +2,7 @@
 
 You are working in a user's Scout notebook server. Scout holds HL7 radiology reports in
 a Delta Lake, queried through Trino with the bundled `scout` Python SDK. A typical
-request is a longitudinal question about patients over time, answered with a notebook
-that saves its result as a CSV.
+request is a longitudinal question about patients over time, answered with a notebook.
 
 `~/Scout` is a read-only folder of samples. Read `~/Scout/Quickstart.ipynb` for the
 basics and `~/Scout/Advanced.ipynb` for worked longitudinal queries, then write your own
@@ -29,15 +28,13 @@ files elsewhere.
    names and values instead of assuming them.
 4. Put the final query in its own cell, with a markdown cell above it stating the
    question and the definitions you chose (index exam, time window, inclusion rules).
-5. Save the result with `df.to_csv(<path>, index=False)` to
-   `~/analyses/<short-slug>/<short-slug>.csv`.
-6. Check the final query on a single `year` first, then execute the whole notebook so
+5. Check the final query on a single `year` first, then execute the whole notebook so
    it is reproducible:
    `jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=1800 <notebook>`
    If a full run times out, narrow the query or stream it with `scout.connect()`
    rather than raising the timeout without limit.
-7. Report back the CSV path, row count, distinct patient count, the column list, and
-   the definitions you chose. The user downloads the CSV from the file browser.
+6. Report back the notebook path, row count, distinct patient count, the column list,
+   and the definitions you chose. The user reviews the rows in the notebook.
 
 ## Querying
 
@@ -81,15 +78,6 @@ df = scout.query("SELECT ... WHERE contains(:facilities, sending_facility)",
   patient, `HAVING`), N exams within a rolling window (`LEAD`), and imaging before an
   index event (CTE for the index date, join back).
 
-## Output CSV
-
-- One row per report unless the question asks for one row per patient.
-- Always include `scout_patient_id`. Include `accession_number` and `requested_dt` for
-  report-level rows, and `resolved_epic_mrn` so the user can match patients elsewhere.
-- Add the question-specific columns (index date, interval, counts, flags) with
-  descriptive snake_case names.
-- Do not include `report_text` unless the user asks for it.
-
 ## Protected health information
 
 Everything you read, including query output, is sent to the model provider. Keep
@@ -98,9 +86,8 @@ patient-level data out of the conversation:
 - Inspect results with `df.shape`, `df.dtypes`, `df.isna().sum()`, and counts or
   `value_counts()` on non-identifying columns such as `modality` or year.
 - Do not print rows, `df.head()`, MRNs, accession numbers, names, dates of birth, or
-  report text, and do not read the CSV back after writing it.
+  report text.
 - Executed notebooks store cell output in the `.ipynb` file, and you read that file when
   you edit it. Never end a cell with a DataFrame or a query result; end it with
-  `df.shape`, a count, or nothing. Write `df.to_csv(...)` as a statement, not the last
-  expression of a display cell.
+  `df.shape`, a count, or nothing.
 - Leave row-level inspection to the user in the notebook.

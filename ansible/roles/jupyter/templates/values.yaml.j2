@@ -205,7 +205,7 @@ singleuser:
       ephemeral-storage: '{{ jupyter_singleuser_ephemeral_storage_limit }}'
 {% set _profiles = [] %}
 {% for _profile in jupyter_profiles %}
-{%   set _ = _profiles.append(_profile | combine({'profile_options': jupyter_interfaces | combine(_profile.profile_options | default({}))})) %}
+{%   set _ = _profiles.append(_profile | combine({'profile_options': jupyter_interfaces | combine(_profile.profile_options | default({}), recursive=True)})) %}
 {% endfor %}
   profileList: {{ _profiles | to_json }}
 {% if jupyter_target_node_name is defined %}

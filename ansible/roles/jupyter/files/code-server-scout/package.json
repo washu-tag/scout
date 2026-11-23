@@ -1,7 +1,7 @@
 {
   "name": "scout",
   "displayName": "Scout",
-  "description": "Log out of Scout and set up your AI gateway key.",
+  "description": "Set up your AI gateway key.",
   "publisher": "scout",
   "version": "1.1.0",
   "engines": {
@@ -13,12 +13,6 @@
   ],
   "contributes": {
     "commands": [
-      {
-        "command": "scout.logout",
-        "title": "Log Out",
-        "category": "Scout",
-        "icon": "$(sign-out)"
-      },
       {
         "command": "scout.setGatewayKey",
         "title": "Set AI Gateway Key",

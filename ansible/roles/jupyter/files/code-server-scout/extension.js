@@ -9,29 +9,7 @@ const SET_KEY = '/usr/local/bin/scout-set-key';
 const DONT_ASK_KEY = 'scout.gatewayKey.dontAsk';
 const CHAT_MODELS = '.local/share/code-server/User/chatLanguageModels.json';
 
-function logoutUrl() {
-  const base = process.env.JUPYTERHUB_PUBLIC_URL || process.env.JUPYTERHUB_PUBLIC_HUB_URL;
-  return base ? vscode.Uri.parse(new URL('logout', base).toString()) : null;
-}
-
-async function logout(url) {
-  const choice = await vscode.window.showWarningMessage(
-    'Log out of Scout?',
-    { modal: true, detail: 'This stops your server and any running notebooks or terminals.' },
-    'Log out',
-  );
-  if (choice !== 'Log out') {
-    return;
-  }
-  const opened = await vscode.env.openExternal(url);
-  if (opened) {
-    vscode.window.showInformationMessage(
-      'Logging out in a new tab. Once it finishes, you can close this tab.',
-    );
-  } else {
-    vscode.window.showErrorMessage(`Could not open the log out page. Go to ${url} to log out.`);
-  }
-}
+let refreshKeyItem = () => {};
 
 function readJson(file) {
   try {
@@ -100,6 +78,7 @@ async function setGatewayKey() {
     vscode.window.showErrorMessage(`Could not save the key: ${err.message}`);
     return;
   }
+  refreshKeyItem();
   const choice = await vscode.window.showInformationMessage(
     'Key saved. Reload the window so Claude Code and chat use it, and open a new terminal before running codex.',
     'Reload Window',
@@ -123,37 +102,33 @@ async function promptForKey(context) {
     await setGatewayKey();
   } else if (choice === "Don't Ask Again") {
     await context.globalState.update(DONT_ASK_KEY, true);
+    refreshKeyItem();
   }
 }
 
 function activate(context) {
-  const url = logoutUrl();
+  const item = vscode.window.createStatusBarItem(
+    'scout.gatewayKey',
+    vscode.StatusBarAlignment.Right,
+    -1000,
+  );
+  item.name = 'Scout AI Gateway Key';
+  item.text = '$(key) Add AI Gateway Key';
+  item.tooltip = 'Claude Code, Codex, and VS Code chat need your AI gateway key';
+  item.command = 'scout.setGatewayKey';
+  refreshKeyItem = () => {
+    if (!context.globalState.get(DONT_ASK_KEY) && needsKey()) {
+      item.show();
+    } else {
+      item.hide();
+    }
+  };
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('scout.logout', () => {
-      if (!url) {
-        vscode.window.showErrorMessage('Scout log out is unavailable: no JupyterHub URL is set.');
-        return;
-      }
-      return logout(url);
-    }),
+    item,
     vscode.commands.registerCommand('scout.setGatewayKey', setGatewayKey),
   );
-
-  if (url) {
-    const item = vscode.window.createStatusBarItem(
-      'scout.logout',
-      vscode.StatusBarAlignment.Right,
-      -1000,
-    );
-    item.name = 'Scout Log Out';
-    item.text = '$(sign-out) Log out';
-    item.tooltip = 'Stop your server and log out of Scout';
-    item.command = 'scout.logout';
-    item.show();
-    context.subscriptions.push(item);
-  }
-
+  refreshKeyItem();
   promptForKey(context);
 }
 
