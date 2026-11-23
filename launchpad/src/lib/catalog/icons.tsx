@@ -42,6 +42,7 @@ import {
 } from 'react-icons/hi';
 import {
   SiDocker,
+  SiGit,
   SiGithub,
   SiGrafana,
   SiJupyter,
@@ -99,6 +100,7 @@ export const ICONS: Record<string, IconType> = {
   'user-group': HiUserGroup,
   // Brand marks (Simple Icons)
   docker: SiDocker,
+  git: SiGit,
   github: SiGithub,
   grafana: SiGrafana,
   jupyter: SiJupyter,
