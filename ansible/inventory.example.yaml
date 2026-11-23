@@ -665,6 +665,13 @@ k3s_cluster:
     # windows. Modern Temporal has no max-retention cap (only a ~24h minimum).
     # temporal_default_namespace_retention: 30d
 
+    # Daily ingest of new HL7 logs (IngestHl7LogWorkflow with default inputs).
+    # Off by default; enable on sites that receive real feeds. Runs at
+    # scheduled_ingest_hour (UTC, default 6), or set a full scheduled_ingest_cron.
+    # scheduled_ingest_enabled: true
+    # scheduled_ingest_hour: 6
+    # scheduled_ingest_cron: '0 6 * * *'
+
     #---------------------------------------------------------------------------
     # Superset
     #---------------------------------------------------------------------------
