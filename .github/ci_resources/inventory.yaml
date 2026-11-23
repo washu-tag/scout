@@ -192,7 +192,7 @@ k3s_cluster:
     # deploy doesn't fail at template render.
     trino_internal_shared_secret: ci-trino-internal-shared-secret
 
-    # Valkey (single shared password for all services)
+    # Valkey: the shared instance, then the cache instance and its ACL users
     valkey_password: valkey123
     valkey_cache_password: valkey123-cache
     valkey_cache_report_viewer_password: valkey123-cache-rv

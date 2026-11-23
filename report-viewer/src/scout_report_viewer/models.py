@@ -42,6 +42,19 @@ SEARCH_REQUIRED_COLUMNS: tuple[str, ...] = (
     "accession_number",
 )
 
+# Report-body columns: the largest, and neither the grid nor charts use them, so
+# they're stripped from /rows and chart rows (and so from cached entries); the SPA
+# fetches report text per row via /reports/read.
+REPORT_BODY_COLUMNS: frozenset[str] = frozenset(
+    {
+        "report_text",
+        "report_section_findings",
+        "report_section_impression",
+        "report_section_addendum",
+        "report_section_technician_note",
+    }
+)
+
 # Tables /reports/read may target; renders default to reports_curated, epic
 # views are opt-in for resolved cross-version patient identity.
 READ_REPORTS_TABLES: tuple[str, ...] = (

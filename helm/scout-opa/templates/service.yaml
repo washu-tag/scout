@@ -13,3 +13,22 @@ spec:
       port: {{ .Values.service.port }}
       targetPort: http
       protocol: TCP
+---
+# Resolves to every ready replica, for a caller that must ask them all: Report
+# Viewer caches a result only when every replica agrees on the user's
+# permissions, since Trino may get its decisions from any of them.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "scout-opa.fullname" . }}-replicas
+  labels:
+    {{- include "scout-opa.objectLabels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    {{- include "scout-opa.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP

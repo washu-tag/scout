@@ -32,8 +32,9 @@ TRINO_QUERY_DURATION = Histogram(
 CACHE_LOOKUPS = Counter(
     "scout_report_viewer_cache_lookups_total",
     "Query-result cache lookups (hit, miss, error, unavailable when the OPA "
-    "fingerprint could not be read, or cold when the query's tables or their "
-    "versions aren't known yet and only a write can follow).",
+    "fingerprint could not be read from every replica or they disagree, or "
+    "cold when the query's tables or their versions aren't known yet and only "
+    "a write can follow).",
     ["op", "result"],
 )
 

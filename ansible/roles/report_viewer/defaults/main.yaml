@@ -55,6 +55,9 @@ report_viewer_cache_ttl_seconds: 14400
 report_viewer_valkey_url: 'redis://{{ valkey_cache_helm_release_name }}.{{ valkey_namespace }}:6379'
 # OPA, for each user's permissions fingerprint (scout.cache_fingerprint).
 report_viewer_opa_url: 'http://opa-trino.{{ opa_namespace }}:8181'
+# Every OPA replica (the chart's headless Service): a result is cached only when
+# they all agree on the user's permissions.
+report_viewer_opa_replicas_host: 'opa-trino-replicas.{{ opa_namespace }}'
 # A result is cached only if the user bundle was at least this old when its
 # query started, which must outlast OPA replicas disagreeing about it.
 report_viewer_cache_bundle_age_seconds: '{{ opa_bundle_max_delay_seconds | int + 5 }}'

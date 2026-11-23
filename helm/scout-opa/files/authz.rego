@@ -10,6 +10,7 @@ trino_decisions := {"allow", "rowFilters", "batchColumnMasks"}
 
 allow if {
 	input.method == "POST"
+	no_params
 	count(input.path) == 4
 	input.path[0] == "v1"
 	input.path[1] == "data"
@@ -19,6 +20,7 @@ allow if {
 
 allow if {
 	input.method == "POST"
+	no_params
 	input.path == ["v1", "data", "scout", "cache_fingerprint"]
 }
 
@@ -26,3 +28,7 @@ allow if {
 	input.method == "GET"
 	input.path == ["health"]
 }
+
+# Query parameters such as ?explain=full or ?instrument would return evaluation
+# traces that include the user's bundle record. Neither caller sends any.
+no_params if object.get(input, "params", {}) == {}

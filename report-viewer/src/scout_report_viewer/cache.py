@@ -9,11 +9,13 @@ outside the Delta catalog has no version to key on and runs uncached. Versions
 are read as Report Viewer's own identity, which OPA exempts from row filters on
 `$history` tables only, so every user's searches key on the same real versions.
 
-OPA's replicas each poll the user bundle on their own, so for a while after a
-bundle is published the fingerprint read here and the decisions Trino gets can
-come from different bundles. A result is therefore stored only if, when its
-query started, the bundle was already `cache_bundle_age_seconds` old, longer
-than OPA's polling delay, so every replica had it.
+OPA's replicas each poll the user bundle on their own, and are replaced one at
+a time on a policy change, so Trino's decisions may come from a replica that
+differs from the one a fingerprint is read from. Every replica is therefore
+asked: the cache is used only when they all agree on the user's hash, and a
+result is stored only if they also agree on the bundle's publish time and it was
+already `cache_bundle_age_seconds` old when the query started, longer than OPA's
+polling delay.
 
 Off unless `valkey_url` and `opa_url` are set and `cache_ttl_seconds` is
 positive. Any Valkey, OPA or Trino failure here means running uncached, never a
@@ -27,11 +29,13 @@ import hashlib
 import json
 import logging
 import math
+import socket
 import time
 import zlib
 from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Any
+from urllib.parse import urlsplit
 
 import httpx
 import redis.asyncio as redis
@@ -143,18 +147,44 @@ async def aclose() -> None:
 
 
 async def _fingerprint(user: str) -> tuple[str, int | None] | None:
-    """The user's permissions hash, and when the user bundle it came from was
-    published (epoch ms; None if OPA can't tell)."""
+    """The user's permissions hash, and when the user bundle behind it was
+    published (epoch ms), as every OPA replica sees them, since Trino may get
+    its decisions from any of them. None if a replica can't be asked or they
+    disagree on the hash; the publish time is None if they disagree on it, so
+    nothing is stored until they've all caught up."""
     try:
-        resp = await _opa_client().post(
-            "/v1/data/scout/cache_fingerprint", json={"input": {"user": user}}
-        )
-        resp.raise_for_status()
-        result = resp.json()["result"]
-        return result["hash"], result.get("published_ms")
+        urls = await _opa_replicas()
+        if not urls:
+            raise RuntimeError("no OPA replicas resolved")
+        answers = await asyncio.gather(*(_ask_replica(url, user) for url in urls))
     except Exception:
         log.warning("cache: OPA fingerprint unavailable", exc_info=True)
         return None
+    hashes = {h for h, _ in answers}
+    if len(hashes) != 1:
+        return None
+    published = {p for _, p in answers}
+    return hashes.pop(), published.pop() if len(published) == 1 else None
+
+
+async def _opa_replicas() -> list[str]:
+    if not settings.opa_replicas_host:
+        return [settings.opa_url]
+    port = urlsplit(settings.opa_url).port or 8181
+    infos = await asyncio.get_running_loop().getaddrinfo(
+        settings.opa_replicas_host, port, type=socket.SOCK_STREAM
+    )
+    hosts = sorted({info[4][0] for info in infos})
+    return [f"http://[{h}]:{port}" if ":" in h else f"http://{h}:{port}" for h in hosts]
+
+
+async def _ask_replica(url: str, user: str) -> tuple[str, int | None]:
+    resp = await _opa_client().post(
+        f"{url}/v1/data/scout/cache_fingerprint", json={"input": {"user": user}}
+    )
+    resp.raise_for_status()
+    result = resp.json()["result"]
+    return result["hash"], result.get("published_ms")
 
 
 def _spawn(coro: Any) -> asyncio.Task:

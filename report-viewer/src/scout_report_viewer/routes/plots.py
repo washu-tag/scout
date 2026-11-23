@@ -42,7 +42,13 @@ from ..csv_upload import (
     substitute_cohort,
 )
 from ..ids import new_plot_id
-from ..models import PlotDetail, PlotMeta, PlotRequest, PlotResponse
+from ..models import (
+    REPORT_BODY_COLUMNS,
+    PlotDetail,
+    PlotMeta,
+    PlotRequest,
+    PlotResponse,
+)
 from ..store import PlotStore, get_plot_store
 
 log = logging.getLogger(__name__)
@@ -52,15 +58,7 @@ router = APIRouter(prefix="/api/plots", tags=["plots"])
 # Must match the Vega-Lite version the frontend and vl-convert-python compile against.
 VEGA_LITE_SCHEMA = "https://vega.github.io/schema/vega-lite/v6.json"
 
-# Never plottable, and the browser has no use for them here.
-_HEAVY_COLS: frozenset[str] = frozenset(
-    {
-        "report_text",
-        "report_section_findings",
-        "report_section_impression",
-        "report_section_addendum",
-    }
-)
+_HEAVY_COLS = REPORT_BODY_COLUMNS
 
 
 # Viewer-owned keys; `usermeta` too since vega-embed lets a spec override

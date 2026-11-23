@@ -259,9 +259,13 @@ first_patient_name_is() {
     [[ "$(echo "$GOT" | jq -r '.[0][0]')" == "$expected" ]]
 }
 
+# Readable, or missing (CI may not have the table): either way past /allow. Any
+# other failure, a denial or a transient error, doesn't count.
 hidden_table_not_denied() {
-    GOT=$(trino_query "SELECT * FROM reports_report_patient_mapping LIMIT 1" "$TEST_USER" 2>&1 || true)
-    ! echo "$GOT" | grep -qE "PERMISSION_DENIED|Access Denied"
+    if GOT=$(trino_query "SELECT * FROM reports_report_patient_mapping LIMIT 1" "$TEST_USER" 2>&1); then
+        return 0
+    fi
+    echo "$GOT" | grep -qE "TABLE_NOT_FOUND|does not exist"
 }
 
 query_allowed() {
@@ -337,43 +341,40 @@ trino_query_via_report_viewer_svc() {
     _trino_run "$sql" "$user" -H "Authorization: Bearer $token"
 }
 
-# Variant that expects the query to fail (deny). Returns 0 if Trino
-# refused (HTTP error or error in response body), 1 if the query
-# succeeded unexpectedly.
+# Variant that expects an access denial. Returns 0 only if Trino refused the
+# query with one; success or any other failure (no token, a transient error)
+# returns 1 and leaves what it saw in GOT.
 trino_query_expect_deny() {
     local sql=$1 user=$2
-    local token http_code response next
+    local token raw http_code response next
     token=$(get_svc_token)
 
-    response=$(curl -sS "${CURL_CA_OPTS[@]}" -X POST "$TRINO_URL/v1/statement" \
+    raw=$(curl -sS "${CURL_CA_OPTS[@]}" -X POST "$TRINO_URL/v1/statement" \
         -H "Authorization: Bearer $token" \
         -H "X-Trino-User: $user" \
         -H "X-Trino-Catalog: delta" \
         -H "X-Trino-Schema: default" \
         --data-binary "$sql" -w "\n%{http_code}")
-    http_code=$(echo "$response" | tail -n1)
-    response=$(echo "$response" | head -n -1)
-
-    if [[ "$http_code" =~ ^4 || "$http_code" =~ ^5 ]]; then
-        return 0
-    fi
-    # 200 OK on the POST is the normal case -- Trino doesn't decide
-    # access until the query has been planned, which happens on the
-    # second or later nextUri hop. Drain the chain looking for the
-    # `.error.message` Trino synthesizes when OPA denies. (Single-hop
-    # follow misses denials that surface after queued -> planning
-    # transitions.)
+    # Trino accepts the POST and decides access once the query is planned, a
+    # later nextUri hop, so follow the chain to its error or its end.
     while true; do
-        if echo "$response" | jq -e '.error' >/dev/null 2>&1; then
+        http_code=$(echo "$raw" | tail -n1)
+        response=$(echo "$raw" | head -n -1)
+        if echo "$response" | grep -q "Access Denied"; then
             return 0
+        fi
+        if [[ "$http_code" =~ ^[45] ]] || echo "$response" | jq -e '.error' >/dev/null 2>&1; then
+            GOT="HTTP $http_code: $(echo "$response" | head -c 300)"
+            return 1
         fi
         next=$(echo "$response" | jq -r '.nextUri // empty')
         if [[ -z "$next" ]]; then
+            GOT="query succeeded"
             return 1
         fi
-        response=$(curl -sS "${CURL_CA_OPTS[@]}" "$next" \
+        raw=$(curl -sS "${CURL_CA_OPTS[@]}" "$next" \
             -H "Authorization: Bearer $token" \
-            -H "X-Trino-User: $user")
+            -H "X-Trino-User: $user" -w "\n%{http_code}")
     done
 }
 
@@ -521,14 +522,10 @@ set_user_state "$USER_ID" true '{"allowed_facilities":["*"],"allowed_modalities"
 # The table may not exist in CI (no extractor) — Trino will return
 # TABLE_NOT_FOUND, NOT PERMISSION_DENIED. Distinguishing the two
 # proves the OPA gate was passed.
-eventually hidden_table_not_denied || true
-err=$GOT
-if echo "$err" | grep -qE "TABLE_NOT_FOUND|does not exist|line 1:15"; then
-    ok "bypass allowed past /allow (table-not-found, not perm-denied)"
-elif echo "$err" | grep -qE "PERMISSION_DENIED|Access Denied"; then
-    fail "still permission denied with bypass=true"
+if eventually hidden_table_not_denied; then
+    ok "bypass allowed past /allow"
 else
-    ok "query succeeded (bypass allowed past /allow)"
+    fail "hidden table still refused with bypass=true, got: $GOT"
 fi
 
 # --- Scenario 8: disabled user denied at /allow -----------------------------
@@ -537,7 +534,7 @@ set_user_state "$USER_ID" false '{"allowed_facilities":["*"]}'
 if eventually query_denied; then
     ok "disabled user denied"
 else
-    fail "disabled user query unexpectedly succeeded"
+    fail "disabled user not denied, got: $GOT"
 fi
 
 # --- Scenario 9: user removed from scout-user denied at /allow --------------
@@ -554,7 +551,7 @@ remove_user_from_group "$USER_ID" "$SCOUT_USER_GROUP_ID"
 if eventually query_denied; then
     ok "user without scout-user denied"
 else
-    fail "unapproved user query unexpectedly succeeded"
+    fail "unapproved user not denied, got: $GOT"
 fi
 # Restore membership so subsequent test runs against the same Keycloak
 # instance start from a clean state.

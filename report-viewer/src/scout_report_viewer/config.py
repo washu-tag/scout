@@ -88,6 +88,9 @@ class Settings(BaseSettings):
     valkey_password: str = ""
     valkey_timeout_seconds: float = 0.5
     opa_url: str = ""
+    # A name resolving to every OPA replica (its headless Service), each asked for
+    # the fingerprint; empty asks only opa_url.
+    opa_replicas_host: str = ""
     opa_timeout_seconds: float = 2.0
     # How old the user bundle must be before results are stored: longer than
     # OPA's bundle polling max delay, so every replica has it.

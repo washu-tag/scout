@@ -826,10 +826,12 @@ Superset UI). For site-specific dashboards see the README in
 
 #### Report Viewer
 
-Report-viewer requires one secret with no default — the deploy fails without it:
+Report-viewer requires two secrets with no default — the deploy fails without either:
+its database password, and its cache Valkey password (see [Valkey](#valkey)):
 
 ```yaml
 report_viewer_db_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+valkey_cache_report_viewer_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 ```
 
 It also caches each user's search cohorts, charts and accession lists in the cache

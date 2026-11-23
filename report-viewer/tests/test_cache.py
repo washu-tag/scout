@@ -7,13 +7,16 @@ import asyncio
 import json
 import re
 import time
+import zlib
 from collections import OrderedDict
 from typing import Any
 
+import httpx
 import pytest
 
 from scout_report_viewer import cache, trino_client
 from scout_report_viewer.config import settings
+from scout_report_viewer.models import REPORT_BODY_COLUMNS
 from tests.test_actions import (  # noqa: F401 (fixture)
     _FakeAsyncClient,
     _bearer_headers,
@@ -397,6 +400,24 @@ def test_rows_cache_the_fallback_when_trino_rejects_the_rewrite(
     assert again.json() == r.json()
 
 
+def test_chart_entries_hold_no_report_body_columns(
+    client, auth_headers, fake_trino, env
+):
+    from tests.test_plots import _create as create_plot, _queue_chart_query
+
+    columns = ["modality", "n", *sorted(REPORT_BODY_COLUMNS)]
+    row = {"modality": "MR", "n": 7, **{c: "BODY" for c in REPORT_BODY_COLUMNS}}
+    _queue_chart_query(fake_trino, columns, [row])
+    plot_id = create_plot(client, auth_headers).json()["id"]
+    fake_trino(columns, [row])
+    detail = client.get(f"/api/plots/{plot_id}", headers=auth_headers).json()
+    client.portal.call(cache.wait_pending)
+
+    assert detail["rows"] == [{"modality": "MR", "n": 7}]
+    (blob,) = env.valkey.data.values()
+    assert "BODY" not in zlib.decompress(blob).decode()
+
+
 # --- Action clicks -------------------------------------------------------------
 
 
@@ -558,3 +579,78 @@ def test_readyz_waits_for_the_warm_up(client, monkeypatch):
     assert client.get("/readyz").status_code == 503
     monkeypatch.setattr(cache, "warmed_up", lambda: True)
     assert client.get("/readyz").status_code == 200
+
+
+# --- Every OPA replica -----------------------------------------------------------
+
+
+def _replicas(monkeypatch, answers: dict[str, Any]) -> None:
+    """OPA replicas at the given hosts, each answering the fingerprint call with
+    its value, or failing for an Exception."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        answer = answers[request.url.host]
+        if isinstance(answer, Exception):
+            raise answer
+        return httpx.Response(200, json={"result": answer})
+
+    monkeypatch.setattr(
+        cache, "_opa", httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    )
+
+    async def replicas() -> list[str]:
+        return [f"http://{h}:8181" for h in answers]
+
+    monkeypatch.setattr(cache, "_opa_replicas", replicas)
+
+
+def _fingerprint() -> Any:
+    return asyncio.run(cache._fingerprint("alice"))
+
+
+def test_fingerprint_when_every_replica_agrees(monkeypatch):
+    same = {"hash": "h1", "published_ms": 100}
+    _replicas(monkeypatch, {"10.0.0.1": same, "10.0.0.2": same})
+    assert _fingerprint() == ("h1", 100)
+
+
+def test_no_fingerprint_when_replicas_disagree_on_the_hash(monkeypatch):
+    _replicas(
+        monkeypatch,
+        {
+            "10.0.0.1": {"hash": "h1", "published_ms": 100},
+            "10.0.0.2": {"hash": "h2", "published_ms": 100},
+        },
+    )
+    assert _fingerprint() is None
+
+
+def test_no_publish_time_while_a_replica_has_an_older_bundle(monkeypatch):
+    _replicas(
+        monkeypatch,
+        {
+            "10.0.0.1": {"hash": "h1", "published_ms": 100},
+            "10.0.0.2": {"hash": "h1", "published_ms": 200},
+        },
+    )
+    assert _fingerprint() == ("h1", None)
+
+
+def test_no_fingerprint_when_a_replica_is_unreachable(monkeypatch):
+    _replicas(
+        monkeypatch,
+        {
+            "10.0.0.1": {"hash": "h1", "published_ms": 100},
+            "10.0.0.2": httpx.ConnectError("refused"),
+        },
+    )
+    assert _fingerprint() is None
+
+
+def test_replicas_resolved_from_the_headless_service(monkeypatch):
+    monkeypatch.setattr(settings, "opa_url", "http://opa-trino.ns:8181")
+    monkeypatch.setattr(settings, "opa_replicas_host", "localhost")
+    urls = asyncio.run(cache._opa_replicas())
+    assert "http://127.0.0.1:8181" in urls
+    monkeypatch.setattr(settings, "opa_replicas_host", "")
+    assert asyncio.run(cache._opa_replicas()) == ["http://opa-trino.ns:8181"]

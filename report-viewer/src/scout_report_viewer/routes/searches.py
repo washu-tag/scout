@@ -58,6 +58,7 @@ from ..csv_upload import (
 from ..ids import new_search_id
 from ..logging_setup import scrub_for_log
 from ..models import (
+    REPORT_BODY_COLUMNS,
     SEARCH_REQUIRED_COLUMNS,
     ActionInvokeRequest,
     ActionInvokeResponse,
@@ -109,18 +110,7 @@ async def _run_with_fallback(
         return columns, rows, False, exc
 
 
-# Report-body columns never sent to the grid: too large for 50k-row payloads,
-# and the SPA fetches them per-row via /reports/read on expand. Shared by the
-# create-sample response and the full-cohort fetch.
-_HEAVY_COLS: frozenset[str] = frozenset(
-    {
-        "report_text",
-        "report_section_findings",
-        "report_section_impression",
-        "report_section_addendum",
-        "report_section_technician_note",
-    }
-)
+_HEAVY_COLS = REPORT_BODY_COLUMNS
 
 
 def _assert_required_projections(columns: list[str]) -> None:

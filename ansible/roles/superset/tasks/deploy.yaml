@@ -81,6 +81,16 @@
         selector:
           app: superset
 
+- name: Check the cache Valkey password is set
+  ansible.builtin.assert:
+    that:
+      - valkey_cache_superset_password | default('') | length > 0
+    fail_msg: >
+      valkey_cache_superset_password is required (the cache Valkey's superset
+      user). Set it in inventory.yaml (use Ansible Vault).
+      Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
+    quiet: true
+
 - name: Create Secret with Valkey password for Superset
   no_log: true
   kubernetes.core.k8s:

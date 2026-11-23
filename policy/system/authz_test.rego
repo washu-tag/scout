@@ -59,6 +59,19 @@ test_policy_and_data_writes_denied if {
 	not allowed("DELETE", ["v1", "data", "users"])
 }
 
+with_params(method, path, params) if authz.allow with input as {"method": method, "path": path, "params": params}
+
+test_decisions_with_query_parameters_denied if {
+	not with_params("POST", ["v1", "data", "scout", "cache_fingerprint"], {"explain": ["full"]})
+	not with_params("POST", ["v1", "data", "trino", "rowFilters"], {"explain": ["full"]})
+	not with_params("POST", ["v1", "data", "trino", "allow"], {"instrument": ["true"]})
+	with_params("POST", ["v1", "data", "trino", "allow"], {})
+}
+
+test_health_allows_its_bundles_check if {
+	with_params("GET", ["health"], {"bundles": [""]})
+}
+
 test_metrics_denied if {
 	not allowed("GET", ["metrics"])
 }
