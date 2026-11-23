@@ -23,7 +23,9 @@ resources:
 registryMirrors: {}
 # PEM of an extra CA to trust, e.g. a staging node's self-signed certificate.
 caCert: ''
-# Environment for build steps, e.g. PIP_INDEX_URL for a package proxy.
+# Environment for build steps. The shared build passes PIP_INDEX_URL, PIP_TRUSTED_HOST,
+# CONDA_CHANNEL_ALIAS, APT_MIRROR and APT_SECURITY_MIRROR to builds as build args, and
+# points repo2docker builds at them.
 buildEnv: {}
 
 networkPolicy:

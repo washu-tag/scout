@@ -11,6 +11,8 @@ data:
     [registry.{{ $registry | quote }}]
       mirrors = [{{ $mirror | quote }}]
     {{- end }}
+  render.py: {{ .Files.Get "files/repo2docker/render.py" | quote }}
+  repo2docker.Dockerfile: {{ .Files.Get "files/repo2docker/Dockerfile" | quote }}
   {{- with .Values.caCert }}
   ca.crt: |
     {{- . | nindent 4 }}

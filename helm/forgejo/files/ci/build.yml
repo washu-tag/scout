@@ -9,7 +9,10 @@
 #       uses: scout/ci/.forgejo/workflows/build.yml@main
 #       secrets: inherit
 #
-# Pushes to main build <repo>:main, tags build <repo>:<tag>.
+# Pushes to main build <repo>:main, tags build <repo>:<tag>. A repo without a Dockerfile
+# is built with repo2docker (requirements.txt, environment.yml, apt.txt, postBuild, ...).
+# An xnat-command.json goes into the image as its org.nrg.commands label, for XNAT.
+# Layers are cached in the registry as <repo>:buildcache, since every build gets a fresh runner.
 on:
   workflow_call:
 jobs:
@@ -30,10 +33,34 @@ jobs:
           mkdir -p ~/.docker
           printf '{"auths":{"%s":{"auth":"%s"}}}' "$host" "$(printf '%s:%s' "$OWNER" "$REGISTRY_TOKEN" | base64 | tr -d '\n')" > ~/.docker/config.json
           set --
-          for arg in PIP_INDEX_URL PIP_TRUSTED_HOST; do
+          for arg in PIP_INDEX_URL PIP_TRUSTED_HOST CONDA_CHANNEL_ALIAS APT_MIRROR APT_SECURITY_MIRROR; do
             eval "value=\${$arg:-}"
             [ -z "$value" ] || set -- "$@" --opt "build-arg:$arg=$value"
           done
+          context=src
+          if [ ! -f src/Dockerfile ]; then
+            echo "no Dockerfile, rendering one with repo2docker"
+            tools=$(mktemp -d)
+            cp -L /opt/scout-build/repo2docker/* "$tools"
+            buildctl-daemonless.sh build --frontend dockerfile.v0 --local context=src \
+              --local dockerfile="$tools" --local tools="$tools" --opt context:tools=local:tools "$@" \
+              --output type=local,dest=repo2docker
+            context=repo2docker
+            set -- "$@" --opt build-arg:NB_USER=jovyan --opt build-arg:NB_UID=1000
+          fi
+          if [ -f src/xnat-command.json ]; then
+            commands=$(cat src/xnat-command.json)
+            case "$(printf '%s' "$commands" | tr -d ' \t\r\n' | cut -c1)" in
+              '[') ;;
+              *) commands="[$commands]" ;;
+            esac
+            set -- "$@" --opt "label:org.nrg.commands=$commands"
+          fi
           echo "building $image"
-          buildctl-daemonless.sh build --frontend dockerfile.v0 --local context=src --local dockerfile=src "$@" \
-            --output "type=image,name=$image,push=true"
+          cache="${image%:*}:buildcache"
+          buildctl-daemonless.sh build --frontend dockerfile.v0 --local context="$context" --local dockerfile="$context" "$@" \
+            --import-cache "type=registry,ref=$cache" \
+            --export-cache "type=registry,ref=$cache,mode=max,image-manifest=true,oci-mediatypes=true" \
+            --output "type=image,name=$image,push=true" --metadata-file metadata.json
+          digest=$(sed -n 's/.*"containerimage.digest": *"\([^"]*\)".*/\1/p' metadata.json)
+          echo "pushed $image@$digest"

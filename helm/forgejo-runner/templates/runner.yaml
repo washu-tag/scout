@@ -63,11 +63,21 @@ spec:
         {{- if .Values.caCert }}
         - { name: ca, mountPath: /etc/forgejo-runner/ca, readOnly: true }
         {{- end }}
+        - { name: repo2docker, mountPath: /opt/scout-build/repo2docker, readOnly: true }
   volumes:
     - { name: tools, emptyDir: {} }
     - { name: data, emptyDir: {} }
     - name: config
       configMap: { name: forgejo-runner }
+    - name: repo2docker
+      configMap:
+        name: forgejo-runner
+        items:
+          - { key: render.py, path: render.py }
+          - { key: repo2docker.Dockerfile, path: Dockerfile }
+          {{- if .Values.caCert }}
+          - { key: ca.crt, path: ca.crt }
+          {{- end }}
     {{- if .Values.caCert }}
     - name: ca
       configMap:
