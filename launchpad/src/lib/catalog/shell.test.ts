@@ -11,6 +11,7 @@ import {
   frameUrl,
   isChipOrigin,
   isCurrentChip,
+  isHeadingLink,
   openRequest,
   openTarget,
   railSections,
@@ -167,6 +168,10 @@ describe('shellSections', () => {
     });
     // A url heading link isn't routed; it opens in a new tab as before.
     assert.strictEqual(embeddedChip(sections, 'core'), undefined);
+    // The routed link opens its own page each time; the section's chips resume.
+    assert.strictEqual(isHeadingLink(sections, 'mine'), true);
+    assert.strictEqual(isHeadingLink(sections, 'draft'), false);
+    assert.strictEqual(isHeadingLink(sections, 'core'), false);
     // The service's own pages still go to their chips; the rest of its host to the link.
     const owner = (url: string) => chipForUrl(sections, new URL(url))?.id;
     assert.strictEqual(owner('https://books.scout.example.edu/'), 'mine');

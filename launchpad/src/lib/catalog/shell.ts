@@ -80,6 +80,12 @@ export function routableChips(sections: ShellSection[]): RenderChip[] {
   );
 }
 
+// Whether `id` is a section heading's link. A heading link names a page ("See all"), so it
+// opens that page each time; an app's own chip resumes where its frame was.
+export function isHeadingLink(sections: ShellSection[], id: string): boolean {
+  return sections.some((section) => section.link?.id === id);
+}
+
 export function isCurrentChip(chip: RenderChip, pathname: string): boolean {
   const target = chipTarget(chip);
   return target.internal && (pathname === target.href || pathname.startsWith(`${target.href}/`));

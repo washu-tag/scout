@@ -17,10 +17,12 @@ import {
   frameUrl,
   isChipOrigin,
   isCurrentChip,
+  isHeadingLink,
   openRequest,
   railSections,
   recentApps,
   shellLocation,
+  shellPath,
   type ShellSection,
 } from '@/lib/catalog/shell';
 import { TONES, type ToneName } from '@/lib/catalog/tones';
@@ -155,6 +157,7 @@ export default function ShellClient({
     ? decodeURIComponent(pathname.split('/')[2] ?? '')
     : null;
   const active = appId ? embeddedChip(sections, appId) : undefined;
+  const headingLink = active ? isHeadingLink(sections, active.id) : false;
 
   // The rail's chips come from the layout, which client navigation doesn't re-render,
   // so an app added to the catalog since the page loaded needs a refresh to open. The
@@ -169,6 +172,8 @@ export default function ShellClient({
 
   // The page each framed app last reported, so the address bar can follow it.
   const [locations, setLocations] = useState<Record<string, string>>({});
+  const locationsRef = useRef(locations);
+  locationsRef.current = locations;
   const frames = useRef(new Map<string, HTMLIFrameElement>());
   // Where a frame said it is navigating; used if the frame then loads a page that
   // can't report itself.
@@ -177,7 +182,7 @@ export default function ShellClient({
   // A deep link (/app/<id>/<path>) opens the app at that page. Read from the
   // browser's URL, which during a rail click may still be the previous app's. An
   // app that was unloaded reopens at the page it last reported.
-  const remembered = active ? locations[active.id] : undefined;
+  const remembered = active && !headingLink ? locations[active.id] : undefined;
   const deep =
     active && typeof window !== 'undefined'
       ? (deepPath(active.id, window.location) ??
@@ -332,6 +337,22 @@ export default function ShellClient({
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
   }, [sections, router]);
+
+  // Going to a heading link's own address takes its frame back to the link's page, wherever
+  // the person had gone in it since.
+  useEffect(() => {
+    if (!active || !headingLink || pathname !== shellPath(active.id)) return;
+    const at = locationsRef.current[active.id];
+    if (!at || at === shellPath(active.id)) return;
+    const frame = frames.current.get(active.id);
+    if (frame?.getAttribute('src') === active.href) frame.src = active.href;
+    setOpened((current) =>
+      current.map((entry) =>
+        entry.chip.id === active.id ? { ...entry, src: active.href } : entry,
+      ),
+    );
+    setLocations((current) => ({ ...current, [active.id]: shellPath(active.id) }));
+  }, [pathname, active, headingLink]);
 
   const activeLocation = active ? locations[active.id] : undefined;
   useEffect(() => {
