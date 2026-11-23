@@ -1,0 +1,1 @@
+../../../deploy/base/launchpad-frame-location/frame-location.js

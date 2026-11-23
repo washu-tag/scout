@@ -15,7 +15,12 @@ data:
         e.preventDefault();
         e.stopImmediatePropagation();
         fetch(link.dataset.url, {method: 'POST', headers: {'X-Csrf-Token': window.config.csrfToken}})
-          .finally(() => { window.location.href = {{ . | toJson }}; });
+          .finally(() => { window.top.location.href = {{ . | toJson }}; });
       }, true);
+    </script>
+    {{- end }}
+    {{- if .Values.launchpad.frameLocation }}
+    <script>
+    {{- .Files.Get "files/frame-location.js" | replace "${server_hostname}" .Values.domain | nindent 4 }}
     </script>
     {{- end }}

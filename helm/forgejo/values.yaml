@@ -17,9 +17,11 @@ database:
   sslMode: require
 
 launchpad:
+  # Keeps the launchpad's address bar on the Forgejo page shown in its frame (ADR 0042).
+  frameLocation: true
   title: Git
   description: Code repositories, container images and build pipelines
-  icon: cube
+  icon: git
   tone: slate
 
 ingress:
@@ -28,12 +30,27 @@ ingress:
   annotations: {}
   middlewares:
     - kube-system-security-headers@kubernetescrd
+  # Scout's oauth2-proxy, in front of the web UI only. Git, registry, runner and package
+  # clients have no browser session and use a route without it (templates/ingress.yaml).
+  authMiddlewares:
+    - kube-system-oauth2-proxy-error@kubernetescrd
+    - kube-system-oauth2-proxy-auth@kubernetescrd
   # Sends /user/login straight to Scout sign-in, so users never see Forgejo's login page.
   ssoRedirect: true
 
 # Where Sign Out lands after Forgejo ends its own session, e.g. Scout's
 # https://auth.<domain>/oauth2/sign_out. Empty keeps Forgejo's default.
 signOutUrl: ''
+
+# Keeps container images and other packages in an S3/MinIO bucket instead of on
+# Forgejo's volume. Changing it needs a restart of the Forgejo pod.
+packageStorage:
+  enabled: false
+  endpoint: ''
+  bucket: forgejo-packages
+  accessKey: ''
+  secretKey: ''
+  useSSL: false
 
 networkPolicy:
   enabled: true
