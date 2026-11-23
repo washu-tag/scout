@@ -5,7 +5,7 @@ import type { JWT } from 'next-auth/jwt';
 // swallow this "re-authenticate me" signal before the launchpad UI sees it.
 export const REAUTH_REQUIRED = 440;
 
-function tokenRequest(path: string, params: Record<string, string>) {
+export function tokenRequest(path: string, params: Record<string, string>) {
   return fetch(`${process.env.KEYCLOAK_ISSUER}/protocol/openid-connect/${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

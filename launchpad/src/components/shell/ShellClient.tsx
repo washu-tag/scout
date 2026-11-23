@@ -8,6 +8,7 @@ import { FaBook, FaMoon, FaSignOutAlt, FaSun } from 'react-icons/fa';
 import { HiOutlineExternalLink } from 'react-icons/hi';
 import { ChipIcon } from '@/components/catalog/CatalogSections';
 import { ChipAnchor } from '@/components/shell/ChipAnchor';
+import { NoticeBell, NoticesPanel, useNoticeSummary } from '@/components/shell/Notices';
 import { DEFAULT_ICON, ICONS } from '@/lib/catalog/icons';
 import {
   chipTarget,
@@ -33,10 +34,12 @@ interface ShellClientProps {
   sections: ShellSection[];
   environment: string;
   docsUrl: string;
+  notices: boolean;
   children: React.ReactNode;
 }
 
 const ACCOUNT_MENU = '@account';
+const NOTICES_MENU = '@notices';
 const SESSION_CHECK_MS = 60_000;
 const RECOVERY_KEY = 'scout-shell-session-recovery';
 const RECOVERY_BACKOFF_MS = 60_000;
@@ -135,6 +138,7 @@ export default function ShellClient({
   sections,
   environment,
   docsUrl,
+  notices,
   children,
 }: ShellClientProps) {
   const pathname = usePathname();
@@ -266,6 +270,11 @@ export default function ShellClient({
     else if (gate === 'verify') checkSession();
   }, [gate, checkSession]);
 
+  const [noticeSummary, setNoticeSummary] = useNoticeSummary(
+    notices && !skipAuth && !ended && Boolean(lastSession.current),
+    checkSession,
+  );
+
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState === 'visible') checkSession();
@@ -286,6 +295,26 @@ export default function ShellClient({
     document.documentElement.classList.toggle('dark', prefersDark);
   }, []);
 
+  // Opens a Scout page in the frame of the app that owns it, for `scout:open` and
+  // for notices; false when the sender may not ask or no app owns the page.
+  const openInShell = useCallback(
+    (origin: string, target: unknown): boolean => {
+      const request = openRequest(sections, new URL(window.location.href), origin, target);
+      if (!request) return false;
+      const { chip, address, href } = request;
+      // React won't reload a frame whose src is unchanged, wherever the user has since gone.
+      const frame = frames.current.get(chip.id);
+      if (frame?.getAttribute('src') === href) frame.src = href;
+      setLocations((current) => ({ ...current, [chip.id]: address }));
+      setOpened((current) =>
+        current.map((entry) => (entry.chip.id === chip.id ? { ...entry, src: href } : entry)),
+      );
+      router.push(address);
+      return true;
+    },
+    [sections, router],
+  );
+
   // Apps report their own address with a `scout:location` message, and where a
   // navigation is headed with `scout:leaving`. Only the app's own frame, from the
   // chip's origin, is believed; content an app nests inside its frame has a
@@ -296,22 +325,7 @@ export default function ShellClient({
     const onMessage = (event: MessageEvent) => {
       const type = event.data?.type;
       if (type === 'scout:open') {
-        const request = openRequest(
-          sections,
-          new URL(window.location.href),
-          event.origin,
-          event.data.href,
-        );
-        if (!request) return;
-        const { chip, address, href } = request;
-        // React won't reload a frame whose src is unchanged, wherever the user has since gone.
-        const frame = frames.current.get(chip.id);
-        if (frame?.getAttribute('src') === href) frame.src = href;
-        setLocations((current) => ({ ...current, [chip.id]: address }));
-        setOpened((current) =>
-          current.map((entry) => (entry.chip.id === chip.id ? { ...entry, src: href } : entry)),
-        );
-        router.push(address);
+        if (!openInShell(event.origin, event.data.href)) return;
         (event.source as Window | null)?.postMessage(
           { type: 'scout:opened', href: event.data.href },
           event.origin,
@@ -336,7 +350,7 @@ export default function ShellClient({
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [sections, router]);
+  }, [sections, openInShell]);
 
   // Going to a heading link's own address takes its frame back to the link's page, wherever
   // the person had gone in it since.
@@ -522,7 +536,26 @@ export default function ShellClient({
               ),
           )}
 
-          <div className="mt-auto flex w-full flex-col items-center border-t border-slate-200 pt-2 dark:border-slate-800">
+          <div className="mt-auto flex w-full flex-col items-center gap-1 border-t border-slate-200 pt-2 dark:border-slate-800">
+            {notices && (
+              <button
+                type="button"
+                aria-haspopup="dialog"
+                aria-expanded={menu?.id === NOTICES_MENU}
+                aria-label={
+                  noticeSummary?.unseen ? `Notices, ${noticeSummary.unseen} new` : 'Notices'
+                }
+                title="Notices"
+                onClick={(event) => toggleMenu(NOTICES_MENU, event)}
+                className={railItemClass(menu?.id === NOTICES_MENU)}
+              >
+                <RailLabel
+                  icon={<NoticeBell unseen={noticeSummary?.unseen ?? 0} />}
+                  label="Notices"
+                  active={menu?.id === NOTICES_MENU}
+                />
+              </button>
+            )}
             <button
               type="button"
               aria-haspopup="menu"
@@ -600,6 +633,15 @@ export default function ShellClient({
               </div>
             ))}
           </div>
+        )}
+
+        {menu?.id === NOTICES_MENU && (
+          <NoticesPanel
+            summary={noticeSummary}
+            onSummary={setNoticeSummary}
+            onOpen={(href) => openInShell(window.location.origin, href)}
+            onClose={() => setMenu(null)}
+          />
         )}
 
         {menu?.id === ACCOUNT_MENU && (
