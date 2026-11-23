@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
-import { HiArrowRight, HiOutlineDocumentText, HiOutlineExclamation } from 'react-icons/hi';
-import { ChipBadge } from '@/components/catalog/ChipBadge';
+import { HiArrowRight, HiChevronRight, HiOutlineExclamation } from 'react-icons/hi';
 import { DEFAULT_ICON, ICONS } from '@/lib/catalog/icons';
+import { ChipBadge } from '@/components/catalog/ChipBadge';
+import { ChipAnchor } from '@/components/shell/ChipAnchor';
 import { TONES } from '@/lib/catalog/tones';
 import type { RenderChip, RenderGroup, RenderModel } from '@/lib/catalog/types';
 
@@ -11,19 +12,22 @@ import type { RenderChip, RenderGroup, RenderModel } from '@/lib/catalog/types';
 // through these literal maps, never string interpolation (ADR 0034).
 const CARD_COLS: Record<number, string> = {
   1: '',
-  2: 'lg:grid-cols-2',
-  3: 'lg:grid-cols-3',
-  4: 'lg:grid-cols-4',
+  2: 'sm:grid-cols-2',
+  3: 'md:grid-cols-3',
+  4: 'sm:grid-cols-2 lg:grid-cols-4',
 };
 
 const TILE_COLS: Record<number, string> = {
   1: 'grid-cols-1',
   2: 'grid-cols-2',
-  3: 'grid-cols-3',
-  4: 'grid-cols-4',
+  3: 'grid-cols-2 sm:grid-cols-3',
+  4: 'grid-cols-2 sm:grid-cols-4',
 };
 
-function ChipIcon({ chip, className }: { chip: RenderChip; className: string }) {
+const SURFACE = 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800';
+const MUTED = 'text-slate-600 dark:text-slate-400';
+
+export function ChipIcon({ chip, className }: { chip: RenderChip; className: string }) {
   if (chip.iconData) {
     // Data URIs render via <img> only — never inlined into the DOM — so
     // embedded SVG stays inert (ADR 0034).
@@ -34,153 +38,148 @@ function ChipIcon({ chip, className }: { chip: RenderChip; className: string }) 
   return <Icon className={className} />;
 }
 
-function linkTarget(chip: RenderChip) {
-  return chip.newTab ? { target: '_blank', rel: 'noopener noreferrer' } : {};
-}
-
-// Large card — the Core Services idiom.
-const ChipCard = ({ chip }: { chip: RenderChip }) => {
+const ToneIcon = ({ chip, size }: { chip: RenderChip; size: string }) => {
   const tone = TONES[chip.tone];
   return (
-    <a
-      href={chip.href}
-      {...linkTarget(chip)}
-      className={`group block p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl transition-all duration-200 no-underline hover:shadow-lg hover:-translate-y-0.5 ${tone.hoverBorder} ${tone.hoverShadow}`}
+    <span
+      className={`flex flex-none items-center justify-center border ${size} ${tone.iconBg} ${tone.icon}`}
     >
-      <div className="flex items-center gap-3 mb-4">
-        <div
-          className={`w-11 h-11 rounded-xl border flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${tone.iconBg}`}
+      <ChipIcon chip={chip} className="text-lg" />
+    </span>
+  );
+};
+
+// Full-width groups get the large card; half-width groups a smaller one.
+const ChipCard = ({ chip, large }: { chip: RenderChip; large: boolean }) => {
+  const tone = TONES[chip.tone];
+  return (
+    <ChipAnchor
+      chip={chip}
+      className={`group flex flex-wrap content-between items-start no-underline transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${SURFACE} ${tone.hoverBorder} ${tone.hoverShadow} ${
+        large ? 'gap-x-4 gap-y-3 p-5 rounded-2xl shadow-sm' : 'gap-x-3 gap-y-2.5 p-4 rounded-[14px]'
+      }`}
+    >
+      <ToneIcon
+        chip={chip}
+        size={large ? 'w-[42px] h-[42px] rounded-xl' : 'w-9 h-9 rounded-[10px]'}
+      />
+      <span className="flex min-w-0 flex-1 flex-col gap-1">
+        <span
+          className={`inline-flex items-center gap-1.5 font-semibold tracking-tight text-slate-900 dark:text-slate-100 ${large ? 'text-lg' : 'text-[15px]'}`}
         >
-          <div className={`text-xl ${tone.icon}`}>
-            <ChipIcon chip={chip} className="text-xl" />
-          </div>
-        </div>
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          <h3 className="text-xl font-semibold text-slate-900 dark:text-white tracking-tight">
-            {chip.title}
-          </h3>
-          <ChipBadge chip={chip} />
-        </div>
-      </div>
-      <p className="text-base text-slate-500 dark:text-slate-400 mb-4 leading-relaxed font-light">
-        {chip.description}
-      </p>
-      <div className={`flex items-center gap-1 font-medium text-sm ${tone.cta}`}>
-        <span className="group-hover:translate-x-0.5 transition-transform duration-200">Open</span>
-        <HiArrowRight className="transform group-hover:translate-x-1 transition-transform duration-200 ease-out" />
-      </div>
-    </a>
-  );
-};
-
-// Compact chip: the rows idiom (Playbooks) carries a trailing arrow and an
-// inline badge; the tiles idiom (Admin Tools) has no arrow and puts the badge
-// on its own row across the tile. One component so their chrome cannot drift
-// apart.
-const ChipCompact = ({ chip, arrow }: { chip: RenderChip; arrow: boolean }) => {
-  const tone = TONES[chip.tone];
-  const badgeAtFoot = !arrow && Boolean(chip.badge);
-  return (
-    <a
-      href={chip.href}
-      {...linkTarget(chip)}
-      className={`group flex items-center gap-3 ${badgeAtFoot ? 'flex-wrap gap-y-2.5' : ''} p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 no-underline ${tone.hoverBorder} ${tone.hoverShadow}`}
-    >
-      <div
-        className={`w-10 h-10 rounded-lg border flex items-center justify-center flex-shrink-0 ${tone.iconBg}`}
-      >
-        <div className={`text-xl ${tone.icon}`}>
-          <ChipIcon chip={chip} className="text-xl" />
-        </div>
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-white tracking-tight">
-            {chip.title}
-          </h3>
-          {!badgeAtFoot && <ChipBadge chip={chip} />}
-        </div>
-        <p className="text-xs text-slate-500 dark:text-slate-400 leading-snug font-light">
+          {chip.title}
+          {large && (
+            <HiArrowRight
+              className={`text-base ${tone.cta} transition-transform duration-200 group-hover:translate-x-1`}
+            />
+          )}
+        </span>
+        <span className={`leading-normal ${MUTED} ${large ? 'text-sm' : 'text-[13px]'}`}>
           {chip.description}
-        </p>
-      </div>
-      {arrow && (
-        <HiArrowRight
-          className={`text-base ${tone.cta} group-hover:translate-x-1 transition-transform duration-200 flex-shrink-0`}
-        />
-      )}
-      {badgeAtFoot && (
-        <div className="basis-full min-w-0">
+        </span>
+      </span>
+      {chip.badge && (
+        <span className="basis-full min-w-0">
           <ChipBadge chip={chip} />
-        </div>
+        </span>
       )}
-    </a>
+    </ChipAnchor>
   );
 };
 
-const GroupPanel = ({ group, fillHeight }: { group: RenderGroup; fillHeight: boolean }) => {
-  const HeaderIcon = ICONS[group.icon] ?? ICONS[DEFAULT_ICON];
+const ChipRow = ({ chip }: { chip: RenderChip }) => (
+  <ChipAnchor
+    chip={chip}
+    className="group flex items-center gap-3.5 px-4 py-2.5 no-underline transition-colors duration-200 hover:bg-slate-50 dark:hover:bg-slate-800/60"
+  >
+    <ToneIcon chip={chip} size="w-[34px] h-[34px] rounded-[9px]" />
+    <span className="flex flex-1 min-w-0 flex-col gap-0.5">
+      <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+          {chip.title}
+        </span>
+        <ChipBadge chip={chip} />
+      </span>
+      <span className={`text-[13px] ${MUTED}`}>{chip.description}</span>
+    </span>
+    <HiChevronRight
+      className={`flex-none text-base ${MUTED} transition-transform duration-200 group-hover:translate-x-0.5`}
+    />
+  </ChipAnchor>
+);
+
+const ChipTile = ({ chip }: { chip: RenderChip }) => {
+  const tone = TONES[chip.tone];
   return (
-    <div
-      className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-sm ${
-        fillHeight ? 'h-full' : ''
-      } ${group.layout === 'tiles' ? 'flex flex-col' : ''}`}
+    <ChipAnchor
+      chip={chip}
+      title={chip.description}
+      className={`flex flex-wrap items-center gap-x-2.5 gap-y-2 px-3 py-2.5 rounded-[14px] no-underline transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${SURFACE} ${tone.hoverBorder} ${tone.hoverShadow}`}
     >
-      <div className="text-center mb-6">
-        <div className="flex items-center justify-center gap-2 mb-3">
-          <div className="w-7 h-7 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center">
-            <HeaderIcon className="text-sm text-slate-600 dark:text-slate-300" />
-          </div>
-          <h2 className="text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-[0.18em]">
-            {group.title}
-          </h2>
-        </div>
-        {group.description && (
-          <p className="text-sm text-slate-500 dark:text-slate-400 font-light">
-            {group.description}
-          </p>
-        )}
+      <ToneIcon chip={chip} size="w-[34px] h-[34px] rounded-[9px]" />
+      <span className="min-w-0 flex-1 text-[13px] font-semibold text-slate-900 dark:text-slate-100">
+        {chip.title}
+      </span>
+      {chip.badge && (
+        <span className="basis-full min-w-0">
+          <ChipBadge chip={chip} />
+        </span>
+      )}
+    </ChipAnchor>
+  );
+};
+
+const GroupSection = ({ group, half }: { group: RenderGroup; half: boolean }) => (
+  <section className="flex min-w-0 flex-col gap-3">
+    <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 pb-3 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+          {group.title}
+        </h2>
+        {group.description && <span className={`text-sm ${MUTED}`}>{group.description}</span>}
       </div>
-
-      {group.layout === 'cards' && (
-        <div className={`grid grid-cols-1 gap-8 ${CARD_COLS[group.columns] ?? ''}`}>
-          {group.chips.map((chip) => (
-            <ChipCard key={`${chip.source}:${chip.id}`} chip={chip} />
-          ))}
-        </div>
-      )}
-      {group.layout === 'rows' && (
-        <div className="space-y-3">
-          {group.chips.map((chip) => (
-            <ChipCompact key={`${chip.source}:${chip.id}`} chip={chip} arrow />
-          ))}
-        </div>
-      )}
-      {group.layout === 'tiles' && (
-        <div className={`grid gap-3 flex-1 ${TILE_COLS[group.columns] ?? 'grid-cols-2'}`}>
-          {group.chips.map((chip) => (
-            <ChipCompact key={`${chip.source}:${chip.id}`} chip={chip} arrow={false} />
-          ))}
-        </div>
-      )}
-
       {group.footerLink && (
-        <div className="mt-6 text-center">
-          <a
-            href={group.footerLink.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors duration-200 no-underline"
-          >
-            <HiOutlineDocumentText className="text-base" />
-            <span>{group.footerLink.text}</span>
-            <HiArrowRight className="text-base" />
-          </a>
-        </div>
+        <ChipAnchor
+          chip={group.footerLink.chip}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-700 dark:text-indigo-300 hover:text-indigo-900 dark:hover:text-indigo-200 no-underline"
+        >
+          {group.footerLink.text}
+          <HiArrowRight />
+        </ChipAnchor>
       )}
     </div>
-  );
-};
+
+    {group.layout === 'cards' && (
+      <div
+        className={`grid grid-cols-1 ${half ? 'gap-3' : 'gap-4'} ${
+          (half ? CARD_COLS[Math.min(group.columns, 2)] : CARD_COLS[group.columns]) ?? ''
+        }`}
+      >
+        {group.chips.map((chip) => (
+          <ChipCard key={`${chip.source}:${chip.id}`} chip={chip} large={!half} />
+        ))}
+      </div>
+    )}
+    {group.layout === 'rows' && (
+      <div
+        className={`flex flex-col overflow-hidden rounded-[14px] divide-y divide-slate-200 dark:divide-slate-800 ${SURFACE}`}
+      >
+        {group.chips.map((chip) => (
+          <ChipRow key={`${chip.source}:${chip.id}`} chip={chip} />
+        ))}
+      </div>
+    )}
+    {group.layout === 'tiles' && (
+      <div
+        className={`grid gap-2.5 ${TILE_COLS[half ? group.columns : Math.min(group.columns * 2, 4)] ?? 'grid-cols-2'}`}
+      >
+        {group.chips.map((chip) => (
+          <ChipTile key={`${chip.source}:${chip.id}`} chip={chip} />
+        ))}
+      </div>
+    )}
+  </section>
+);
 
 // Admin-only: the loader and validator report everything they skipped or
 // coerced here, because the person who just shipped a broken chip is looking
@@ -238,8 +237,8 @@ class SectionBoundary extends React.Component<
   render() {
     if (this.state.failed) {
       return (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-sm text-center">
-          <p className="text-sm text-slate-500 dark:text-slate-400 font-light">
+        <div className={`rounded-2xl p-8 text-center ${SURFACE}`}>
+          <p className={`text-sm ${MUTED}`}>
             The “{this.props.title}” section failed to render. Details are in the browser console
             and the launchpad logs.
           </p>
@@ -254,10 +253,8 @@ export default function CatalogSections({ model }: { model: RenderModel }) {
   if (model.rows.length === 0) {
     return (
       <div className="space-y-6">
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-sm text-center">
-          <p className="text-sm text-slate-500 dark:text-slate-400 font-light">
-            No services are registered on this launchpad yet.
-          </p>
+        <div className={`rounded-2xl p-8 text-center ${SURFACE}`}>
+          <p className={`text-sm ${MUTED}`}>No services are registered on this launchpad yet.</p>
         </div>
         <DiagnosticsPanel model={model} />
       </div>
@@ -265,19 +262,22 @@ export default function CatalogSections({ model }: { model: RenderModel }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-8 tall:gap-11">
       {model.rows.map((row) =>
         row.groups.length === 2 ? (
-          <div key={row.groups[0].id} className="grid gap-6 md:grid-cols-2">
+          <div
+            key={row.groups[0].id}
+            className="grid gap-8 md:grid-cols-2 tall:gap-11 tall:md:gap-10"
+          >
             {row.groups.map((group) => (
               <SectionBoundary key={group.id} title={group.title}>
-                <GroupPanel group={group} fillHeight />
+                <GroupSection group={group} half />
               </SectionBoundary>
             ))}
           </div>
         ) : (
           <SectionBoundary key={row.groups[0].id} title={row.groups[0].title}>
-            <GroupPanel group={row.groups[0]} fillHeight={false} />
+            <GroupSection group={row.groups[0]} half={false} />
           </SectionBoundary>
         ),
       )}

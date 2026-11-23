@@ -40,7 +40,7 @@
   register: temporal_schema
   changed_when: false
 
-# Idempotent Temporal setup (namespace retention, issue #432) via a small
+# Idempotent Temporal setup (namespace retention, scheduled ingest) via a small
 # Scout-owned chart of Helm-hook Jobs (temporal-bootstrap), mirroring the
 # scout-dashboards model. kubernetes.core.helm won't upgrade a local chart on
 # file-only edits (it keys on chart version + values, not rendered templates),
@@ -78,82 +78,9 @@
       namespace:
         name: default
         retention: '{{ temporal_default_namespace_retention }}'
-
-# Set up scheduled tasks
-- name: Construct cron schedule
-  when: scheduled_ingest_cron is undefined and scheduled_ingest_hour is defined
-  set_fact:
-    scheduled_ingest_cron: '0 {{ scheduled_ingest_hour }} * * *'
-
-- name: Add scheduled task for prospective report indexing
-  when: scheduled_ingest_cron is defined
-  kubernetes.core.k8s:
-    state: present
-    wait: true
-    wait_timeout: 120
-    wait_condition:
-      type: Complete
-      status: 'True'
-    definition:
-      apiVersion: batch/v1
-      kind: Job
-      metadata:
-        generateName: 'add-prospective-indexing-'
-        namespace: '{{ scout_extractor_namespace }}'
-        labels:
-          app: prospective-indexing
-      spec:
-        ttlSecondsAfterFinished: 3600
-        backoffLimit: 5
-        template:
-          metadata:
-            labels:
-              app: prospective-indexing
-          spec:
-            restartPolicy: Never
-            containers:
-              - name: prospective-indexing-setup
-                image: '{{ temporal_admin_tools_image_repository }}:{{ temporal_admin_tools_image_tag }}'
-                securityContext:
-                  runAsNonRoot: true
-                  runAsUser: 1000
-                  allowPrivilegeEscalation: false
-                  readOnlyRootFilesystem: true
-                  capabilities:
-                    drop:
-                      - ALL
-                  seccompProfile:
-                    type: RuntimeDefault
-                env:
-                  - name: TEMPORAL_ADDRESS
-                    value: 'temporal-internal-frontend.{{ scout_extractor_namespace }}:7236'
-                  - name: HOME
-                    value: /tmp
-                command:
-                  - /bin/sh
-                  - -c
-                  - |
-                    if temporal schedule describe --schedule-id ScheduledReportIngest 2>/dev/null; then
-                      temporal schedule update \
-                        --schedule-id ScheduledReportIngest \
-                        --workflow-id ScheduledReportIngest \
-                        --task-queue ingest-hl7-log \
-                        --type IngestHl7LogWorkflow \
-                        --cron '{{ scheduled_ingest_cron }}'
-                    else
-                      temporal schedule create \
-                        --schedule-id ScheduledReportIngest \
-                        --workflow-id ScheduledReportIngest \
-                        --task-queue ingest-hl7-log \
-                        --type IngestHl7LogWorkflow \
-                        --cron '{{ scheduled_ingest_cron }}'
-                    fi
-                volumeMounts:
-                  - name: tmp
-                    mountPath: /tmp
-            volumes:
-              - name: tmp
-                emptyDir: {}
+      scheduledIngest:
+        enabled: '{{ scheduled_ingest_enabled | bool }}'
+        cron: "{{ scheduled_ingest_cron | default('0 ' ~ scheduled_ingest_hour ~ ' * * *') }}"
 
 # The Orchestrator chip ships with Temporal (ADR 0034). The /auth/sso path is
 # load-bearing: the Temporal UI runs its own OIDC login behind the edge gate,

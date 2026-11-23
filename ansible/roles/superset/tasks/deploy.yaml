@@ -31,6 +31,20 @@
         favicon.ico: '{{ lookup("community.general.binary_file", superset_favicon_path) }}'
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
+- name: Create ConfigMap hiding Superset's logo inside the launchpad
+  delegate_to: localhost
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: superset-head-extra
+        namespace: '{{ superset_namespace }}'
+      data:
+        head_custom_extra.html: '{{ lookup("file", "head_custom_extra.html") }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+
 - name: Create ConfigMap for StatsD exporter mapping
   delegate_to: localhost
   kubernetes.core.k8s:
@@ -80,6 +94,17 @@
       type: Opaque
       stringData:
         REDIS_PASSWORD: '{{ valkey_password }}'
+
+- name: Publish launchpad frame-location script
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: frame_location
+  vars:
+    frame_location_configmap: superset-frame-location
+    frame_location_namespace: '{{ superset_namespace }}'
+    frame_location_files:
+      tail_js_custom_extra.html: tail_js_custom_extra.html
+      scout-frame-location.js: frame-location.js
 
 - name: Parse Superset Helm values
   ansible.builtin.set_fact:

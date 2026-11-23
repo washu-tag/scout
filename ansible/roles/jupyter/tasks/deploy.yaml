@@ -254,6 +254,18 @@
   loop_control:
     label: '{{ item.name }}'
 
+- name: Publish launchpad frame-location script
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: frame_location
+  vars:
+    frame_location_configmap: jupyter-frame-location
+    frame_location_namespace: '{{ jupyter_namespace }}'
+    frame_location_files:
+      package.json: package.json
+      remoteEntry.js: remoteEntry.js
+      frame-location.js: frame-location.js
+
 - name: Parse Helm values
   no_log: true
   ansible.builtin.set_fact:

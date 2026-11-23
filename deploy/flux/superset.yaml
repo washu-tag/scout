@@ -21,6 +21,7 @@ spec:
         name: cluster-vars
   dependsOn:
     - name: scout-analytics-foundation
+    - name: launchpad-frame-location
     - name: postgres-ready
     - name: valkey
     - name: trino-ro

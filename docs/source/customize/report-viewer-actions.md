@@ -100,9 +100,9 @@ actions:
 | `weight`       | no       | `100`   | Lower renders first; ties break by title, then id.                                    |
 | `requiredRole` | no       | —       | Keycloak client role required to see the button (see [Gating](#gating-with-requiredrole)). |
 
-The SPA opens `url` via a real navigation, with an always-shown copy-link fallback —
-see [Popups from the chat embed](#popups-from-the-chat-embed) if the destination needs
-to open as a popup from OWUI's embedded chat.
+The SPA opens `url` in Scout's launchpad when a launchpad app owns it, otherwise via a
+real navigation, with an always-shown copy-link fallback — see
+[Opening links from the chat embed](#opening-links-from-the-chat-embed).
 
 ### `backend-call` — hand off to a separate service
 
@@ -307,23 +307,18 @@ Your service doesn't need to re-check roles itself — see
 [Securing a backend-call target](#securing-a-backend-call-target) for what it should
 check instead.
 
-## Popups from the chat embed
+## Opening links from the chat embed
 
-An `open-url` (or `backend-call`) target that needs to open as a popup/new tab from
-report-viewer's own OWUI-embedded chat context has one specific requirement: it must
-serve `Cross-Origin-Opener-Policy: unsafe-none`. Per the WHATWG HTML navigation
-algorithm, a sandboxed iframe without `allow-popups-to-escape-sandbox` (which is how
-OWUI embeds report-viewer) can only open a popup on a destination whose COOP is exactly
-`unsafe-none` — anything else, including a seemingly-relaxed value like
-`same-origin-allow-popups`, is blocked identically to a strict `same-origin`. See
-`security-headers-sameorigin-popups` in `ansible/roles/traefik/tasks/main.yaml` for the
-full citation and the accepted tradeoff (loses COOP's cross-origin process isolation;
-reverse-tabnabbing is separately mitigated regardless, since the SPA always opens links
-with `rel="noopener noreferrer"`).
+Inside chat, report-viewer runs in a sandboxed frame within chat's own sandbox, and
+neither allows popups or moving the top window (ADR 0042). So from the chat embed:
 
-If your destination can't set this header, don't worry about it: the SPA always shows a
-copy-link fallback alongside the popup attempt, so the action still works — the user
-just has to paste the link themselves instead of a new tab opening automatically.
+- a target on a Scout host that a launchpad app owns (Datasets, XNAT, another framed
+  service) opens in that app inside the launchpad, through the launchpad's `scout:open`
+  message;
+- any other target can't open a new tab or popup, whatever headers it sends; the
+  always-shown copy-link fallback lets the user paste it themselves.
+
+Opened outside chat (report-viewer's own page), a target opens in a new tab as usual.
 
 ## Troubleshooting
 

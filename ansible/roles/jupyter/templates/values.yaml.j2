@@ -433,6 +433,10 @@ singleuser:
           name: scout-code-server-extensions
           defaultMode: 0644
 {% endif %}
+      frame-location:
+        name: frame-location
+        configMap:
+          name: jupyter-frame-location
       trino-ca:
         name: trino-ca
         secret:
@@ -512,6 +516,11 @@ singleuser:
         mountPath: /opt/code-server/extensions
         readOnly: true
 {% endif %}
+      # A prebuilt JupyterLab extension that keeps the launchpad's address bar on the open page.
+      frame-location:
+        name: frame-location
+        mountPath: /opt/conda/share/jupyter/labextensions/scout-frame-location
+        readOnly: true
       trino-ca:
         name: trino-ca
         mountPath: /etc/trino-ca

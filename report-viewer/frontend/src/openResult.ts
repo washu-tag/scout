@@ -16,6 +16,40 @@ function _execCommandCopy(text: string): boolean {
   }
 }
 
+const LAUNCHPAD_ACK_MS = 500;
+
+/** Ask the Scout launchpad framing this page to open `url` in place, and
+ * resolve whether it did. The launchpad is at the parent domain of
+ * report-viewer's own host, answers `scout:opened` for a URL one of its apps
+ * owns, and stays silent otherwise. Unlike a new tab, this works from inside
+ * OWUI's sandboxed chat iframe, whose popups inherit the sandbox. */
+function openInLaunchpad(url: string): Promise<boolean> {
+  if (window.top === window || !window.top) return Promise.resolve(false);
+  const host = window.location.host.split('.').slice(1).join('.');
+  if (!host) return Promise.resolve(false);
+  const launchpad = `${window.location.protocol}//${host}`;
+  const top = window.top;
+  return new Promise((resolve) => {
+    const done = (opened: boolean) => {
+      window.clearTimeout(timer);
+      window.removeEventListener('message', onMessage);
+      resolve(opened);
+    };
+    const onMessage = (event: MessageEvent) => {
+      if (
+        event.origin === launchpad &&
+        event.data?.type === 'scout:opened' &&
+        event.data.href === url
+      ) {
+        done(true);
+      }
+    };
+    const timer = window.setTimeout(() => done(false), LAUNCHPAD_ACK_MS);
+    window.addEventListener('message', onMessage);
+    top.postMessage({ type: 'scout:open', href: url }, launchpad);
+  });
+}
+
 export interface OpenResultState {
   opening: boolean;
   error: string | null;
@@ -25,7 +59,8 @@ export interface OpenResultState {
 
 /** Open a result URL from any action button, reusably.
  *
- * Always attempts a real navigation via a simulated anchor click, not
+ * Inside the Scout launchpad the launchpad opens it in place
+ * (`openInLaunchpad`). Otherwise this attempts a real navigation via a simulated anchor click, not
  * `window.open()` - Chrome treats a script-controlled popup more strictly
  * than a real navigation and can block it outright with
  * ERR_BLOCKED_BY_RESPONSE / "blocked from loading in a popup opened by a
@@ -35,12 +70,10 @@ export interface OpenResultState {
  * fallback is needed; always expose the link afterward so the caller can
  * render an "open this manually" affordance unconditionally.
  *
- * Whether the popup actually succeeds is controlled by the destination's
- * own Cross-Origin-Opener-Policy response header, not anything this hook
- * does - see security-headers-sameorigin-popups in
- * ansible/roles/traefik/tasks/main.yaml for which value is required and
- * why. A destination that hasn't opted in will always fall through to
- * the copy-link affordance when embedded in OWUI's sandboxed chat iframe.
+ * Inside chat no popup can open at all: chat's frame is sandboxed without
+ * allow-popups (ADR 0042), and report-viewer's frame inherits that, whatever
+ * the destination's Cross-Origin-Opener-Policy. There, a page the launchpad
+ * doesn't own falls through to the copy-link affordance.
  *
  * Copying is a separate, explicit `copyLink` call rather than something
  * `open` does automatically: `document.execCommand('copy')` only succeeds
@@ -69,6 +102,10 @@ export function useOpenResult() {
 
   const open = useCallback(async (url: string) => {
     setState({ opening: true, error: null, resultLink: null, copied: false });
+    if (await openInLaunchpad(url)) {
+      setState({ opening: false, error: null, resultLink: null, copied: false });
+      return;
+    }
     try {
       const link = document.createElement('a');
       link.href = url;

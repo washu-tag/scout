@@ -2,8 +2,9 @@
 # below in the `cluster-vars` ConfigMap that the Flux Kustomizations reference via
 # postBuild.substituteFrom. Run the kustomize-controller with
 # StrictPostBuildSubstitutions so a missing key fails the build; without it a missing
-# key renders empty. s3_sse_type, s3_username, minio_oidc_enabled and temporal_web_auth
-# are the exceptions: they default to NONE, minio, on and oidc. Auto-derived from the
+# key renders empty. s3_sse_type, s3_username, minio_oidc_enabled, temporal_web_auth,
+# scheduled_ingest_enabled and scheduled_ingest_cron are the exceptions: they default
+# to NONE, minio, on, oidc, false and "0 6 * * *". Auto-derived from the
 # ${...} vars used across deploy/ and enforced by validate-deploy.yaml; regenerate
 # with the snippet in that workflow when bases add
 # or drop a substitution. Site-repo CI (Phase 4) and the staging reconciler
@@ -93,6 +94,8 @@ s3_path_style_access
 s3_region
 s3_sse_type
 s3_username
+scheduled_ingest_cron
+scheduled_ingest_enabled
 scout_analytics_namespace
 scout_core_namespace
 scout_data_namespace

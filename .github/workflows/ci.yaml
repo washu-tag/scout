@@ -1207,6 +1207,7 @@ jobs:
           # Subdomains this side deploys (root scout.test = launchpad)
           {
             echo "127.0.0.1 scout.test"
+            echo "127.0.0.1 nonexistent.scout.test"
             for sub in $(echo "$SUBDOMAINS" | tr ',' ' '); do
               echo "127.0.0.1 ${sub}.scout.test"
             done
@@ -1422,8 +1423,8 @@ jobs:
         env:
           SUBDOMAINS: ${{ matrix.subdomains }}
         run: bash tests/auth/auth-curl-tests.sh scout.test --include "$SUBDOMAINS"
-      - name: 'Auth playwright tests: OWUI iframe defaults'
-        if: matrix.side == 'analytics'
+      # authorization.spec.ts tests this side's services; OWUI's iframe defaults need chat.
+      - name: 'Auth playwright tests'
         shell: bash
         working-directory: tests/auth
         env:
@@ -1434,13 +1435,20 @@ jobs:
           UNAUTHORIZED_USER_USERNAME: scout-unauthorized-ci-user
           AUTHORIZED_USER_USERNAME: scout-authorized-ci-user
           TEST_USER_PASSWORD: ci-test-user-password-1234
+          AUTH_TEST_SUBDOMAINS: ${{ matrix.subdomains }}
+          # Grafana's token exchange doesn't trust the CI cert; the Silo MinIO console
+          # puts SSO in a menu the test doesn't drive yet (#1013).
+          AUTH_TEST_SKIP: grafana-api,minio
+          SIDE: ${{ matrix.side }}
         run: |
           set -euo pipefail
           export KEYCLOAK_ADMIN_PASSWORD=$(yq '.k3s_cluster.vars.keycloak_bootstrap_admin_password' ../../ansible/inventory.yaml)
           npm ci
-          npx playwright test owui-iframe-seed.spec.ts
+          specs=(authorization.spec.ts)
+          if [ "$SIDE" = analytics ]; then specs+=(owui-iframe-seed.spec.ts); fi
+          npx playwright test "${specs[@]}"
       - name: 'Auth playwright report'
-        if: ${{ failure() && matrix.side == 'analytics' }}
+        if: ${{ failure() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: playwright-report-${{ matrix.side }}
