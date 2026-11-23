@@ -1040,8 +1040,8 @@ xnat_site_id: SCOUT
 # Namespace where XNAT is deployed (default: xnat)
 xnat_namespace: xnat
 
-# XNAT Helm chart version to deploy from GHCR (default: 3.3.0)
-xnat_chart_version: 3.3.0
+# XNAT Helm chart version to deploy from GHCR (default: 5.0.1)
+xnat_chart_version: 5.0.1
 
 # ghcr.io/nrgxnat/xnat image tag (default: 1.10.1)
 xnat_image_tag: '1.10.1'
