@@ -39,9 +39,9 @@ CACHE_LOOKUPS = Counter(
 
 CACHE_WRITES = Counter(
     "scout_report_viewer_cache_writes_total",
-    "Query-result cache writes (stored, error, unsettled when the user's "
-    "permissions fingerprint changed while the query ran, or unversioned when "
-    "a table's version wasn't known before the query started).",
+    "Query-result cache writes (stored, error, unsettled when the user bundle "
+    "was too new for every OPA replica to have it when the query started, or "
+    "unversioned when a table's version wasn't known before the query started).",
     ["op", "result"],
 )
 

@@ -196,8 +196,8 @@ opa_namespace: '{{ trino_namespace }}'
 # action propagating to a Trino decision. Comfortably inside ADR 0020's
 # "user disabled at their partner institution must lose access within
 # seconds" requirement; tune downward at proportional MinIO request-rate
-# cost if a deployment needs tighter convergence. Report Viewer's cache waits
-# out the max before trusting a permissions fingerprint.
+# cost if a deployment needs tighter convergence. Report Viewer's cache stores
+# nothing until a newly published bundle is older than the max.
 opa_bundle_min_delay_seconds: 5
 opa_bundle_max_delay_seconds: 10
 superset_namespace: '{{ scout_analytics_namespace }}'

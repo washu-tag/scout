@@ -9,10 +9,11 @@ outside the Delta catalog has no version to key on and runs uncached. Versions
 are read as Report Viewer's own identity, which OPA exempts from row filters on
 `$history` tables only, so every user's searches key on the same real versions.
 
-OPA's replicas pull the user bundle independently, so just after a permission
-change the fingerprint read here and the policy Trino applies can disagree. A
-result is therefore stored only once a second fingerprint read, at least
-`cache_settle_seconds` after the query started, matches the first.
+OPA's replicas each poll the user bundle on their own, so for a while after a
+bundle is published the fingerprint read here and the decisions Trino gets can
+come from different bundles. A result is therefore stored only if, when its
+query started, the bundle was already `cache_bundle_age_seconds` old, longer
+than OPA's polling delay, so every replica had it.
 
 Off unless `valkey_url` and `opa_url` are set and `cache_ttl_seconds` is
 positive. Any Valkey, OPA or Trino failure here means running uncached, never a
@@ -49,8 +50,8 @@ _PREFIX = "rv:v1:"
 
 _valkey: redis.Redis | None = None
 _opa: httpx.AsyncClient | None = None
-# Detached so neither a write's settle wait nor a table or version lookup holds
-# up a response or its connection.
+# Detached so neither a write nor a table or version lookup holds up a response
+# or its connection.
 _pending: set[asyncio.Task] = set()
 
 # SQL -> (its input tables, when looked up). Tables are None when the lookup
@@ -86,20 +87,13 @@ class Lookup:
     # The table versions known at lookup when the key couldn't be built yet: read
     # before the query started, so safe to key a write on once its tables are known.
     known: dict[_Table, str] | None = None
-    started: float = 0.0
+    # Whether every OPA replica had the user bundle when the query started.
+    settled: bool = False
     value: Any = None
 
     @property
     def key(self) -> str | None:
-        return self.key_for(self.op)
-
-    def key_for(self, op: str) -> str | None:
-        """The key another `op` stores for this same query and user."""
-        return None if self.digest is None else _key(op, self.digest)
-
-    @property
-    def writable(self) -> bool:
-        return self.digest is not None or self.known is not None
+        return None if self.digest is None else _key(self.op, self.digest)
 
 
 def _key(op: str, digest: str) -> str:
@@ -148,13 +142,16 @@ async def aclose() -> None:
         _opa = None
 
 
-async def _fingerprint(user: str) -> str | None:
+async def _fingerprint(user: str) -> tuple[str, int | None] | None:
+    """The user's permissions hash, and when the user bundle it came from was
+    published (epoch ms; None if OPA can't tell)."""
     try:
         resp = await _opa_client().post(
             "/v1/data/scout/cache_fingerprint", json={"input": {"user": user}}
         )
         resp.raise_for_status()
-        return resp.json().get("result")
+        result = resp.json()["result"]
+        return result["hash"], result.get("published_ms")
     except Exception:
         log.warning("cache: OPA fingerprint unavailable", exc_info=True)
         return None
@@ -359,21 +356,26 @@ def _decode(blob: bytes) -> Any:
 
 async def lookup(op: str, user: str, sql: str, *parts: Any) -> Lookup:
     """Find a cached result for this user's `sql`; `parts` covers anything else
-    the result depends on. Call just before running the query: `started` is the
-    reference point for the settle wait."""
+    the result depends on. Call just before running the query: whether a result
+    may be stored depends on the user bundle's age at this point."""
     found = Lookup(op=op, user=user, sql=sql, parts=parts)
     if enabled():
-        found.fingerprint = await _fingerprint(user)
+        fingerprint = await _fingerprint(user)
         version = _data_version(user, sql)
-        if found.fingerprint is None:
+        if fingerprint is None:
             metrics.CACHE_LOOKUPS.labels(op=op, result="unavailable").inc()
-        elif version is None:
+            return found
+        found.fingerprint, published_ms = fingerprint
+        found.settled = published_ms is not None and (
+            time.time() * 1000 - published_ms
+            >= settings.cache_bundle_age_seconds * 1000
+        )
+        if version is None:
             found.known = dict(_versions)
             metrics.CACHE_LOOKUPS.labels(op=op, result="cold").inc()
         else:
             found.digest = _digest(user, found.fingerprint, version, sql, *parts)
             found.value = await _get(op, found.key)
-    found.started = time.monotonic()
     return found
 
 
@@ -410,27 +412,22 @@ async def _get(op: str, key: str) -> Any | None:
 
 
 def remember(found: Lookup, value: Any) -> None:
-    """Store `value` under the lookup's key once the settle check passes."""
-    if found.writable:
-        _spawn(_confirm_and_put(found, value))
-
-
-async def _confirm_and_put(found: Lookup, value: Any) -> None:
-    wait = found.started + settings.cache_settle_seconds - time.monotonic()
-    if wait > 0:
-        await asyncio.sleep(wait)
-    if await _fingerprint(found.user) != found.fingerprint:
+    """Store `value` under the lookup's key, unless the user bundle was too new
+    when the query started for every OPA replica to have had it."""
+    if found.digest is None and found.known is None:
+        return
+    if not found.settled:
         metrics.CACHE_WRITES.labels(op=found.op, result="unsettled").inc()
         return
-    await _put_late(found, found.op, value, settings.cache_ttl_seconds)
+    _spawn(_put_late(found, value))
 
 
-async def _put_late(found: Lookup, op: str, value: Any, ttl: int) -> None:
+async def _put_late(found: Lookup, value: Any) -> None:
     digest = await _digest_late(found)
     if digest is None:
-        metrics.CACHE_WRITES.labels(op=op, result="unversioned").inc()
+        metrics.CACHE_WRITES.labels(op=found.op, result="unversioned").inc()
         return
-    await _put(op, _key(op, digest), value, ttl)
+    await _put(found.op, _key(found.op, digest), value, settings.cache_ttl_seconds)
 
 
 async def _put(op: str, key: str, value: Any, ttl: int) -> None:
@@ -442,20 +439,6 @@ async def _put(op: str, key: str, value: Any, ttl: int) -> None:
         metrics.CACHE_WRITES.labels(op=op, result="error").inc()
         return
     metrics.CACHE_WRITES.labels(op=op, result="stored").inc()
-
-
-def remember_briefly(found: Lookup, op: str, value: Any, ttl: int) -> None:
-    """Store `value` under `op`'s key for the same query right away, without the
-    settle check. Only for a reader that acts on rows this user was just shown,
-    so a result computed under permissions about to change exposes nothing new."""
-    if found.writable:
-        _spawn(_put_late(found, op, value, ttl))
-
-
-async def get_related(found: Lookup, op: str) -> Any | None:
-    """What `op` stored for the same query and user, if anything."""
-    key = found.key_for(op)
-    return None if key is None else await _get(op, key)
 
 
 async def wait_pending() -> None:

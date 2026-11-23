@@ -538,7 +538,7 @@ async def invoke_search_action(
     # stand in as the identifier. The same cohort GET /rows serves, so the
     # click acts on the rows the page showed.
     _cols, rows, cohort_truncated = await _cohort(
-        request, search_id, ds, user, progress_id, for_action=True
+        request, search_id, ds, user, progress_id
     )
     reports = [
         {
@@ -623,29 +623,22 @@ def _rows_query_error(exc: Exception, stage: str) -> HTTPException:
     )
 
 
-_ID_COLS = ["primary_report_identifier", "accession_number"]
-
-
 async def _cohort(
     request: Request,
     search_id: str,
     ds: dict[str, Any],
     user: User,
     progress_id: str | None,
-    for_action: bool = False,
 ) -> tuple[list[str], list[dict[str, Any]], bool]:
     """The search's cohort as `GET /rows` serves it: columns, rows without report
     bodies, and whether it was truncated at the cap. An action's click reads the
-    same cache entry, so it acts on the rows the page showed; its IDs are also
-    kept briefly, for a click before the full entry is stored."""
+    same cache entry, so it acts on the rows the page showed."""
     source_sql = ds["sql"]
     uploaded_ids = ds.get("uploaded_ids")
     cap = settings.max_cohort_rows
     found = await cache.lookup("rows", user.sub, source_sql, uploaded_ids, cap)
-    cached = found.value
-    if cached is None and for_action:
-        cached = await cache.get_related(found, "rows-ids")
-    if cached is not None:
+    if found.value is not None:
+        cached = found.value
         rows = cache.unpack_rows(cached["columns"], cached["rows"])
         return cached["columns"], rows, cached["truncated"]
     # Derived per read, not stored, so the saved search stays a verbatim record
@@ -691,16 +684,6 @@ async def _cohort(
     metrics.RESULT_ROWS.labels(op="rows_query").observe(len(rows))
     lean_columns = [c for c in columns if c not in _HEAVY_COLS]
     lean_rows = [{k: v for k, v in r.items() if k not in _HEAVY_COLS} for r in rows]
-    cache.remember_briefly(
-        found,
-        "rows-ids",
-        {
-            "columns": _ID_COLS,
-            "rows": cache.pack_rows(_ID_COLS, lean_rows),
-            "truncated": truncated,
-        },
-        settings.cache_recent_seconds,
-    )
     # A transient failure of the rewrite must not hide the evidence for the whole
     # TTL; only a rewrite Trino rejects as invalid is worth remembering.
     if rewrite_error is None or trino_client.is_user_error(rewrite_error):

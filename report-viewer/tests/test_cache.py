@@ -1,4 +1,4 @@
-"""Query-result cache (#806): keys, the settle check, the data-version refresh,
+"""Query-result cache (#806): keys, the bundle-age rule, the data-version refresh,
 failing open, and the routes serving repeat reads without Trino."""
 
 from __future__ import annotations
@@ -43,14 +43,19 @@ class _FakeValkey:
         pass
 
 
+_AN_HOUR_AGO_MS = int(time.time() * 1000) - 3_600_000
+
+
 class _Env:
     def __init__(self, valkey: _FakeValkey) -> None:
         self.valkey = valkey
         self.fingerprints: dict[str, str | None] = {"alice": "fp-a", "bob": "fp-b"}
         self.version: str | None = "v1"
+        self.published_ms: int | None = _AN_HOUR_AGO_MS
 
-    async def fingerprint(self, user: str) -> str | None:
-        return self.fingerprints.get(user, f"fp-{user}")
+    async def fingerprint(self, user: str) -> tuple[str, int | None] | None:
+        fp = self.fingerprints.get(user, f"fp-{user}")
+        return None if fp is None else (fp, self.published_ms)
 
     def data_version(self, user: str, sql: str) -> str | None:
         return self.version
@@ -62,7 +67,7 @@ def env(monkeypatch) -> _Env:
     monkeypatch.setattr(settings, "valkey_url", "redis://fake:6379")
     monkeypatch.setattr(settings, "opa_url", "http://opa:8181")
     monkeypatch.setattr(settings, "cache_ttl_seconds", 600)
-    monkeypatch.setattr(settings, "cache_settle_seconds", 0)
+    monkeypatch.setattr(settings, "cache_bundle_age_seconds", 15)
     monkeypatch.setattr(cache, "_valkey", e.valkey)
     monkeypatch.setattr(cache, "_fingerprint", e.fingerprint)
     monkeypatch.setattr(cache, "_data_version", e.data_version)
@@ -107,32 +112,34 @@ def test_key_covers_user_query_fingerprint_and_version(env, monkeypatch):
     assert base != asyncio.run(key())
 
 
-def test_not_stored_when_the_fingerprint_changes_before_the_settle_check(env):
+def test_stored_straight_after_the_query_once_the_bundle_is_old_enough(env):
     async def go():
         found = await cache.lookup("rows", "alice", "SELECT 1")
-        env.fingerprints["alice"] = "fp-a2"
         cache.remember(found, [1])
         await cache.wait_pending()
+        return found
 
-    asyncio.run(go())
+    assert asyncio.run(go()).key in env.valkey.data
+
+
+def test_not_stored_while_the_bundle_is_newer_than_every_replica_has(env):
+    env.published_ms = int(time.time() * 1000) - 5_000
+    found = asyncio.run(_store("rows", "alice", [1], "SELECT 1"))
+    assert not found.settled
     assert env.valkey.data == {}
 
 
-def test_stored_only_after_the_settle_window(env, monkeypatch):
-    monkeypatch.setattr(settings, "cache_settle_seconds", 0.3)
+def test_still_read_while_the_bundle_is_new(env):
+    stored = asyncio.run(_store("rows", "alice", [1], "SELECT 1"))
+    env.published_ms = int(time.time() * 1000)
+    found = asyncio.run(cache.lookup("rows", "alice", "SELECT 1"))
+    assert found.key == stored.key and found.value == [1]
 
-    async def go():
-        found = await cache.lookup("rows", "alice", "SELECT 1")
-        cache.remember(found, [1])
-        await asyncio.sleep(0.05)
-        early = dict(env.valkey.data)
-        await cache.wait_pending()
-        return found, early, time.monotonic() - found.started
 
-    found, early, elapsed = asyncio.run(go())
-    assert early == {}
-    assert found.key in env.valkey.data
-    assert elapsed >= 0.3
+def test_not_stored_when_the_publish_time_is_unknown(env):
+    env.published_ms = None
+    asyncio.run(_store("rows", "alice", [1], "SELECT 1"))
+    assert env.valkey.data == {}
 
 
 def test_off_without_urls_or_with_zero_ttl(env, monkeypatch):
@@ -425,29 +432,6 @@ def test_action_click_reads_the_pages_cohort(
     assert body["dropped_report_count"] == 1
 
 
-def test_action_click_reads_brief_ids_before_the_full_entry_lands(
-    client, keypair, fake_trino, env, catalog_with_backend_call_action, monkeypatch
-):
-    monkeypatch.setattr(cache, "remember", lambda *_: None)
-    headers = _bearer_headers(keypair[0])
-    sid = _create_search(client, headers, fake_trino)
-    fake_trino(["primary_report_identifier", "accession_number"], _COHORT)
-    client.get(f"/api/searches/{sid}/rows", headers=headers)
-    client.portal.call(cache.wait_pending)
-    calls = len(fake_trino.calls)
-
-    (key,) = env.valkey.data
-    assert key.startswith("rv:v1:rows-ids:")
-    assert env.valkey.ttls[key] == settings.cache_recent_seconds
-    _body, sent = _invoke(client, headers, sid)
-    assert len(fake_trino.calls) == calls
-    assert sent["reports"] == _COHORT
-
-    fake_trino(["primary_report_identifier", "accession_number"], _COHORT)
-    client.get(f"/api/searches/{sid}/rows", headers=headers)
-    assert len(fake_trino.calls) == calls + 1, "a page load never reads them"
-
-
 def test_action_click_on_a_miss_runs_the_pages_query(
     client, keypair, fake_trino, env, catalog_with_backend_call_action
 ):
@@ -474,11 +458,11 @@ def live(monkeypatch, delta) -> _FakeValkey:
     monkeypatch.setattr(settings, "valkey_url", "redis://fake:6379")
     monkeypatch.setattr(settings, "opa_url", "http://opa:8181")
     monkeypatch.setattr(settings, "cache_ttl_seconds", 600)
-    monkeypatch.setattr(settings, "cache_settle_seconds", 0)
+    monkeypatch.setattr(settings, "cache_bundle_age_seconds", 15)
     monkeypatch.setattr(cache, "_valkey", valkey)
 
-    async def fingerprint(user: str) -> str:
-        return f"fp-{user}"
+    async def fingerprint(user: str) -> tuple[str, int]:
+        return f"fp-{user}", _AN_HOUR_AGO_MS
 
     monkeypatch.setattr(cache, "_fingerprint", fingerprint)
     return valkey
@@ -500,14 +484,12 @@ def test_first_run_is_cached_when_its_tables_versions_are_known(live, delta):
     async def go():
         cold = await cache.lookup("rows", "alice", _VIEW_SQL, 10)
         cache.remember(cold, [1])
-        cache.remember_briefly(cold, "rows-ids", [2], 60)
         await cache.wait_pending()
         return cold, await cache.lookup("rows", "alice", _VIEW_SQL, 10)
 
     cold, warm = asyncio.run(go())
     assert cold.digest is None and cold.value is None
     assert warm.value == [1]
-    assert live.ttls[warm.key_for("rows-ids")] == 60
     assert not any("$history" in c for c in delta.calls)
 
 

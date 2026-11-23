@@ -112,8 +112,8 @@ trino_masked_columns:
 opa_bundle_minio_url: 'http://{{ minio_tenant_name }}-hl.{{ minio_tenant_namespace }}:9000'
 
 # Bundle pull cadence (opa_bundle_min/max_delay_seconds) is in
-# scout_common/defaults/main.yaml: Report Viewer's cache sizes its settle wait
-# from it.
+# scout_common/defaults/main.yaml: Report Viewer's cache sizes its bundle-age
+# rule from it.
 
 # Decision logs go to stdout (Loki picks them up via existing Scout log shipping).
 opa_decision_log_min_delay_seconds: 5
