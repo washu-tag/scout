@@ -306,8 +306,8 @@ export function ActionsToolbar({
       {droppedCount > 0 && (
         <p style={{ color: 'var(--rv-danger)', margin: 0, flexBasis: '100%' }}>
           {droppedCount === 1 ? '1 report' : `${droppedCount} reports`} shown here{' '}
-          {droppedCount === 1 ? 'was' : 'were'} not sent, because the search's current results don't
-          include {droppedCount === 1 ? 'it' : 'them'}. Reload the page to see them.
+          {droppedCount === 1 ? 'was' : 'were'} not sent, because the search&apos;s current results
+          don&apos;t include {droppedCount === 1 ? 'it' : 'them'}. Reload the page to see them.
         </p>
       )}
       {resultLink && (
