@@ -55,7 +55,8 @@ groups: [] # section definitions (only when introducing a section)
 
 A document with any other `apiVersion` or `kind` is skipped. Unknown fields inside a
 known version are ignored (with a logged warning), so a newer document still renders its
-basics on an older launchpad.
+basics on an older launchpad. The one exception is [`users`](#chips-for-named-users),
+which needs `apiVersion: launchpad.scout.xnat.org/v1alpha2`.
 
 ## Chip fields
 
@@ -68,17 +69,50 @@ basics on an older launchpad.
 | `icon`           | no       | `app`     | A name from the [icon registry](#icons-and-tones).                                                                                               |
 | `iconData`       | no       | —         | `data:image/(png\|jpeg\|svg+xml);base64,…`, max 16 KiB. Wins over `icon`.                                                                        |
 | `tone`           | no       | `indigo`  | One of `indigo emerald amber violet rose cyan red orange slate`.                                                                                 |
-| `newTab`         | no       | `true`    | Open the destination in a new tab.                                                                                                               |
+| `badge`          | no       | —         | `{text, tone}`: a short status beside the title, such as "Draft". `text` max 24 characters; `tone` as above, default `slate`.                   |
+| `newTab`         | no       | `true`    | Open a `url` destination in a new tab. Other destinations open inside the launchpad — see [links](#links).                                       |
+| `sandbox`        | no       | `false`   | Open the framed app in a sandbox that can't open popups or navigate the launchpad window. For apps that render untrusted content, such as chat. |
 | `group`          | no       | `more`    | Which section the chip renders in.                                                                                                               |
 | `weight`         | no       | `100`     | Lower renders first; ties break by title, then id.                                                                                               |
 | `audience`       | no       | `user`    | `user` (any authenticated user) or `admin`. This is display filtering only — your service must still enforce its own access.                     |
 | `enabled`        | no       | `true`    | Set `false` to hide a shipped chip without deleting the ConfigMap (useful when your chart gates the chip on a value).                            |
+| `users`          | no       | —         | `v1alpha2` documents only. Usernames that see the chip; nobody else does. See [chips for named users](#chips-for-named-users).                  |
 
 Invalid values in the optional presentation fields fall back to their defaults (the
 chip still renders, and the problem is reported — see
 [troubleshooting](#troubleshooting)). A chip without a valid `id`, `title`, and `link`
-is skipped entirely — and so is a chip with an invalid `audience` or `enabled`:
-visibility fails closed, because a typo there must not widen who sees the chip.
+is skipped entirely — and so is a chip with an invalid `audience`, `enabled`, `users`
+or `sandbox`: visibility and the sandbox fail closed, because a typo there must not
+widen who sees the chip or drop its sandbox.
+
+### Chips for named users
+
+A chip with `users` shows only to the users it lists, matched against their Scout
+username ignoring case. This suits a service that lists each person's own items, such as
+the drafts they are writing or the ones waiting for their review. An empty list shows
+the chip to nobody, and a section whose chips are all hidden from a viewer disappears
+for them.
+
+```yaml
+apiVersion: launchpad.scout.xnat.org/v1alpha2
+kind: Catalog
+groups:
+  - id: my-drafts
+    title: My drafts
+    weight: 5 # above Core Services
+chips:
+  - id: draft-chest-ct
+    title: Chest CT review
+    link: { subdomain: my-service, path: /drafts/chest-ct }
+    group: my-drafts
+    users: [alice, bob]
+```
+
+`users` is only valid in a `v1alpha2` document: a launchpad from before `users` existed
+skips the whole document instead of showing its chips to everyone, and a `v1alpha1`
+chip that sets `users` is skipped. Keep a service's other chips in a `v1alpha1` document
+(a separate data key) so they still render on older launchpads. Like `audience`, this
+only decides who sees the chip; your service must still check who may open the link.
 
 ### Links
 
@@ -98,6 +132,87 @@ an unauthenticated UI). Only `http(s)` URLs, rooted paths, and DNS-label subdoma
 validate; anything else (e.g. `javascript:`) rejects the whole chip. A rooted path
 means exactly one leading slash — protocol-relative `//host` values, which the browser
 would resolve off-site, are rejected too.
+
+Every chip also appears in the launchpad's navigation rail: Core Services' chips at the
+top, then one entry per other group, a menu when it has more than one chip, with
+admin-only groups last. A group with `railMenu` is listed in that group's menu instead. A subdomain
+destination opens inside the launchpad, framed next to the rail, so your service must allow the
+launchpad to frame it. On-prem, the `security-headers` middleware from
+[service authentication](service-authentication.md) does that. A path destination is a
+launchpad page and renders with the rail. A `url` destination opens on its own,
+following `newTab`.
+
+A page-style service (forms, lists, reports, as opposed to a full-screen tool) lines up
+with the launchpad's own pages if it uses the same page gutter, measured on its own
+width: 16px, 24px from 768px wide, and 32px from 1024px, around content at most 80rem
+wide, 88rem from 1536px, with 2rem above the page's first line. Inside the launchpad
+the frame is the window less the rail, and the launchpad's pages switch at the same
+frame widths. A service doesn't need to know whether it is framed to get this right.
+
+Links into your service that arrive from outside Scout, such as a bookmark or a link
+someone shared, open inside the launchpad at the same page, and so does a new tab or
+window that another Scout service opens. The edge sends top-level `GET` page loads
+from anywhere but your own host to
+`https://<launchpad host>/open/<service host>/<path>`, and the launchpad frames the
+chip on that host whose path matches best; a URL no chip owns goes to the launchpad's
+home page. Frame loads, form posts, fetch and XHR, and navigation within your own host
+reach your service directly. A new tab your service opens to its own host isn't
+redirected; to send it into the launchpad too, have a page that finds itself outside a
+frame (`window.parent === window`) go to `https://<launchpad host>/open/<its host><its
+path>`, as the address-bar script Scout ships for its own apps does. The edge can't tell a sign-in callback or a download from any other
+page load: one that arrives at the top level opens in your frame too. On-prem, Traefik
+does this for every single-label Scout subdomain. On other edges, the Ingresses of
+framed services carry the label `launchpad.scout.xnat.org/deep-link: "true"` so an edge
+overlay can find them.
+
+While your service is framed, the launchpad's address bar shows the page the service
+was opened at. To keep it in step as users move around, post the page's address to the
+launchpad whenever it changes:
+
+```js
+window.parent.postMessage(
+  { type: 'scout:location', href: window.location.href },
+  'https://scout.example.edu', // the launchpad's origin
+);
+```
+
+Name the launchpad's origin rather than `'*'`, and send nothing but these messages. The launchpad
+accepts the message only from your chip's frame and only for an address on your
+chip's host or one of its subdomains, so content your page nests from another origin
+cannot move it. It keeps the path, query and fragment, which then appear in the
+launchpad's address bar and history, so don't report addresses with secrets in them.
+
+A page that can't run your script can't report itself. To keep the address bar right
+when a link leads to one, post where a navigation is going just before it leaves:
+
+```js
+window.parent.postMessage(
+  { type: 'scout:leaving', href: destinationUrl },
+  'https://scout.example.edu', // the launchpad's origin
+);
+```
+
+The launchpad checks it like `scout:location` and shows that address only if your
+frame then loads a new page within 30 seconds; a `scout:location` from the new page
+replaces it. Send it for link navigations only, not form posts or downloads.
+
+To send users to another Scout page, for example a button that opens a result in
+another service, ask the launchpad to open it instead of opening a new tab:
+
+```js
+window.top.postMessage(
+  { type: 'scout:open', href: 'https://xnat.scout.example.edu/data/projects/P1' },
+  'https://scout.example.edu', // the launchpad's origin
+);
+```
+
+The launchpad opens the page in the chip that owns it and answers the sender with
+`{ type: 'scout:opened', href }`. It accepts the request from any frame, nested ones
+included, whose origin is the launchpad's or a single-label subdomain of its host,
+except a chip with `sandbox: true`, and ignores pages no chip owns. Without an answer,
+open the page as you otherwise would. This also works from a page your service shows
+inside another service's sandboxed frame, as report-viewer does inside chat, where a
+new tab would inherit the sandbox, as long as that frame keeps your origin.
 
 ## Groups: Defining a section
 
@@ -126,7 +241,8 @@ groups:
 | `maxColumns`  | no       | `cards` 3, `tiles` 2, `rows` 1 | Rendered columns = `min(visible chips, maxColumns)`.                                                |
 | `width`       | no       | `full`                         | Consecutive `half` groups pair side by side; an unpaired `half` renders full.                       |
 | `audience`    | no       | `user`                         | A group also hides automatically whenever it has no visible chips.                                  |
-| `footerLink`  | no       | —                              | `{text, url}` rendered as an inline link under the group's grid.                                   |
+| `railMenu`    | no       | —                              | Another group's id: the rail lists this group in that group's menu, under its own heading, rather than as its own entry. Ignored when that group isn't shown. |
+| `footerLink`  | no       | —                              | A link in the section heading: `{text, url}`, opened in a new tab, or `{text, link}` with a chip destination (see [links](#links)), so a Scout service opens inside the launchpad under the section's rail entry. A launchpad from before `link` drops a `{text, link}` footerLink with a diagnostic. |
 
 Several documents may define the same group id (two services can both put chips in
 `imaging` and both ship the definition). The launchpad's own catalog wins a definition
@@ -206,8 +322,8 @@ and reports the rest. Checks, in the order problems actually occur:
 2. **YAML syntax error** — the whole document is skipped and the diagnostic includes
    line and column.
 3. **Wrong `apiVersion` or `kind`** — the document is skipped.
-4. **Chip missing `id`/`title`/valid `link`, or with an invalid `audience` or
-   `enabled`** — that chip is skipped.
+4. **Chip missing `id`/`title`/valid `link`, with an invalid `audience`, `enabled` or
+   `users`, or with `users` in a `v1alpha1` document** — that chip is skipped.
 5. **Bad optional presentation field** (unknown icon or tone, overlong text) — the
    chip renders with defaults and the coercion is reported.
 

@@ -1,0 +1,87 @@
+{{- /*
+Converges the ScheduledReportIngest schedule on every install/upgrade: creates or
+updates it when scheduledIngest.enabled is "true", deletes it otherwise. Runs after
+the namespace-retention hook, which guarantees the namespace exists.
+*/ -}}
+{{- $enabled := eq (toString .Values.scheduledIngest.enabled | lower) "true" }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "temporal-bootstrap.fullname" . }}-scheduled-ingest
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "temporal-bootstrap.labels" . | nindent 4 }}
+    app.kubernetes.io/component: scheduled-ingest
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation
+    "helm.sh/hook-weight": "10"
+spec:
+  ttlSecondsAfterFinished: {{ .Values.ttlSecondsAfterFinished }}
+  backoffLimit: {{ .Values.backoffLimit }}
+  template:
+    metadata:
+      labels:
+        {{- include "temporal-bootstrap.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: scheduled-ingest
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: scheduled-ingest
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: TEMPORAL_ADDRESS
+              value: {{ required "temporal-bootstrap: temporalAddress is required" .Values.temporalAddress | quote }}
+            - name: HOME
+              value: /tmp
+            - name: SCHEDULE_ID
+              value: {{ .Values.scheduledIngest.scheduleId | quote }}
+            {{- if $enabled }}
+            - name: SCHEDULE_CRON
+              value: {{ required "temporal-bootstrap: scheduledIngest.cron is required when enabled" .Values.scheduledIngest.cron | quote }}
+            {{- end }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              {{- if $enabled }}
+              if temporal schedule describe --schedule-id "$SCHEDULE_ID" >/dev/null 2>&1; then
+                action=update
+              else
+                action=create
+              fi
+              temporal schedule "$action" \
+                --schedule-id "$SCHEDULE_ID" \
+                --workflow-id "$SCHEDULE_ID" \
+                --task-queue {{ .Values.scheduledIngest.taskQueue | quote }} \
+                --type {{ .Values.scheduledIngest.workflowType | quote }} \
+                --cron "$SCHEDULE_CRON"
+              echo "schedule $SCHEDULE_ID: ${action}d with cron '$SCHEDULE_CRON'"
+              {{- else }}
+              if temporal schedule describe --schedule-id "$SCHEDULE_ID" >/dev/null 2>&1; then
+                temporal schedule delete --schedule-id "$SCHEDULE_ID"
+                echo "schedule $SCHEDULE_ID: deleted (scheduled ingest disabled)"
+              else
+                echo "schedule $SCHEDULE_ID: absent (scheduled ingest disabled)"
+              fi
+              {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

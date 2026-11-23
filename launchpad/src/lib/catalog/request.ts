@@ -1,19 +1,14 @@
-import { headers } from 'next/headers';
 import { getServerSession } from 'next-auth';
-import HomeClient from './HomeClient';
+import { headers } from 'next/headers';
 import { assemble, type Origin } from '@/lib/catalog/assemble';
 import { loadCatalog } from '@/lib/catalog/load';
+import type { RenderModel } from '@/lib/catalog/types';
 import { authOptions } from '@/lib/auth';
-import { getDocsUrl } from '@/lib/docsUrl';
-
-// Force dynamic rendering: the catalog, the session, and the request host are
-// all read at request time.
-export const dynamic = 'force-dynamic';
 
 // Subdomain chip links resolve against the request's own host — what Traefik
 // forwards is what the browser sees (ADR 0034). The configured NextAuth URL
 // is only the header-less fallback.
-async function requestOrigin(): Promise<Origin> {
+export async function requestOrigin(): Promise<Origin> {
   const requestHeaders = await headers();
   const host = requestHeaders.get('x-forwarded-host') ?? requestHeaders.get('host');
   const forwardedProto = requestHeaders.get('x-forwarded-proto');
@@ -30,23 +25,16 @@ async function requestOrigin(): Promise<Origin> {
   }
 }
 
-export default async function Home() {
+// The catalog as this request's viewer sees it: audience-filtered, links
+// resolved against the request host.
+// `anyAudience` keeps admin-only chips, for matching a URL to its app before the user has
+// signed in to the launchpad; the session-aware render still applies the audience.
+export async function requestModel({ anyAudience = false } = {}): Promise<RenderModel> {
   const origin = await requestOrigin();
   // Dev-only override, mirroring the client-side NEXT_PUBLIC_DEV_ADMIN gate.
   const devAdmin =
     process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEV_ADMIN === 'true';
   const session = await getServerSession(authOptions);
-  const isAdmin = devAdmin || session?.user?.isAdmin === true;
-
-  const catalog = await loadCatalog();
-  const model = assemble(catalog, { origin, isAdmin });
-
-  return (
-    <HomeClient
-      model={model}
-      scoutEnv={process.env.SCOUT_ENV}
-      deployerName={process.env.DEPLOYER_NAME}
-      docsUrl={getDocsUrl()}
-    />
-  );
+  const isAdmin = anyAudience || devAdmin || session?.user?.isAdmin === true;
+  return assemble(await loadCatalog(), { origin, isAdmin, username: session?.user?.username });
 }

@@ -32,11 +32,12 @@ on two ports:
 
 Splitting them means `/invoke` is *structurally* unreachable from the public listener,
 not just NetworkPolicy-restricted — a bug in the NetworkPolicy can't accidentally expose
-it. The landing page needs `COOP: unsafe-none` because it's opened as a popup from OWUI's
-sandboxed chat embed; see `security-headers-sameorigin-popups` in
-`ansible/roles/traefik/tasks/main.yaml` for the full citation. Self-hosting the landing
-page (rather than pointing at a real XNAT deployment) means this demo doesn't need a real
-XNAT Ingress's COOP header changed just to prove the popup mechanism end to end.
+it. The landing page sends `COOP: unsafe-none` so a sandboxed opener can open it in a new
+tab; inside chat, report-viewer's frame doesn't allow popups, so the action can't open it
+there at all (see `security-headers-sameorigin-popups` in
+`ansible/roles/traefik/tasks/main.yaml`). Self-hosting the landing page (rather than
+pointing at a real XNAT deployment) means this demo doesn't need a real XNAT Ingress's
+COOP header changed.
 
 ## Security model
 

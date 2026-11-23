@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { FrameLocator, Page } from '@playwright/test';
 
 export interface TestUser {
   username: string;
@@ -49,4 +49,27 @@ async function acceptScoutTermsIfPresent(page: Page): Promise<void> {
   }
   await page.getByRole('button', { name: 'Continue', exact: true }).click();
   await page.waitForLoadState('domcontentloaded', { timeout: 30000 });
+}
+
+/**
+ * Load a service page in a frame on the launchpad's home page.
+ *
+ * A top-level load of a service URL opens in the launchpad (ADR 0042), which frames only
+ * chips the user's audience allows, so a non-admin never reaches an admin service that
+ * way. A frame load reaches the service directly. The home page is loaded first so that
+ * no redirect still under way replaces the page and its frame.
+ */
+export async function openInFrame(page: Page, url: string): Promise<FrameLocator> {
+  const home = `https://${process.env.SCOUT_HOSTNAME}/`;
+  await page.goto(home, { waitUntil: 'domcontentloaded' });
+  await page.waitForURL(home, { timeout: 60000 });
+  await page.getByRole('navigation', { name: 'Scout' }).waitFor({ timeout: 60000 });
+  await page.evaluate((src) => {
+    const frame = document.createElement('iframe');
+    frame.id = 'service-under-test';
+    frame.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:100;border:0';
+    frame.src = src;
+    document.body.append(frame);
+  }, url);
+  return page.frameLocator('#service-under-test');
 }

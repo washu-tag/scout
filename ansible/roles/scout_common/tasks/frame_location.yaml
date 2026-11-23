@@ -1,0 +1,101 @@
+---
+# Publish the script that tells the launchpad which page a framed app is on, so
+# the launchpad's address bar follows navigation inside the app (ADR 0042). The
+# files live in deploy/base/launchpad-frame-location (files/frame-location links
+# to them), shared with the GitOps lane; ${server_hostname} is filled in here.
+#
+# Include with `frame_location_files`, a map of ConfigMap key to file name:
+#
+#   - name: Publish launchpad frame-location script
+#     ansible.builtin.include_role:
+#       name: scout_common
+#       tasks_from: frame_location
+#     vars:
+#       frame_location_configmap: my-service-frame-location
+#       frame_location_namespace: '{{ my_service_namespace }}'
+#       frame_location_files: { loader.js: frame-location.js }
+#
+# or with `frame_location_file: <name>.jar` for XNAT: a jar holding an XNAT header
+# template (GET pages only) that loads from XNAT's plugins directory.
+# Then mount the keys where the app loads them.
+- name: Publish frame-location ConfigMap {{ frame_location_configmap }}
+  when: frame_location_files is defined
+  block:
+    - name: Read the frame-location files
+      ansible.builtin.set_fact:
+        _frame_location_data: >-
+          {{ (_frame_location_data if ansible_loop.index > 1 else {}) | combine({item.key:
+          lookup('ansible.builtin.file', 'frame-location/' ~ item.value)
+          | replace('${server_hostname}', server_hostname)}) }}
+      loop: '{{ frame_location_files | dict2items }}'
+      loop_control:
+        extended: true
+        label: '{{ item.key }}'
+
+    # Apps mount these by subPath, which never refreshes, so each role puts this in
+    # its pod annotations and a changed script rolls the pods.
+    - name: Fingerprint the frame-location files
+      ansible.builtin.set_fact:
+        frame_location_checksum: '{{ _frame_location_data | to_json | hash("sha256") }}'
+
+    - name: Publish the ConfigMap
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: '{{ frame_location_configmap }}'
+            namespace: '{{ frame_location_namespace }}'
+          data: '{{ _frame_location_data }}'
+
+- name: Publish frame-location jar ConfigMap {{ frame_location_configmap }}
+  when: frame_location_file is defined and frame_location_file is match('.*\.jar$')
+  block:
+    - name: Create a frame-location build directory
+      ansible.builtin.tempfile:
+        state: directory
+      delegate_to: localhost
+      become: false
+      register: _frame_location_build
+
+    # The same jar every Scout release carries (tooling/deploy/xnat_frame_location_jar.py).
+    - name: Build the frame-location jar
+      ansible.builtin.command:
+        argv:
+          - '{{ ansible_playbook_python }}'
+          - '{{ role_path }}/../../../tooling/deploy/xnat_frame_location_jar.py'
+          - '{{ _frame_location_build.path }}/{{ frame_location_file }}'
+      delegate_to: localhost
+      become: false
+      changed_when: false
+
+    - name: Read the jar
+      ansible.builtin.slurp:
+        src: '{{ _frame_location_build.path }}/{{ frame_location_file }}'
+      delegate_to: localhost
+      become: false
+      register: _frame_location_jar
+
+    - name: Fingerprint the jar
+      ansible.builtin.set_fact:
+        frame_location_checksum: '{{ _frame_location_jar.content | hash("sha256") }}'
+
+    - name: Publish the jar
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: '{{ frame_location_configmap }}'
+            namespace: '{{ frame_location_namespace }}'
+          binaryData: '{{ {frame_location_file: _frame_location_jar.content} }}'
+  always:
+    - name: Remove the frame-location build directory
+      when: _frame_location_build.path is defined
+      ansible.builtin.file:
+        path: '{{ _frame_location_build.path }}'
+        state: absent
+      delegate_to: localhost
+      become: false

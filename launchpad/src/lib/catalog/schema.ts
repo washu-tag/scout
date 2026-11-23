@@ -6,14 +6,19 @@ import type { Catalog, Chip, Diagnostic, Group, GroupLayout } from './types';
 
 // The document envelope, shaped like a Kubernetes object: the API group names
 // the launchpad specifically, so this schema versions independently of
-// anything else Scout publishes, and `kind` carries the type identity. The
-// version moves only for a breaking change — new optional fields are additive
-// and stay v1alpha1.
+// anything else Scout publishes, and `kind` carries the type identity. New
+// optional fields are additive and stay in their version, except one that
+// narrows who sees a chip: an older launchpad ignores an unknown field and
+// would show the chip to everyone, but skips a document of an unknown version.
+// v1alpha2 adds `users`.
 export const CATALOG_API_VERSION = 'launchpad.scout.xnat.org/v1alpha1';
+export const CATALOG_API_VERSION_V1ALPHA2 = 'launchpad.scout.xnat.org/v1alpha2';
+const CATALOG_API_VERSIONS = [CATALOG_API_VERSION, CATALOG_API_VERSION_V1ALPHA2];
 export const CATALOG_KIND = 'Catalog';
 
 export const TITLE_MAX = 60;
 export const DESCRIPTION_MAX = 200;
+export const BADGE_MAX = 24;
 export const ICON_DATA_MAX_CHARS = 16 * 1024;
 
 // Where a chip lands when it names no group. The core catalog defines the
@@ -68,6 +73,11 @@ const linkSchema = z
     'link must be exactly one destination: subdomain (with optional path suffix), path, or url',
   );
 
+const badgeShape = {
+  text: z.string().trim().min(1).max(BADGE_MAX),
+  tone: z.enum(TONE_NAMES),
+};
+
 const chipBase = {
   id: idSchema,
   title: titleSchema,
@@ -78,12 +88,15 @@ const chipBase = {
     .regex(ICON_DATA_RE, 'iconData must be a base64 png/jpeg/svg+xml data URI')
     .max(ICON_DATA_MAX_CHARS, `iconData must be at most ${ICON_DATA_MAX_CHARS} characters`),
   tone: z.enum(TONE_NAMES),
+  badge: z.object(badgeShape),
   link: linkSchema,
   newTab: z.boolean(),
+  sandbox: z.boolean(),
   group: idSchema,
   weight: z.number(),
   audience: audienceSchema,
   enabled: z.boolean(),
+  users: z.array(z.string().trim().min(1, 'usernames must be non-empty strings').toLowerCase()),
 };
 
 const groupBase = {
@@ -96,15 +109,23 @@ const groupBase = {
   maxColumns: z.number().int().min(1).max(4),
   width: z.enum(['full', 'half']),
   audience: audienceSchema,
-  footerLink: z.object({
-    text: z.string().trim().min(1).max(TITLE_MAX),
-    url: z
-      .string()
-      .refine(
-        (v) => ROOTED_PATH_RE.test(v) || httpUrlSchema.safeParse(v).success,
-        'must be an http(s) URL or a rooted path',
-      ),
-  }),
+  railMenu: idSchema,
+  footerLink: z
+    .object({
+      text: z.string().trim().min(1).max(TITLE_MAX),
+      url: z
+        .string()
+        .refine(
+          (v) => ROOTED_PATH_RE.test(v) || httpUrlSchema.safeParse(v).success,
+          'must be an http(s) URL or a rooted path',
+        )
+        .optional(),
+      link: linkSchema.optional(),
+    })
+    .refine(
+      (footer) => !footer.url !== !footer.link,
+      'footerLink needs exactly one of url or link',
+    ),
 };
 
 // Known-key lists for the forward-compatibility warning, derived from the
@@ -112,6 +133,7 @@ const groupBase = {
 const CHIP_KEYS = Object.keys(chipBase);
 const GROUP_KEYS = Object.keys(groupBase);
 const LINK_KEYS = Object.keys(linkShape);
+const BADGE_KEYS = Object.keys(badgeShape);
 
 // Fallback values for the lenient parser, in one table so each default is
 // stated exactly once (the authoring guide's field tables document these).
@@ -120,10 +142,15 @@ const CHIP_FALLBACKS = {
   icon: DEFAULT_ICON,
   tone: DEFAULT_TONE,
   newTab: true,
+  sandbox: false,
   group: DEFAULT_GROUP,
   weight: 100,
   audience: 'user',
   enabled: true,
+} as const;
+
+const BADGE_FALLBACKS = {
+  tone: 'slate',
 } as const;
 
 const GROUP_FALLBACKS = {
@@ -139,7 +166,7 @@ const GROUP_FALLBACKS = {
 // Lenient parsing schemas: presentation fields degrade per-field — omitted →
 // default silently, invalid → default with a diagnostic. Identity and
 // destination fields have no fallback, and the visibility fields (audience,
-// enabled) fail closed: their failure rejects the whole chip/group rather
+// enabled, users) fail closed: their failure rejects the whole chip/group rather
 // than defaulting it into view (the graded budget of ADR 0034).
 // ---------------------------------------------------------------------------
 
@@ -178,6 +205,11 @@ function caughtOptional<T extends z.ZodType>(field: string, base: T) {
   });
 }
 
+const badgeSchema = z.object({
+  text: badgeShape.text,
+  tone: caught('badge.tone', badgeShape.tone, BADGE_FALLBACKS.tone),
+});
+
 const chipSchema = z.object({
   id: chipBase.id,
   title: chipBase.title,
@@ -185,14 +217,19 @@ const chipSchema = z.object({
   icon: caught('icon', chipBase.icon, CHIP_FALLBACKS.icon),
   iconData: caughtOptional('iconData', chipBase.iconData),
   tone: caught('tone', chipBase.tone, CHIP_FALLBACKS.tone),
+  badge: caughtOptional('badge', badgeSchema),
   link: chipBase.link,
   newTab: caught('newTab', chipBase.newTab, CHIP_FALLBACKS.newTab),
+  // Fails closed like audience: an invalid value rejects the chip rather than
+  // dropping the sandbox.
+  sandbox: chipBase.sandbox.default(CHIP_FALLBACKS.sandbox),
   group: caught('group', chipBase.group, CHIP_FALLBACKS.group),
   weight: caught('weight', chipBase.weight, CHIP_FALLBACKS.weight),
   // Visibility fails closed: no .catch() here, so an invalid value rejects
   // the chip instead of widening who sees it.
   audience: chipBase.audience.default(CHIP_FALLBACKS.audience),
   enabled: chipBase.enabled.default(CHIP_FALLBACKS.enabled),
+  users: chipBase.users.optional(),
 });
 
 const groupSchema = z.object({
@@ -207,6 +244,7 @@ const groupSchema = z.object({
   // Fail closed, as for chips: a definition that cannot state its audience
   // is dropped (member chips still render via their own audience).
   audience: groupBase.audience.default(GROUP_FALLBACKS.audience),
+  railMenu: caughtOptional('railMenu', groupBase.railMenu),
   footerLink: caughtOptional('footerLink', groupBase.footerLink),
 });
 
@@ -289,12 +327,13 @@ export function validateDocument(input: unknown, source: string, sourceRank = 0)
     return { chips, groups, diagnostics };
   }
   const { apiVersion, kind } = envelope.data;
-  if (apiVersion !== CATALOG_API_VERSION || kind !== CATALOG_KIND) {
+  if (!CATALOG_API_VERSIONS.includes(apiVersion) || kind !== CATALOG_KIND) {
     diagnostics.push({
       source,
       message:
         `unknown document type "${apiVersion} ${kind}" ` +
-        `(expected "${CATALOG_API_VERSION} ${CATALOG_KIND}"); document skipped`,
+        `(expected apiVersion ${CATALOG_API_VERSIONS.join(' or ')}, kind ${CATALOG_KIND}); ` +
+        'document skipped',
     });
     return { chips, groups, diagnostics };
   }
@@ -304,6 +343,15 @@ export function validateDocument(input: unknown, source: string, sourceRank = 0)
   envelope.data.chips.forEach((raw, index) => {
     const fallbackSubject = `chips[${index}]`;
     const subject = isRecord(raw) && typeof raw.id === 'string' ? raw.id : fallbackSubject;
+    // An older launchpad shows a v1alpha1 chip's `users` to everyone.
+    if (isRecord(raw) && 'users' in raw && apiVersion !== CATALOG_API_VERSION_V1ALPHA2) {
+      diagnostics.push({
+        source,
+        subject,
+        message: `chip skipped: users needs apiVersion ${CATALOG_API_VERSION_V1ALPHA2}`,
+      });
+      return;
+    }
     const fieldDiags: Diagnostic[] = [];
     const result = parseWithFieldDiags(chipSchema, raw, (field, error) =>
       fieldDiags.push({
@@ -326,6 +374,9 @@ export function validateDocument(input: unknown, source: string, sourceRank = 0)
     warnUnknownKeys(raw, CHIP_KEYS, diagnostics, source, subject);
     if (isRecord(raw) && isRecord(raw.link)) {
       warnUnknownKeys(raw.link, LINK_KEYS, diagnostics, source, subject);
+    }
+    if (isRecord(raw) && isRecord(raw.badge)) {
+      warnUnknownKeys(raw.badge, BADGE_KEYS, diagnostics, source, subject);
     }
     if (seenChipIds.has(result.data.id)) {
       diagnostics.push({

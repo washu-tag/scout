@@ -17,7 +17,10 @@ traefik_helm_job_timeout: 300
 # rather than a round number, and not 0s, which is the CVE-2024-28869 shape.
 traefik_read_timeout: 1h
 
-traefik_embeddable_frame_ancestors: 'https://chat.{{ server_hostname }}'
+traefik_embeddable_frame_ancestors: 'https://chat.{{ server_hostname }} https://{{ server_hostname }}'
+# Who may frame services behind security-headers-sameorigin (XNAT): itself and the launchpad,
+# plus any app a site adds that shows XNAT pages in a frame.
+traefik_sameorigin_frame_ancestors: "'self' https://{{ server_hostname }}"
 # Inventory requirements depend on tls_mode:
 #
 # tls_mode: file

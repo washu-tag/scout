@@ -311,6 +311,8 @@ singleuser:
         "@jupyter-server/resource-usage:topbar-item":
           enable: true
           refreshRate: 1000
+        "@jupyterlab/apputils-extension:themes":
+          adaptive-theme: true
 {% if jupyter_extension_manager_mode == 'readonly' %}
 
         # Configure Extension Manager to readonly mode (view installed extensions only)
@@ -361,6 +363,10 @@ singleuser:
         configMap:
           name: scout-quickstart-samples
           defaultMode: 0644
+      frame-location:
+        name: frame-location
+        configMap:
+          name: jupyter-frame-location
       trino-ca:
         name: trino-ca
         secret:
@@ -396,6 +402,11 @@ singleuser:
       scout-samples:
         name: scout-samples
         mountPath: /opt/scout/samples
+        readOnly: true
+      # A prebuilt JupyterLab extension that keeps the launchpad's address bar on the open page.
+      frame-location:
+        name: frame-location
+        mountPath: /opt/conda/share/jupyter/labextensions/scout-frame-location
         readOnly: true
       trino-ca:
         name: trino-ca

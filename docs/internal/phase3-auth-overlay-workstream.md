@@ -1,6 +1,6 @@
 # Phase 3 follow-up: the auth-overlay workstream (Keycloak realm decomposition + Temporal authz/web)
 
-Status: items 2 and 3 are done; items 1 and 4 are NOT started. Deferred out of the
+Status: items 2, 3 and 4 are done; item 1 is NOT started. Deferred out of the
 Phase 3 `deploy/` base sweep on purpose.
 This is the "item #9" from the Phase 3 completion plan. It is a single cohesive
 workstream, not a grab-bag, and it is gated on a spike that needs a live cluster.
@@ -21,8 +21,8 @@ login. It should be built and reviewed on its own, spike-first.
 2. Temporal frontend JWT authorization (the `authorization.authorizer: default`
    block the Ansible role renders in `values.yaml.j2`).
 3. Temporal web UI ingress + OIDC (also rendered by the Ansible role).
-4. The optional Temporal `ScheduledReportIngest` cron. This one is independent of
-   the auth work (see below).
+4. The optional Temporal `ScheduledReportIngest` cron. Independent of the auth work;
+   the `temporal-bootstrap` chart manages it in both lanes.
 
 Items 2 and 3 landed ahead of item 1: the realm already ships the `temporal` client
 unconditionally, so they did not need the decomposition.
@@ -81,12 +81,3 @@ Only after the spike:
   base key always and the feature keys per site (mirroring the Ansible `enable_xnat`
   gate).
 - Set the proven `import.managed.*` values on the keycloak-config-cli HelmRelease.
-
-## The one piece that does not need the spike
-
-The optional Temporal `ScheduledReportIngest` cron
-(`ansible/roles/temporal/tasks/deploy.yaml`, gated on `scheduled_ingest_cron` /
-`scheduled_ingest_hour`) is a plain `temporal schedule create/update` CLI Job against
-the internal frontend. It has no auth entanglement and can be added to
-`deploy/base/temporal/bootstrap` (alongside the retention setup) independently, if a
-site wants scheduled ingest.

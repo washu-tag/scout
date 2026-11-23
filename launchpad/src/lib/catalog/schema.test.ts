@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { CATALOG_API_VERSION, CATALOG_KIND, parseCatalogText, validateDocument } from './schema';
+import {
+  CATALOG_API_VERSION,
+  CATALOG_API_VERSION_V1ALPHA2,
+  CATALOG_KIND,
+  parseCatalogText,
+  validateDocument,
+} from './schema';
 
 const SOURCE = 'test/apps.yaml';
 
@@ -31,6 +37,7 @@ describe('validateDocument', () => {
       icon: 'app',
       tone: 'indigo',
       newTab: true,
+      sandbox: false,
       group: 'more',
       weight: 100,
       audience: 'user',
@@ -188,10 +195,132 @@ describe('validateDocument', () => {
     assert.match(result.diagnostics[0].message, /invalid footerLink/);
   });
 
+  it('takes a footerLink with a chip destination instead of a url, not both', () => {
+    const footer = (footerLink: Record<string, unknown>) =>
+      validateDocument(doc({ groups: [{ id: 'a', title: 'A', footerLink }] }), SOURCE);
+    const ok = footer({ text: 'All', link: { subdomain: 'books', path: '/' } });
+    assert.deepStrictEqual(ok.diagnostics, []);
+    assert.deepStrictEqual(ok.groups[0].footerLink?.link, { subdomain: 'books', path: '/' });
+    for (const invalid of [
+      { text: 'All' },
+      { text: 'All', url: '/x', link: { path: '/x' } },
+      { text: 'All', link: { subdomain: 'Books' } },
+    ]) {
+      const result = footer(invalid);
+      assert.strictEqual(result.groups[0].footerLink, undefined, JSON.stringify(invalid));
+      assert.match(result.diagnostics[0].message, /invalid footerLink/);
+    }
+  });
+
   it('rejects a chip whose enabled or audience is invalid (visibility fails closed)', () => {
     for (const overrides of [{ enabled: 'no' }, { enabled: 0 }, { audience: 'adminstrator' }]) {
       const result = validateDocument(doc({ chips: [chip(overrides)] }), SOURCE);
       assert.strictEqual(result.chips.length, 0, JSON.stringify(overrides));
+      assert.match(result.diagnostics[0].message, /chip skipped/);
+    }
+  });
+
+  it('keeps a sandbox request and rejects a chip whose sandbox is invalid (fails closed)', () => {
+    assert.strictEqual(
+      validateDocument(doc({ chips: [chip({ sandbox: true })] }), SOURCE).chips[0].sandbox,
+      true,
+    );
+    for (const sandbox of ['yes', 1]) {
+      const result = validateDocument(doc({ chips: [chip({ sandbox })] }), SOURCE);
+      assert.strictEqual(result.chips.length, 0, JSON.stringify(sandbox));
+      assert.match(result.diagnostics[0].message, /chip skipped/);
+    }
+  });
+
+  it('accepts a badge, slate by default, and drops one with invalid text with a diagnostic', () => {
+    const result = validateDocument(
+      doc({
+        chips: [
+          chip({ id: 'a', badge: { text: ' Draft ' } }),
+          chip({ id: 'b', badge: { text: 'Shared', tone: 'amber' } }),
+        ],
+      }),
+      SOURCE,
+    );
+    assert.deepStrictEqual(result.diagnostics, []);
+    assert.deepStrictEqual(
+      result.chips.map((c) => c.badge),
+      [
+        { text: 'Draft', tone: 'slate' },
+        { text: 'Shared', tone: 'amber' },
+      ],
+    );
+
+    for (const badge of ['Draft', { text: '' }, { text: 'x'.repeat(25) }]) {
+      const invalid = validateDocument(doc({ chips: [chip({ badge })] }), SOURCE);
+      assert.strictEqual(invalid.chips.length, 1, JSON.stringify(badge));
+      assert.strictEqual(invalid.chips[0].badge, undefined, JSON.stringify(badge));
+      assert.match(invalid.diagnostics[0].message, /badge/);
+    }
+  });
+
+  it('falls back to a slate badge for an unknown badge tone, with a diagnostic', () => {
+    const result = validateDocument(
+      doc({ chips: [chip({ badge: { text: 'Draft', tone: 'pink' } })] }),
+      SOURCE,
+    );
+    assert.deepStrictEqual(result.chips[0].badge, { text: 'Draft', tone: 'slate' });
+    assert.strictEqual(result.diagnostics.length, 1);
+    assert.match(result.diagnostics[0].message, /invalid badge\.tone .*default used/);
+  });
+
+  it('warns on unknown fields inside a badge', () => {
+    const result = validateDocument(
+      doc({ chips: [chip({ badge: { text: 'Draft', color: 'amber' } })] }),
+      SOURCE,
+    );
+    assert.deepStrictEqual(result.chips[0].badge, { text: 'Draft', tone: 'slate' });
+    assert.strictEqual(result.diagnostics.length, 1);
+    assert.match(result.diagnostics[0].message, /unknown field "color"/);
+  });
+
+  it('accepts users in a v1alpha2 document, lowercased', () => {
+    const result = validateDocument(
+      doc({ apiVersion: CATALOG_API_VERSION_V1ALPHA2, chips: [chip({ users: ['Alice', 'bob'] })] }),
+      SOURCE,
+    );
+    assert.deepStrictEqual(result.diagnostics, []);
+    assert.deepStrictEqual(result.chips[0].users, ['alice', 'bob']);
+  });
+
+  it('parses a v1alpha2 document without users like a v1alpha1 one', () => {
+    const result = validateDocument(
+      doc({
+        apiVersion: CATALOG_API_VERSION_V1ALPHA2,
+        groups: [{ id: 'a', title: 'A' }],
+        chips: [chip({ group: 'a' })],
+      }),
+      SOURCE,
+    );
+    assert.deepStrictEqual(result.diagnostics, []);
+    assert.strictEqual(result.groups.length, 1);
+    assert.strictEqual(result.chips[0].users, undefined);
+  });
+
+  it('rejects a chip with users in a v1alpha1 document, keeping its siblings', () => {
+    const result = validateDocument(
+      doc({ chips: [chip({ users: ['alice'] }), chip({ id: 'other' })] }),
+      SOURCE,
+    );
+    assert.deepStrictEqual(
+      result.chips.map((c) => c.id),
+      ['other'],
+    );
+    assert.match(result.diagnostics[0].message, /users needs apiVersion .*v1alpha2/);
+  });
+
+  it('rejects a chip whose users is invalid (visibility fails closed)', () => {
+    for (const users of ['alice', [''], ['  '], [42], null]) {
+      const result = validateDocument(
+        doc({ apiVersion: CATALOG_API_VERSION_V1ALPHA2, chips: [chip({ users })] }),
+        SOURCE,
+      );
+      assert.strictEqual(result.chips.length, 0, JSON.stringify(users));
       assert.match(result.diagnostics[0].message, /chip skipped/);
     }
   });

@@ -149,6 +149,15 @@
   ansible.builtin.include_tasks: dev_activemq.yaml
   when: xnat_dev_activemq | bool
 
+- name: Publish launchpad frame-location script
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: frame_location
+  vars:
+    frame_location_configmap: xnat-frame-location
+    frame_location_namespace: '{{ xnat_namespace }}'
+    frame_location_file: scout-frame-location.jar
+
 # no_log: the rendered values contain xnat_postgres_password — a parse failure
 # (or -vvv) would otherwise print the whole document including the secret.
 - name: Parse Helm values
