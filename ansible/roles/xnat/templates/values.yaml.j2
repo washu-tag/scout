@@ -76,15 +76,18 @@ ingress:
         - path: /
           pathType: Prefix
 
-{% set _scp_ports = [] %}
+{# Chart 4.1.0 adds a Service port per receiver, named "<ae_title>-dicom", so
+   receivers sharing a port collide. Until the chart dedupes them itself, pass one
+   entry per port, named by its number. "recievers" is the chart's spelling. #}
+{% set _scp_ports = {} %}
 {% for r in xnat_dicom_scp_receivers if r.enabled | default(true) | bool %}
-{%   set _ = _scp_ports.append(r | dict2items | selectattr('key', 'in', ['ae_title', 'port', 'nodePort', 'loadBalancerIP']) | items2dict) %}
+{%   set p = _scp_ports.setdefault(r.port | int, {'ae_title': r.port | string, 'port': r.port | int}) %}
+{%   for k in ['nodePort', 'loadBalancerIP'] if r[k] is defined %}{% set _ = p.setdefault(k, r[k]) %}{% endfor %}
 {% endfor %}
-{# "recievers" is the chart's spelling. #}
 dicom_scp:
   serviceType: {{ xnat_dicom_scp_service_type }}
   annotations: {{ xnat_dicom_scp_annotations | to_json }}
-  recievers: {{ _scp_ports | to_json }}
+  recievers: {{ _scp_ports.values() | list | to_json }}
 
 volumes:
 {% for vol, size in xnat_volume_sizes.items() %}
