@@ -70,7 +70,7 @@ RUN export HOME=/tmp/ext-home \
         --install-extension "ms-toolsai.jupyter@${JUPYTER_EXTENSION_VERSION}" \
     && find /tmp/ext -mindepth 1 -maxdepth 1 -type d \
         -exec mv -t /usr/lib/code-server/lib/vscode/extensions/ {} + \
-    && jupyter_ext="$(echo /usr/lib/code-server/lib/vscode/extensions/ms-toolsai.jupyter-*)" \
+    && jupyter_ext="$(echo /usr/lib/code-server/lib/vscode/extensions/ms-toolsai.jupyter-${JUPYTER_EXTENSION_VERSION}*)" \
     && test -d "${jupyter_ext}" \
     && install -d -o "${NB_UID}" -g "${NB_GID}" "${jupyter_ext}/temp" \
     && ln -s /usr/lib/code-server/lib/vscode/extensions/anthropic.claude-code-*/resources/native-binary/claude \
