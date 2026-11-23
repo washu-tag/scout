@@ -34,7 +34,6 @@ xnat_replica_count: 1
 # --- Storage --------------------------------------------------------------
 # Empty storage class = cluster default (dynamic provisioning per ADR 0004).
 xnat_storage_class: ''
-xnat_postgres_storage_size: 10Gi
 xnat_volume_sizes:
   xnatdata: 10Gi
   build: 5Gi
@@ -85,11 +84,26 @@ xnat_dicom_scp_receivers:
   - ae_title: XNAT
     port: 8104
 
-# --- Postgres (CNPG-managed, like the rest of Scout) ----------------------
+# --- Postgres -------------------------------------------------------------
+# XNAT's own CNPG cluster, separate from Scout's shared one. Sized for dev;
+# size prod in inventory. Each XNAT replica opens up to 40 connections.
 # REQUIRED when enable_xnat is true — set in inventory (vault-encrypted).
 xnat_postgres_password: ''
 xnat_postgres_db: xnat
 xnat_postgres_user: xnat
+xnat_postgres_instances: 1
+xnat_postgres_storage_size: 10Gi
+xnat_postgres_storage_class: '{{ xnat_storage_class }}'
+xnat_postgres_resources_default:
+  requests:
+    cpu: 250m
+    memory: 1Gi
+  limits:
+    cpu: 2
+    memory: 2Gi
+xnat_postgres_parameters:
+  max_connections: '100'
+  shared_buffers: '256MB'
 
 # --- Startup probe --------------------------------------------------------
 # 60 * 10s = 10 min budget for Hibernate's first-boot DDL (3-5 min). Pairs with

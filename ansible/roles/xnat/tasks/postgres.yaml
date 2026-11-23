@@ -1,0 +1,73 @@
+---
+# XNAT's database: a CNPG cluster the role owns, outside the Helm release.
+
+- name: Look up an existing XNAT Postgres cluster
+  kubernetes.core.k8s_info:
+    api_version: postgresql.cnpg.io/v1
+    kind: Cluster
+    name: '{{ xnat_postgres_cluster_name }}'
+    namespace: '{{ xnat_namespace }}'
+  register: _xnat_postgres_existing
+
+- name: Stop if the XNAT chart still owns the database
+  when: _xnat_postgres_existing.resources | length > 0
+  vars:
+    _labels: '{{ _xnat_postgres_existing.resources[0].metadata.labels | default({}) }}'
+  ansible.builtin.assert:
+    that:
+      - _labels['app.kubernetes.io/managed-by'] | default('') != 'Helm'
+    fail_msg: >-
+      Postgres cluster {{ xnat_postgres_cluster_name }} in namespace {{ xnat_namespace }}
+      was created by the XNAT chart, and the next Helm upgrade would delete it. The role
+      now runs XNAT's database itself, so this XNAT has to be wiped and redeployed:
+      `helm -n {{ xnat_namespace }} uninstall {{ xnat_helm_release_name }}`, then
+      `kubectl -n {{ xnat_namespace }} delete pvc --all`, then run `make install-xnat` again.
+      This deletes all XNAT data.
+    quiet: true
+
+- name: Create the XNAT Postgres cluster
+  kubernetes.core.k8s:
+    state: present
+    wait: true
+    wait_condition:
+      type: Ready
+      status: 'True'
+    wait_timeout: 300
+    definition:
+      apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      metadata:
+        name: '{{ xnat_postgres_cluster_name }}'
+        namespace: '{{ xnat_namespace }}'
+      spec:
+        instances: '{{ xnat_postgres_instances | int }}'
+        imageName: '{{ postgres_image }}:{{ postgres_image_tag }}'
+        storage:
+          storageClass: '{{ xnat_postgres_storage_class | default(omit, true) }}'
+          size: '{{ xnat_postgres_storage_size }}'
+        resources: '{{ xnat_postgres_resources_default | combine(xnat_postgres_resources | default({}), recursive=true) }}'
+        bootstrap:
+          initdb:
+            database: '{{ xnat_postgres_db }}'
+            owner: '{{ xnat_postgres_user }}'
+            secret:
+              name: xnat-postgres-credentials
+        postgresql:
+          parameters: '{{ xnat_postgres_parameters }}'
+
+- name: Expose the XNAT Postgres metrics for Prometheus
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: '{{ xnat_postgres_cluster_name }}-metrics'
+        namespace: '{{ xnat_namespace }}'
+      spec:
+        selector:
+          cnpg.io/cluster: '{{ xnat_postgres_cluster_name }}'
+        ports:
+          - name: metrics
+            port: 9187
+            targetPort: metrics

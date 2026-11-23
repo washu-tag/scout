@@ -429,7 +429,7 @@ prometheus_resources:
     memory: 4Gi
 ```
 
-**Services supporting partial overrides:** temporal, postgres, minio, hive, prometheus, grafana, loki, superset, superset_statsd, jupyter_hub, hl7log_extractor, redis_operator, redis_cluster_node, voila, orthanc, dcm4chee, ollama, open_webui, cassandra_system_logger, data_generator
+**Services supporting partial overrides:** temporal, postgres, minio, hive, prometheus, grafana, loki, superset, superset_statsd, jupyter_hub, hl7log_extractor, redis_operator, redis_cluster_node, voila, orthanc, dcm4chee, ollama, open_webui, cassandra_system_logger, data_generator, xnat_postgres
 
 **Services NOT supporting partial overrides** (use flattened variables instead): Trino coordinator/worker, Cassandra (main container), Elasticsearch, HL7 Transformer. These services use individual variables (e.g., `cassandra_max_heap`, `trino_worker_cpu_limit`) because JVM heap sizes drive memory calculations with different multipliers for requests vs limits. Note: Cassandra's system logger sidecar (Vector) does support partial overrides via `cassandra_system_logger_resources`.
 
@@ -1004,11 +1004,13 @@ The confidential client requires a secret — required only when `enable_xnat` i
 keycloak_xnat_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 ```
 
-XNAT's CNPG-managed Postgres also needs a password when enabled:
+XNAT runs its own Postgres cluster, separate from Scout's shared one, which also needs a password when enabled:
 
 ```yaml
 xnat_postgres_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 ```
+
+Its defaults are sized for development. For production, set `xnat_postgres_storage_size`, `xnat_postgres_resources` and `xnat_postgres_parameters` (and optionally `xnat_postgres_storage_class`, which defaults to `xnat_storage_class`); `inventory.example.yaml` has a starting point. Size storage generously, because local-path volumes can't be enlarged later.
 
 So does `xnat_admin_password`, which seeds XNAT's built-in `admin` account on first boot via the `[system] defaultAdminPassword` preference, replacing XNAT's insecure `admin:admin` default. **The deploy fails if it is unset**, so a deployed XNAT never ships with the default admin credentials. Set a strong, vault-encrypted value:
 

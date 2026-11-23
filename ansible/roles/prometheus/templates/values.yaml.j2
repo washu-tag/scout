@@ -150,7 +150,7 @@ extraScrapeConfigs: |
     relabel_configs:
       - source_labels: [__meta_kubernetes_service_name]
         action: keep
-        regex: {{ postgres_cluster_name }}-metrics
+        regex: ({{ postgres_cluster_name }}|{{ xnat_postgres_cluster_name }})-metrics
       - source_labels: [__meta_kubernetes_endpoint_port_name]
         action: keep
         regex: metrics

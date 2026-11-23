@@ -12,6 +12,9 @@
 > unenforced no longer holds. The openid plugin now requires the role at browser
 > sign-in as well as for bearer tokens (#927); see the XNAT role README.
 
+> **Amended:** §8 originally used the chart's bundled CloudNativePG cluster. XNAT
+> now has a separate cluster that the role owns (#931).
+
 ## Context
 
 XNAT (the imaging informatics platform — repo
@@ -183,7 +186,7 @@ ReadWriteMany storage, an external Redis and ActiveMQ, and re-tuned probes.
 
 All XNAT volumes and the PostgreSQL cluster use dynamically provisioned PVCs
 whose storage class comes from the `xnat_storage_class` inventory variable
-(default empty). When empty, the chart omits the `storageClass` field and the
+(default empty; `xnat_postgres_storage_class` can move the database elsewhere). When empty, the chart omits the `storageClass` field and the
 cluster's default class is used — which on Scout's K3s is `local-path`. This
 matches the existing Scout convention (`minio_storage_class`,
 `postgres_storage_class`, `jupyterhub_storage_class` all default to empty; see
@@ -193,13 +196,24 @@ A `local-path`-style storage class implies XNAT pods are effectively pinned to
 the node where their PVs were first provisioned. This is accepted for the
 single-node posture above and is part of what must be reconsidered for HA.
 
-### 8. PostgreSQL via CloudNativePG
+### 8. PostgreSQL: a separate CloudNativePG cluster owned by the role
 
-XNAT's database is a CloudNativePG cluster (`cnpg.cluster.enabled: true`, a
-single instance, storage via `xnat_storage_class`) rather than the chart's
-bundled PostgreSQL. This keeps XNAT consistent with how the rest of Scout
-provisions databases, so operators reason about it the same way as other Scout
-Postgres instances.
+XNAT's database is a CloudNativePG cluster the role creates itself
+(`xnat-postgres`, outside the Helm release), and the chart's bundled cluster is
+off (`cnpg.cluster.enabled: false`). The chart documents its bundled database as
+for development and testing only. Owning the cluster lets Scout size it, run it
+on Scout's pinned Postgres image (XNAT 1.10 is validated on PostgreSQL 16–18; the
+chart defaults to 15), and keep a Helm uninstall from deleting it.
+
+It is a separate cluster rather than a database on Scout's shared one. Postgres
+can cap XNAT's connections per role, but not its share of memory, CPU or disk
+I/O, and a shared cluster would tie XNAT to Scout's Postgres version and
+restarts. XNAT's sizing needs are also unknown until it runs with real data, so
+it is sized and watched on its own. Keeping it in the `xnat` namespace also
+keeps all XNAT state together.
+
+Moving an XNAT that used the bundled database onto this cluster means wiping
+it; at the time every Scout XNAT was a development or test install.
 
 ### 9. Outbound mail via Scout's shared relay
 

@@ -39,22 +39,16 @@ activemq:
 mail:
   enabled: false
 
-# CNPG-managed Postgres, matching the rest of Scout.
+{# The database is the role's own cluster (tasks/postgres.yaml). With no
+   cnpg.external host set, the chart connects to <release>-postgres-rw, that
+   cluster's read-write Service. #}
 cnpg:
   cluster:
-    enabled: true
-    instances: 1
-    storage:
-      size: {{ xnat_postgres_storage_size }}
-{% if xnat_storage_class %}
-      storageClass: {{ xnat_storage_class }}
-{% endif %}
+    enabled: false
     credentials:
-      database: {{ xnat_postgres_db }}
-      username: {{ xnat_postgres_user }}
-      # to_json keeps an operator-chosen password a string (YAML 1.1 would
-      # coerce e.g. 'no'/'0x1A') and escapes any syntax characters.
-      password: {{ xnat_postgres_password | to_json }}
+      database: {{ xnat_postgres_db | to_json }}
+      username: {{ xnat_postgres_user | to_json }}
+      externalSecret: xnat-postgres-credentials
 
 ingress:
   enabled: true
