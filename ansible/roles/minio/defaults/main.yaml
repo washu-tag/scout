@@ -122,6 +122,12 @@ minio_policies:
       - 'arn:aws:s3:::{{ opa_bundles_bucket }}/scout/*'
     user: '{{ s3_opa_bundle_reader }}'
 
+# A site's own buckets, users and policies, e.g. for a Pluggable App, in the shapes
+# above. They add to Scout's rather than replace them.
+minio_extra_buckets: []
+minio_extra_users: []
+minio_extra_policies: []
+
 # OIDC configuration
 minio_oidc_enabled: true
 
