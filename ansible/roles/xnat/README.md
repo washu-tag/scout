@@ -35,14 +35,36 @@ nothing XNAT is created — and the Keycloak realm omits the `xnat` client and t
 2. **Secrets** (`create_secrets.yaml`): all Secrets are created by Ansible and
    referenced by name in the templated values — the chart owns no Secrets. This
    includes the first-boot `xnat-prefs-init`, the every-boot `xnat-prefs-override`
-   (which pins the session timeout to the Scout SSO lifetime), per-plugin config
-   Secrets, and any Pattern-A jar Secrets.
-3. **Values** (`templates/values.yaml.j2`): templated from inventory, including
+   (which pins the session timeout to the Scout SSO lifetime), the database
+   credentials, per-plugin config Secrets, and any Pattern-A jar Secrets.
+3. **Database** (`postgres.yaml`): XNAT's own CNPG cluster, outside the Helm
+   release. See [Database](#database).
+4. **Values** (`templates/values.yaml.j2`): templated from inventory, including
    the generated `plugins` / `authplugins` / `extraConfig` / `extraVolumes` blocks
    derived from `xnat_plugins_all`. The role writes no `initContainers` of its
    own — the chart renders one per plugin from the `plugins` map.
-4. **Helm install** via the shared `deploy_helm_chart` wrapper, with a 20-minute
+5. **Helm install** via the shared `deploy_helm_chart` wrapper, with a 20-minute
    `--wait` to cover Hibernate's first-boot DDL.
+
+## Database
+
+XNAT uses its own CloudNativePG cluster, `xnat-postgres`, separate from Scout's
+shared one; the chart's bundled database is turned off. It runs Scout's pinned
+Postgres image (`postgres_image_tag`). The role defaults are sized for dev; size
+prod in inventory with `xnat_postgres_storage_size`, `xnat_postgres_storage_class`
+(default `xnat_storage_class`), `xnat_postgres_resources` (merged over
+`xnat_postgres_resources_default`), `xnat_postgres_parameters` (replaces the
+default dict) and `xnat_postgres_instances`. `inventory.example.yaml` has a
+starting point. Set the storage size generously: local-path volumes can't be
+enlarged later.
+
+Each XNAT replica opens up to 40 database connections, so keep `max_connections`
+above 40 × `xnat_replica_count` with some headroom. The database's metrics appear
+on Grafana's CloudNativePG dashboard (namespace `xnat`).
+
+An XNAT deployed with the chart's bundled database has to be wiped before it
+moves to this one, because Helm deletes the bundled cluster on upgrade. The role
+stops with the steps if it finds one.
 
 ## Plugins
 
@@ -246,7 +268,8 @@ xnat_dicom_scp_receivers:
 See `defaults/main.yaml`. Commonly set in inventory: `enable_xnat`,
 `keycloak_xnat_client_secret`, `xnat_postgres_password`, `xnat_admin_password`,
 `xnat_site_id`, `xnat_admin_email`, `xnat_smtp_host`, `xnat_plugins`,
-`xnat_dicom_scp_receivers`. Chart and image versions are pinned in
+`xnat_dicom_scp_receivers`, and the `xnat_postgres_*` sizing variables. Chart and
+image versions are pinned in
 `group_vars/all/versions.yaml`.
 
 Startup and readiness use the unauthenticated `/xapi/siteConfig/buildInfo`

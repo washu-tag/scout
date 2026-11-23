@@ -404,11 +404,29 @@ k3s_cluster:
     # on the next auth deploy, orphaning provisioned XNAT users.
     #
     # Required when enable_xnat is true:
-    # - the CNPG-managed XNAT Postgres password, and
+    # - the password for XNAT's Postgres cluster, and
     # - xnat_admin_password, which seeds the XNAT `admin` account on first boot
     #   (replacing the default admin:admin). The deploy fails if it is unset.
     # xnat_postgres_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     # xnat_admin_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    #
+    # XNAT's Postgres cluster. Role defaults are sized for dev; a production
+    # starting point (storage can't be enlarged later on local-path):
+    # xnat_postgres_storage_size: 50Gi
+    # xnat_postgres_storage_class: "local-database"  # Default: xnat_storage_class
+    # xnat_postgres_resources:
+    #   requests:
+    #     cpu: 1
+    #     memory: 4Gi
+    #   limits:
+    #     cpu: 4
+    #     memory: 8Gi
+    # xnat_postgres_parameters:  # Replaces the default dict
+    #   max_connections: '100'  # Above 40 per XNAT replica, plus headroom
+    #   shared_buffers: '2GB'  # ~1/4 of the memory limit
+    #   effective_cache_size: '6GB'  # ~3/4 of the memory limit
+    #   maintenance_work_mem: '512MB'
+    #   work_mem: '16MB'
     #
     # First-boot site config. Set a real xnat_admin_email for prod — it is also
     # the From address on XNAT outbound mail (relays may reject the placeholder):

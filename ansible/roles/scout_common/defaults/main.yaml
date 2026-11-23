@@ -168,6 +168,9 @@ data_generator_namespace: '{{ scout_data_namespace }}'
 
 # XNAT runs in its own namespace (independent of the consolidated scout_* namespaces)
 xnat_namespace: xnat
+# The XNAT chart connects to <release>-postgres-rw, so this must be the XNAT
+# release name plus -postgres.
+xnat_postgres_cluster_name: xnat-postgres
 
 # Extractor & workflow orchestration
 extractor_namespace: '{{ scout_extractor_namespace }}'
