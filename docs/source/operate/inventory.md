@@ -1034,7 +1034,9 @@ xnat_plugin_s3_secret_access_key: $(echo -n ... | ansible-vault encrypt_string -
 The remaining XNAT variables have sane defaults and only need to be set to override them:
 
 ```yaml
-# Site config seeded on XNAT's first boot (skips the setup wizard).
+# Site config seeded on XNAT's first boot (skips the setup wizard). The site ID
+# prefixes XNAT-generated IDs: a letter, then letters, digits and underscores,
+# at most 24 characters.
 xnat_site_id: SCOUT
 
 # Namespace where XNAT is deployed (default: xnat)
