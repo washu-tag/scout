@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# The script that tells the launchpad which page a framed app is on (ADR 0042), for
+# each app that loads it. frame-location.js is the one copy: ${server_hostname} is
+# filled in by Flux post-build substitution here, and by the Ansible roles, which
+# symlink to these files.
+namespace: '${scout_analytics_namespace}'
+configMapGenerator:
+  - name: superset-frame-location
+    files:
+      - tail_js_custom_extra.html
+      - scout-frame-location.js=frame-location.js
+  - name: open-webui-frame-location
+    files:
+      - loader.js=frame-location.js
+  - name: jupyter-frame-location
+    files:
+      - package.json
+      - remoteEntry.js
+      - frame-location.js
+generatorOptions:
+  # Fixed names: the apps mount these by name.
+  disableNameSuffixHash: true

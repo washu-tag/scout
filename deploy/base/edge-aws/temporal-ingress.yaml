@@ -9,6 +9,9 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: temporal-alb
+  labels:
+    # A framed Scout service: an overlay can add the edge's deep-link redirect here.
+    launchpad.scout.xnat.org/deep-link: 'true'
   namespace: '${scout_extractor_namespace}'
   annotations:
     alb.ingress.kubernetes.io/target-type: ip

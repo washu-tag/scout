@@ -41,6 +41,10 @@ ingress:
 postgresql:
   enabled: false
 supersetNode:
+  podAnnotations:
+    # Rolls the pods when a subPath-mounted template changes.
+    checksum/frame-location: '{{ frame_location_checksum }}'
+    checksum/head-extra: "{{ lookup('file', role_path + '/files/head_custom_extra.html') | hash('sha256') }}"
   command:
     - /bin/sh
     - -c
@@ -231,6 +235,12 @@ extraVolumes:
       items:
         - key: ca.crt
           path: ca.crt
+  - name: frame-location
+    configMap:
+      name: superset-frame-location
+  - name: head-extra
+    configMap:
+      name: superset-head-extra
 extraVolumeMounts:
   - name: scout-logo
     mountPath: /app/superset/static/assets/images/scout.png
@@ -242,6 +252,18 @@ extraVolumeMounts:
     readOnly: true
   - name: trino-ca
     mountPath: /etc/trino-ca
+    readOnly: true
+  - name: frame-location
+    mountPath: /app/superset/templates/tail_js_custom_extra.html
+    subPath: tail_js_custom_extra.html
+    readOnly: true
+  - name: frame-location
+    mountPath: /app/superset/templates/scout-frame-location.js
+    subPath: scout-frame-location.js
+    readOnly: true
+  - name: head-extra
+    mountPath: /app/superset/templates/head_custom_extra.html
+    subPath: head_custom_extra.html
     readOnly: true
 init:
   # Override the apache/superset chart's default firstname/lastname so the

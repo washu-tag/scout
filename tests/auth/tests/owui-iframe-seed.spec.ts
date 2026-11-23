@@ -23,10 +23,24 @@ test('new users get iframeSandbox settings enabled', async ({ page }) => {
 
   await signInToScout(page, `https://chat.${hostname}/`, { username, password });
 
+  // The edge opens chat inside the launchpad (ADR 0042), so the token is in chat's frame.
+  await expect
+    .poll(
+      () =>
+        page.frames().some((f) => new URL(f.url() || 'about:blank').host === `chat.${hostname}`),
+      {
+        timeout: 60000,
+      },
+    )
+    .toBe(true);
+  const chat = page
+    .frames()
+    .find((f) => new URL(f.url() || 'about:blank').host === `chat.${hostname}`)!;
+
   // Wait for the JWT the OAuth callback stores (0.13's socket.io never lets networkidle settle).
   // waitForFunction retries an evaluation the sign-in redirect cut off and throws on real errors.
   const token = await (
-    await page.waitForFunction(() => localStorage.getItem('token'), undefined, { timeout: 30000 })
+    await chat.waitForFunction(() => localStorage.getItem('token'), undefined, { timeout: 30000 })
   ).jsonValue();
 
   await expect

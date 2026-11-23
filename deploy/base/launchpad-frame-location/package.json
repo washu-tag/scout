@@ -1,0 +1,12 @@
+{
+  "name": "scout-frame-location",
+  "version": "1.0.0",
+  "description": "Keeps the Scout launchpad's address bar on the open JupyterLab page.",
+  "jupyterlab": {
+    "extension": true,
+    "_build": {
+      "load": "remoteEntry.js",
+      "extension": "./extension"
+    }
+  }
+}

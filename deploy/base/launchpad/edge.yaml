@@ -1,5 +1,6 @@
 # Per-mode ingress for launchpad via valuesFrom (ADR 0035). on-prem: the chart's
-# Traefik ingress + the oauth2-proxy/security-headers middleware chain (ADR 0012),
+# Traefik ingress + the oauth2-proxy/security-headers-app-csp middleware chain (ADR 0012;
+# the launchpad sets its own CSP),
 # plus the public /favicon.ico route (issue #557). aws: chart ingress off; the ALB
 # (edge-aws/launchpad-ingress.yaml) serves the root host with ALB-native OIDC.
 apiVersion: v1
@@ -16,7 +17,7 @@ data:
         traefik.ingress.kubernetes.io/router.middlewares: >-
           ${oauth2_proxy_namespace}-oauth2-proxy-error@kubernetescrd,
           ${oauth2_proxy_namespace}-oauth2-proxy-auth@kubernetescrd,
-          kube-system-security-headers@kubernetescrd
+          kube-system-security-headers-app-csp@kubernetescrd
       hosts:
         - host: '${server_hostname}'
           paths:

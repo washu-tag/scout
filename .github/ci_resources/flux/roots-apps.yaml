@@ -35,7 +35,7 @@ spec:
           value: 1m
     - target:
         kind: Kustomization
-        name: ^(valkey|launchpad|keycloak-operator|keycloak-instance|keycloak-realm|keycloak-fragment-reconciler|opa|trino-ro|superset-server|superset-dashboards)$
+        name: ^(valkey|launchpad|keycloak-operator|keycloak-instance|keycloak-realm|keycloak-fragment-reconciler|opa|trino-ro|superset-server|superset-dashboards|launchpad-frame-location)$
       patch: |
         - op: add
           path: /spec/suspend
