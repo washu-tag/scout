@@ -39,7 +39,7 @@ export default async function Home() {
   const isAdmin = devAdmin || session?.user?.isAdmin === true;
 
   const catalog = await loadCatalog();
-  const model = assemble(catalog, { origin, isAdmin });
+  const model = assemble(catalog, { origin, isAdmin, username: session?.user?.username });
 
   return (
     <HomeClient
