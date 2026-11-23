@@ -11,6 +11,50 @@
       Use vault encryption. Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
     quiet: true
 
+# JupyterHub's singleuser network policy blocks these ranges unless jupyter_egress_allow_cidr opens one.
+- name: Check whether notebook pods can reach the Squid proxy
+  when:
+    - jupyter_singleuser_https_proxy | length > 0
+    - jupyter_egress_allow_cidr | default('') | length == 0
+  ansible.builtin.command:
+    argv:
+      - python3
+      - -c
+      - |
+        import ipaddress, socket, sys
+        try:
+            ip = ipaddress.ip_address(socket.gethostbyname(sys.argv[1]))
+        except OSError:
+            print('unresolved')
+        else:
+            blocked = ('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16')
+            print('blocked' if any(ip in ipaddress.ip_network(n) for n in blocked) else 'allowed')
+      - "{{ jupyter_singleuser_https_proxy | urlsplit('hostname') }}"
+  register: _jupyter_squid_egress
+  changed_when: false
+  check_mode: false
+
+- name: Validate notebook egress to the Squid proxy
+  when: _jupyter_squid_egress is not skipped
+  ansible.builtin.assert:
+    that:
+      - _jupyter_squid_egress.stdout != 'blocked'
+    fail_msg: >
+      Notebook pods send outbound HTTPS through {{ jupyter_singleuser_https_proxy }}, whose host is
+      on a private network. JupyterHub's network policy blocks private IPs, so set
+      jupyter_egress_allow_cidr in inventory.yaml to a CIDR that covers the staging node
+      (e.g. '10.27.107.145/32').
+    quiet: true
+
+- name: Warn when the Squid proxy host does not resolve on the cluster node
+  when: _jupyter_squid_egress is not skipped and _jupyter_squid_egress.stdout == 'unresolved'
+  ansible.builtin.debug:
+    msg: >-
+      WARNING: {{ jupyter_singleuser_https_proxy | urlsplit('hostname') }} does not resolve on
+      {{ inventory_hostname }}, so the egress check was skipped. If notebook pods resolve it to a
+      private IP, set jupyter_egress_allow_cidr to a CIDR that covers the staging node, or their
+      outbound HTTPS will fail.
+
 - name: Create namespace
   ansible.builtin.include_role:
     name: scout_common

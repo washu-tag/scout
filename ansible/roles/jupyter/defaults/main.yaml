@@ -114,7 +114,8 @@ jupyter_singleuser_environment: {}
 jupyter_singleuser_https_proxy: '{{ squid_proxy_url }}'
 jupyter_singleuser_no_proxy: >-
   {{ (squid_no_proxy + [server_hostname, '.' ~ server_hostname]
-      + ([nexus_host] if package_proxy_mode == 'nexus' and nexus_host else []))
+      + (([conda_channel_alias, pip_proxy_url] | select | map('urlsplit', 'hostname') | select | list)
+         if package_proxy_mode != 'none' else []))
      | unique | join(',') }}
 # Added to every profile in jupyter_profiles: the page a server opens on. A profile's
 # own profile_options.interface is merged over it.
@@ -140,7 +141,8 @@ jupyter_interfaces:
 # By default, JupyterHub's network policy blocks egress to private IP ranges
 # (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16) while allowing public internet.
 # Set this to a CIDR (e.g. '10.27.107.0/24' or '10.27.107.145/32') to allow
-# notebook pods to reach a staging node or package proxy on a private network.
+# notebook pods to reach a staging node or package proxy on a private network. The
+# deploy fails if notebook HTTPS goes through a Squid proxy on a private IP without it.
 # Must be in CIDR notation — use /32 for a single IP (a bare IP is not valid).
 # Leave empty to use the default policy (no extra private-IP egress).
 jupyter_egress_allow_cidr: ''
