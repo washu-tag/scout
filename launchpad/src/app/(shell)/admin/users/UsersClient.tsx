@@ -847,14 +847,14 @@ export default function UsersClient() {
             href={kcConsole}
             target="_blank"
             rel="noopener noreferrer"
-            className={`${BAR_TOOL} max-sm:w-[34px] max-sm:justify-center max-sm:px-0`}
+            className={`${BAR_TOOL} content-phone:w-[34px] content-phone:justify-center content-phone:px-0`}
           >
             <HiOutlineExternalLink className="h-4 w-4 flex-none" aria-hidden="true" />
-            <span className="max-sm:sr-only">Open in Keycloak</span>
+            <span className="content-phone:sr-only">Open in Keycloak</span>
           </a>
         )}
       </AppBar>
-      <main className="px-8 pt-6 pb-8">
+      <main className="px-8 pt-6 pb-8 content-phone:px-4">
         {status === 'loading' || !session ? (
           <Notice>Loading…</Notice>
         ) : authExpired ? (

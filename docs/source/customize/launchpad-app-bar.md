@@ -66,6 +66,7 @@ In dark mode, use your app's own dark equivalents.
 
 When the page is 640px wide or narrower:
 
+- The bar's side padding and the content's side gutters are 16px instead of 32px.
 - The bar stays one row.
 - The app's name and the path are cut short with an ellipsis when they don't fit.
 - Tools may drop their text and show only their icon.
@@ -138,6 +139,10 @@ A bar for the **Reviews** page of an app called **My App**, with the indigo tone
   color: #ffffff; font-weight: 600;
 }
 .app-content { padding: 24px 32px; background: #f8fafc; }
+@media (max-width: 640px) {
+  .app-bar { padding: 0 16px; }
+  .app-content { padding: 24px 16px; }
+}
 ```
 
 The launchpad's own pages use the `AppBar` component in

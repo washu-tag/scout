@@ -26,7 +26,7 @@ export default function AppBar({
   const Icon = ICONS[icon] ?? ICONS[DEFAULT_ICON];
   const current = crumbs[crumbs.length - 1];
   return (
-    <header className="flex h-14 flex-none items-center gap-2.5 border-b border-slate-200 bg-white px-8 dark:border-slate-800 dark:bg-slate-900">
+    <header className="flex h-14 flex-none items-center gap-2.5 border-b border-slate-200 bg-white px-8 content-phone:px-4 dark:border-slate-800 dark:bg-slate-900">
       <span
         className={`flex h-7 w-7 flex-none items-center justify-center rounded-lg ${TONES[tone].iconBg} ${TONES[tone].icon}`}
       >
