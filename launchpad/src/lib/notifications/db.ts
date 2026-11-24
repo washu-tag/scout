@@ -49,6 +49,11 @@ const MIGRATIONS = [
     PRIMARY KEY (sender, window_start)
   );
   `,
+  `
+  ALTER TABLE notices
+    DROP CONSTRAINT notices_detail_check,
+    ADD CONSTRAINT notices_detail_check CHECK (char_length(detail) <= 1000);
+  `,
 ];
 
 // Replicas starting together take turns.
