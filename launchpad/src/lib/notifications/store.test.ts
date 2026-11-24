@@ -56,8 +56,16 @@ describe('notice store', { skip: needsDatabase }, () => {
   it('migrates once, however often it starts', async () => {
     await migrate(pool);
     await Promise.all([migrate(pool), migrate(pool)]);
-    const { rows } = await pool.query('SELECT version FROM launchpad_schema_migrations');
-    assert.deepEqual(rows, [{ version: 1 }]);
+    const { rows } = await pool.query(
+      'SELECT version FROM launchpad_schema_migrations ORDER BY version',
+    );
+    assert.deepEqual(rows, [{ version: 1 }, { version: 2 }]);
+  });
+
+  it('keeps a detail of 1000 characters across lines as sent', async () => {
+    const detail = `${'x'.repeat(500)}\n${'y'.repeat(499)}`;
+    await store.send(notice({ detail }));
+    assert.equal((await store.list('alice', []))[0].detail, detail);
   });
 
   it("lists a delivery to each recipient, with each one's own counts", async () => {
