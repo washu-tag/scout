@@ -40,13 +40,19 @@ describe('sendSchema', () => {
     assert.equal(sendSchema.safeParse({ ...request(), title: 'x'.repeat(120) }).success, true);
     assert.equal(sendSchema.safeParse({ ...request(), title: 'x'.repeat(121) }).success, false);
     assert.equal(sendSchema.safeParse({ ...request(), title: 'é'.repeat(120) }).success, true);
-    assert.equal(sendSchema.safeParse({ ...request(), detail: 'x'.repeat(301) }).success, false);
+    assert.equal(sendSchema.safeParse({ ...request(), detail: 'x'.repeat(1000) }).success, true);
+    assert.equal(sendSchema.safeParse({ ...request(), detail: 'x'.repeat(1001) }).success, false);
     assert.equal(sendSchema.safeParse({ ...request(), title: '   ' }).success, false);
   });
 
-  it('takes plain text on one line only', () => {
+  it('takes plain text, with line breaks in the detail only', () => {
     for (const title of ['line\nbreak', 'tab\there', 'bell\u0007', 'flip \u202e txet']) {
       assert.equal(sendSchema.safeParse({ ...request(), title }).success, false, title);
+    }
+    const detail = 'docker pull ghcr.io/example/app:1.2\n  then run it';
+    assert.equal(sendSchema.safeParse({ ...request(), detail }).data?.detail, detail);
+    for (const bad of ['crlf\r\nbreak', 'tab\there', 'bell\u0007', 'flip \u202e txet']) {
+      assert.equal(sendSchema.safeParse({ ...request(), detail: bad }).success, false, bad);
     }
     assert.equal(
       sendSchema.safeParse({ ...request(), title: '<b>shown as typed</b>' }).success,

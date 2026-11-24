@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { isNormalPath, type Sender } from './registration';
 
 const TITLE_MAX = 120;
-const DETAIL_MAX = 300;
+const DETAIL_MAX = 1000;
 const KEY_MAX = 200;
 const ROLES_MAX = 20;
 const RETENTION_DAYS = 90;
@@ -10,15 +10,19 @@ const LINK_MAX = 2000;
 const BASE = 'https://launchpad.invalid';
 
 // Control characters, and the bidirectional overrides that make text read
-// differently from what it says.
+// differently from what it says. A detail may also break lines with \n.
 const UNSAFE_TEXT = /[\p{Cc}\u202a-\u202e\u2066-\u2069]/u;
+const UNSAFE_LINES = /[^\P{Cc}\n]|[\u202a-\u202e\u2066-\u2069]/u;
 
-function plainText(max: number) {
+function plainText(max: number, lines = false) {
   return z
     .string()
     .trim()
     .min(1)
-    .refine((value) => !UNSAFE_TEXT.test(value), 'must be plain text on one line')
+    .refine(
+      (value) => !(lines ? UNSAFE_LINES : UNSAFE_TEXT).test(value),
+      lines ? 'must be plain text, with lines broken by \\n' : 'must be plain text on one line',
+    )
     .refine((value) => [...value].length <= max, `must be at most ${max} characters`);
 }
 
@@ -46,7 +50,7 @@ export const sendSchema = z.strictObject({
     .refine((r) => r.users.length + r.roles.length > 0, 'name at least one user or role'),
   category: z.string(),
   title: plainText(TITLE_MAX),
-  detail: plainText(DETAIL_MAX).optional(),
+  detail: plainText(DETAIL_MAX, true).optional(),
   link: z.string().max(LINK_MAX),
   collapseKey: keySchema.optional(),
   idempotencyKey: keySchema.optional(),

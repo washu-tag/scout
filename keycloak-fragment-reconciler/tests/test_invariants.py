@@ -895,6 +895,20 @@ class TestSendNotifications:
         assert translate.NOTIFICATIONS_SCOPE in outcome.detail
         assert kc.edges("scout-user") == {"hello-user"}
 
+    def test_a_realm_without_the_scope_yet_is_retried_soon(self, settings, k8s, kc):
+        """The scope arrives with a realm import, which wakes no watch, so the
+        failed pass books its own retry, even with no periodic resync."""
+        settings.resync_seconds = -1
+        k8s.add_fragment(with_fields(SENDS))
+        reconciler = Reconciler(settings, k8s, kc)
+        reconciler.reconcile_once()
+        wait = core.next_wait(reconciler)
+        assert wait is not None and wait <= core.TIER_RETRY_SECONDS
+
+        kc.add_scope(translate.NOTIFICATIONS_SCOPE)
+        reconciler.reconcile_once()
+        assert kc.writes[-1] == f"add_scope:{translate.NOTIFICATIONS_SCOPE}"
+
     def test_offered_scopes_never_touch_it(self, settings, k8s, kc):
         settings.offered_client_scopes = [SCOPE]
         kc.add_scope(SCOPE)

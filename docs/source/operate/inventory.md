@@ -863,8 +863,9 @@ reconciler of the same release.
   stalls. Traefik offers HTTP/2 on its TLS entrypoint by default, and so do AWS ALBs; a
   proxy in front of them that terminates TLS must offer it as well.
   `curl -sI --http2 https://<server_hostname>/favicon.ico` should answer `HTTP/2 200`.
-- **Back it up.** The database is part of the platform Postgres and is backed up with
-  it. It records who was sent which notice and when they read it, so handle it like the
+- **Back it up.** The database lives in the platform Postgres, so whatever backs up that
+  cluster at your site covers it; Scout doesn't configure Postgres backups itself. It
+  records who was sent which notice and when they read it, so handle it like the
   platform's other PHI-adjacent data. Notices are deleted after 90 days.
 - **Turn off one sender.** `launchpad_notification_disabled_senders` takes
   comma-separated Keycloak client ids. The launchpad refuses their sends and hides the

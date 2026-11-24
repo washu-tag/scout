@@ -56,8 +56,16 @@ describe('notice store', { skip: needsDatabase }, () => {
   it('migrates once, however often it starts', async () => {
     await migrate(pool);
     await Promise.all([migrate(pool), migrate(pool)]);
-    const { rows } = await pool.query('SELECT version FROM launchpad_schema_migrations');
-    assert.deepEqual(rows, [{ version: 1 }]);
+    const { rows } = await pool.query(
+      'SELECT version FROM launchpad_schema_migrations ORDER BY version',
+    );
+    assert.deepEqual(rows, [{ version: 1 }, { version: 2 }]);
+  });
+
+  it('keeps a detail of 1000 characters across lines as sent', async () => {
+    const detail = `${'x'.repeat(500)}\n${'y'.repeat(499)}`;
+    await store.send(notice({ detail }));
+    assert.equal((await store.list('alice', []))[0].detail, detail);
   });
 
   it("lists a delivery to each recipient, with each one's own counts", async () => {
@@ -130,6 +138,21 @@ describe('notice store', { skip: needsDatabase }, () => {
       [true, true],
     );
     assert.equal((await store.summary('bob', [])).unread, 2);
+  });
+
+  it('counts only the notices the list returns', async () => {
+    for (let i = 0; i < 105; i++) {
+      await store.send(notice({ recipients: new Map([['alice', null]]) }));
+    }
+    const listed = await store.list('alice', []);
+    assert.equal(listed.length, 100);
+    assert.equal((await store.summary('alice', [])).unseen, 100);
+    await store.mark(
+      'alice',
+      'seen',
+      listed.map((n) => n.id),
+    );
+    assert.equal((await store.summary('alice', [])).unseen, 0);
   });
 
   it("replaces the sender's earlier notice with the same collapse key", async () => {
