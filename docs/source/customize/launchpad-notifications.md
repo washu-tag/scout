@@ -183,7 +183,7 @@ notice to remove it from their list. Read state is each person's own.
 ## Site settings
 
 A site operator turns notices on with `enable_notifications`, which gives the launchpad
-its database; [Launchpad Notices](../operate/inventory.md#launchpad-notices)
+its database; {ref}`Launchpad Notices <launchpad-notices>`
 covers the database, HTTP/2 at the edge, and backups. The launchpad chart sets the
 variables below from those settings, the disabled senders and rate limit from
 `launchpad_notification_disabled_senders` and `launchpad_notification_rate_limit`. The
