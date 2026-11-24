@@ -30,6 +30,54 @@
           data:
             ca.crt: '{{ _traefik_tls_secret.resources[0].data["tls.crt"] }}'
 
+- name: Provision the launchpad database for in-app notices
+  when: enable_notifications | bool
+  block:
+    - name: Require the launchpad database password
+      ansible.builtin.assert:
+        that:
+          - launchpad_postgres_password is defined
+          - launchpad_postgres_password | length > 0
+        fail_msg: >
+          launchpad_postgres_password is required when enable_notifications is true.
+          Set it in inventory.yaml (use Ansible Vault).
+          Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
+        quiet: true
+
+    - name: Initialize the launchpad database
+      ansible.builtin.include_role:
+        name: scout_common
+        tasks_from: create_db_with_owner
+      vars:
+        db_name: '{{ launchpad_database }}'
+        db_owner: '{{ launchpad_postgres_user }}'
+        db_owner_pass: '{{ launchpad_postgres_password }}'
+
+    - name: Grant schema ownership to the launchpad role
+      ansible.builtin.include_role:
+        name: scout_common
+        tasks_from: execute_sql
+      vars:
+        sql_script: 'ALTER SCHEMA public OWNER TO {{ launchpad_postgres_user }};'
+        sql_dbname: '{{ launchpad_database }}'
+
+    # no-verify: encrypted, without checking the server's certificate, like the
+    # psql Jobs' sslmode=require. node-postgres reads require as verify-full.
+    - name: Create the launchpad database Secret
+      no_log: true
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: launchpad-db-secret
+            namespace: '{{ launchpad_namespace }}'
+          type: Opaque
+          stringData:
+            url: >-
+              postgresql://{{ launchpad_postgres_user }}:{{ launchpad_postgres_password | urlencode | replace('/', '%2F') }}@{{ db_host }}:{{ db_port }}/{{ launchpad_database }}?sslmode=no-verify
+
 - name: Read the launchpad's security headers middleware
   kubernetes.core.k8s_info:
     api_version: traefik.io/v1alpha1
@@ -63,6 +111,11 @@
           image:
             repository: '{{ launchpad_sidecar_image }}'
             tag: '{{ launchpad_sidecar_image_tag }}'
+      notifications:
+        enabled: '{{ enable_notifications | bool | lower }}'
+        database:
+          existingSecret: launchpad-db-secret
+        disabledSenders: '{{ launchpad_notification_disabled_senders }}'
       scoutEnv: '{{ scout_env }}'
       deployerName: '{{ deployer_name }}'
       docsUrl: '{{ scout_docs_url }}'

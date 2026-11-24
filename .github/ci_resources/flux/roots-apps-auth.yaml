@@ -67,3 +67,10 @@ spec:
         - op: add
           path: /spec/retryInterval
           value: 1m
+    - target:
+        kind: Kustomization
+        name: ^(launchpad-db)$
+      patch: |
+        - op: add
+          path: /spec/suspend
+          value: true

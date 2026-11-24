@@ -84,6 +84,19 @@ spec:
             - name: SCOUT_DOCS_URL
               value: {{ .Values.docsUrl | quote }}
             {{- end }}
+            {{- if include "launchpad.notificationsEnabled" . }}
+            - name: LAUNCHPAD_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "notifications.database.existingSecret must be set when notifications.enabled is true" .Values.notifications.database.existingSecret }}
+                  key: {{ .Values.notifications.database.existingSecretKey }}
+            - name: LAUNCHPAD_NOTIFICATION_SENDER_DIRS
+              value: /app/config/notification-senders
+            {{- with .Values.notifications.disabledSenders }}
+            - name: LAUNCHPAD_NOTIFICATION_DISABLED_SENDERS
+              value: {{ . | quote }}
+            {{- end }}
+            {{- end }}
             {{- with .Values.env }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -96,6 +109,11 @@ spec:
             {{- if .Values.catalog.discovery.enabled }}
             - name: discovered
               mountPath: /app/config/discovered
+              readOnly: true
+            {{- end }}
+            {{- if include "launchpad.notificationsEnabled" . }}
+            - name: notification-senders
+              mountPath: /app/config/notification-senders
               readOnly: true
             {{- end }}
             {{- with .Values.volumeMounts }}
@@ -148,6 +166,49 @@ spec:
               mountPath: /var/run/secrets/kubernetes.io/serviceaccount
               readOnly: true
         {{- end }}
+        {{- if include "launchpad.notificationsEnabled" . }}
+        - name: notifications-sidecar
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: '{{ .Values.catalog.discovery.image.repository }}:{{ required "catalog.discovery.image.tag must be set (see values.yaml)" .Values.catalog.discovery.image.tag }}'
+          imagePullPolicy: {{ .Values.catalog.discovery.image.pullPolicy }}
+          env:
+            # The sender-registration contract (ADR 0043), fixed like the catalog's.
+            - name: LABEL
+              value: launchpad.scout.xnat.org/notifications
+            - name: LABEL_VALUE
+              value: 'true'
+            - name: FOLDER
+              value: /app/config/notification-senders
+            - name: NAMESPACE
+              value: {{ .Values.notifications.discovery.namespace | quote }}
+            - name: RESOURCE
+              value: configmap
+            - name: UNIQUE_FILENAMES
+              value: 'true'
+            # The catalog sidecar's health server holds 8080.
+            - name: HEALTH_PORT
+              value: '8081'
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 5
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            periodSeconds: 5
+            failureThreshold: 60
+          resources:
+            {{- toYaml .Values.catalog.discovery.resources | nindent 12 }}
+          volumeMounts:
+            - name: notification-senders
+              mountPath: /app/config/notification-senders
+            - name: kube-api-access
+              mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+              readOnly: true
+        {{- end }}
       volumes:
         - name: catalog
           configMap:
@@ -156,6 +217,13 @@ spec:
         - name: discovered
           emptyDir:
             sizeLimit: {{ .Values.catalog.discovery.sizeLimit }}
+        {{- end }}
+        {{- if include "launchpad.notificationsEnabled" . }}
+        - name: notification-senders
+          emptyDir:
+            sizeLimit: {{ .Values.notifications.discovery.sizeLimit }}
+        {{- end }}
+        {{- if include "launchpad.discovers" . }}
         - name: kube-api-access
           projected:
             sources:

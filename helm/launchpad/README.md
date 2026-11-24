@@ -25,5 +25,12 @@ To put a service on the page, do not edit this chart: ship a labelled ConfigMap 
 that service. Authoring guide and schema:
 `docs/source/customize/launchpad-chips.md`.
 
+In-app notices (ADR 0043) are off unless `notifications.enabled` is set. Then the
+launchpad reads `LAUNCHPAD_DATABASE_URL` from `notifications.database.existingSecret`,
+and a second sidecar, with the catalog sidecar's image and ClusterRole, collects
+ConfigMaps labelled `launchpad.scout.xnat.org/notifications: "true"` into
+`/app/config/notification-senders`. Sender guide:
+`docs/source/customize/launchpad-notifications.md`.
+
 Everything else (`auth.*`, ingress, favicon route, image, probes) is conventional and
 documented inline in `values.yaml`.
