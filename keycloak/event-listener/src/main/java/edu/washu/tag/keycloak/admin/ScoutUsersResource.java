@@ -15,8 +15,11 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -24,9 +27,11 @@ import java.util.regex.Pattern;
 import org.jboss.logging.Logger;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
+import org.keycloak.models.ClientModel;
 import org.keycloak.models.GroupModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
+import org.keycloak.models.RoleModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.userprofile.config.UPAttribute;
@@ -38,9 +43,11 @@ import org.keycloak.services.resources.admin.AdminEventBuilder;
 import org.keycloak.userprofile.UserProfileProvider;
 
 /**
- * JAX-RS resource backing the Scout user-administration console. All endpoints
- * require a bearer token whose user is in {@code scout-admin}; the resource then
- * acts as that admin (no standing admin-API credential).
+ * JAX-RS resource backing the Scout user-administration console. Its admin
+ * endpoints require a bearer token whose user is in {@code scout-admin}; the
+ * resource then acts as that admin (no standing admin-API credential). The one
+ * other endpoint, {@link #roleMembers}, answers only the launchpad client's
+ * service account (ADR 0043).
  *
  * <p>The data-access attributes are <b>not hardcoded</b> — they're discovered
  * from the realm User Profile (attributes annotated {@code scoutAuthz=true}),
@@ -75,6 +82,8 @@ public class ScoutUsersResource {
     // suffix keeps it distinct from the scout-user group. A fixed contract string
     // like the group names above — both sides live in this repo.
     static final String REQUIRED_AUDIENCE = "scout-users-api";
+    // The realm template's launchpad client, the only caller of roleMembers.
+    static final String LAUNCHPAD_CLIENT = "launchpad";
     private static final String TERMS_ACCEPTED_ATTR = "scout_terms_accepted_at";
     private static final String APPROVAL_EMAIL_ATTR = "scout_admin_approval_email_sent_at";
 
@@ -111,6 +120,10 @@ public class ScoutUsersResource {
 
     /** What an offboard removed, so the adapter can emit the matching events. */
     record OffboardResult(String username, boolean wasAdmin) {
+    }
+
+    /** The enabled users holding a client role, at most {@code max}; {@code truncated} says there are more. */
+    public record RoleMembers(List<String> usernames, boolean truncated) {
     }
 
     // --- Endpoints (thin JAX-RS adapters) ----------------------------------
@@ -235,6 +248,43 @@ public class ScoutUsersResource {
         return ok("offboarded", result.username());
     }
 
+    /**
+     * {@return who holds a client role now, for the launchpad's role-addressed notices}
+     * 404 {@code role_not_found} when the client or the role doesn't exist. Launchpad service account only.
+     */
+    @GET
+    @Path("clients/{clientId}/roles/{role}/members")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response roleMembers(@PathParam("clientId") String clientId, @PathParam("role") String role,
+                                @QueryParam("max") Integer max) {
+        requireLaunchpadServiceAccount();
+        if (max == null || max < 1) {
+            throw new BadRequestException("max must be a positive integer");
+        }
+        RoleMembers members = findRoleMembers(clientId, role, max);
+        if (members == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(Map.of("error", "role_not_found"))
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
+        return Response.ok(members).build();
+    }
+
+    AuthResult requireLaunchpadServiceAccount() {
+        AuthResult auth = new AppAuthManager.BearerTokenAuthenticator(session).authenticate();
+        if (auth == null || auth.user() == null) {
+            throw new NotAuthorizedException("Bearer");
+        }
+        if (!hasRequiredAudience(auth.token() == null ? null : auth.token().getAudience())) {
+            throw new ForbiddenException("token not audienced for " + REQUIRED_AUDIENCE);
+        }
+        if (!isLaunchpadServiceAccount(auth.client(), auth.user())) {
+            throw new ForbiddenException("requires the " + LAUNCHPAD_CLIENT + " client's service account");
+        }
+        return auth;
+    }
+
     AuthResult requireScoutAdmin() {
         AuthResult auth = new AppAuthManager.BearerTokenAuthenticator(session).authenticate();
         if (auth == null || auth.user() == null) {
@@ -310,6 +360,68 @@ public class ScoutUsersResource {
 
     boolean isScoutAdmin(UserModel user) {
         return user.getGroupsStream().anyMatch(g -> SCOUT_ADMIN_GROUP.equals(g.getName()));
+    }
+
+    /** A client-credentials token of the launchpad client, not a user's token minted for it. */
+    boolean isLaunchpadServiceAccount(ClientModel client, UserModel user) {
+        return client != null && LAUNCHPAD_CLIENT.equals(client.getClientId())
+                && client.getId() != null && client.getId().equals(user.getServiceAccountClientLink());
+    }
+
+    /**
+     * The enabled, non-service-account users holding a client role directly, through a
+     * group (members of its subgroups inherit it), or through a composite role, each
+     * once and lowercased. {@code null} when the client or the role doesn't exist.
+     */
+    RoleMembers findRoleMembers(String clientId, String roleName, int max) {
+        RealmModel realm = session.getContext().getRealm();
+        ClientModel client = realm.getClientByClientId(clientId);
+        RoleModel role = client == null ? null : client.getRole(roleName);
+        if (role == null) {
+            return null;
+        }
+        Set<String> usernames = new HashSet<>();
+        Set<String> groupsSeen = new HashSet<>();
+        for (RoleModel granting : rolesGranting(realm, role)) {
+            List<UserModel> holders = new ArrayList<>(session.users().getRoleMembersStream(realm, granting).toList());
+            for (GroupModel group : session.groups().getGroupsByRoleStream(realm, granting, null, null).toList()) {
+                for (GroupModel member : withSubgroups(group, groupsSeen)) {
+                    holders.addAll(session.users().getGroupMembersStream(realm, member).toList());
+                }
+            }
+            for (UserModel user : holders) {
+                if (user.isEnabled() && user.getServiceAccountClientLink() == null) {
+                    usernames.add(user.getUsername().toLowerCase(Locale.ROOT));
+                }
+            }
+            if (usernames.size() > max) {
+                break;
+            }
+        }
+        return new RoleMembers(usernames.stream().sorted().limit(max).toList(), usernames.size() > max);
+    }
+
+    /** The role itself and every composite, realm or client, that contains it. */
+    private List<RoleModel> rolesGranting(RealmModel realm, RoleModel role) {
+        List<RoleModel> candidates = new ArrayList<>(realm.getRolesStream().toList());
+        for (ClientModel client : realm.getClientsStream().toList()) {
+            candidates.addAll(client.getRolesStream().toList());
+        }
+        return candidates.stream()
+                .filter(r -> r.equals(role) || (r.isComposite() && r.hasRole(role)))
+                .toList();
+    }
+
+    private List<GroupModel> withSubgroups(GroupModel group, Set<String> seen) {
+        List<GroupModel> out = new ArrayList<>();
+        if (!seen.add(group.getId())) {
+            return out;
+        }
+        out.add(group);
+        for (GroupModel child : group.getSubGroupsStream().toList()) {
+            out.addAll(withSubgroups(child, seen));
+        }
+        return out;
     }
 
     // Whether the bearer carries aud=scout-users (added by the launchpad client's
