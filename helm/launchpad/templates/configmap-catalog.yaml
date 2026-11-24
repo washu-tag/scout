@@ -3,9 +3,10 @@
 # exists before the app starts, so the floor when discovery is broken is
 # "core page, optional chips stale or missing" — never an empty page.
 #
-# Only what the launchpad itself owns lives here: the core, admin, and
-# default (more) section definitions, the chips that point at platform-wide
-# services (Analytics, Notebooks), and the launchpad's own Users console.
+# Only what the launchpad itself owns lives here: the sections other
+# components put chips into (core, imaging, admin, and the default, more),
+# the chips that point at platform-wide services (Analytics, Notebooks), and
+# the launchpad's own Users console.
 # Every other chip ships with its owning component as a labelled ConfigMap in
 # that component's namespace — the same schema, discovered by the sidecar.
 apiVersion: v1
@@ -28,6 +29,12 @@ data:
         footerLink:
           text: New to Scout? Check out our documentation
           url: {{ .Values.docsUrl | default "https://washu-scout.readthedocs.io/en/latest" | quote }}
+      - id: imaging
+        title: {{ .Values.catalog.imaging.title | default "Imaging" | quote }}
+        description: {{ .Values.catalog.imaging.description | default "Imaging platforms and data retrieval" | quote }}
+        icon: photograph
+        weight: 15
+        layout: cards
       - id: admin
         title: Admin Tools
         description: Infrastructure and user management

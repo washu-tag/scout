@@ -32,6 +32,12 @@ catalog:
       limits:
         memory: 128Mi
     sizeLimit: 10Mi
+  # The Imaging section (group id `imaging`), where XNAT and other imaging
+  # services put their chips. Sites may rename it; the id is fixed. Empty
+  # values fall back to "Imaging" and "Imaging platforms and data retrieval".
+  imaging:
+    title: ''
+    description: ''
 
 # Environment label shown next to the Scout brand (e.g. "synthetic", "production").
 # Empty string falls back to "local" in the UI.

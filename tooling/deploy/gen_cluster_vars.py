@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -37,6 +38,20 @@ sys.path.insert(0, str(_REPO / "ansible" / "filter_plugins"))
 from jvm_memory import jvm_memory_to_k8s  # noqa: E402
 
 DEFAULT_REQUIRED = _REPO / "deploy" / "required-vars.txt"
+
+# Keys the bases substitute inside ${dq} double quotes.
+DOUBLE_QUOTED = (
+    "deployer_name",
+    "launchpad_imaging_group_description",
+    "launchpad_imaging_group_title",
+)
+_UNQUOTABLE = re.compile(r'["\\\x00-\x1f\x7f]')
+
+
+def unquotable(data: dict) -> list:
+    """DOUBLE_QUOTED keys whose value holds a double quote, backslash or control
+    character, any of which would break out of the quotes."""
+    return sorted(k for k in DOUBLE_QUOTED if _UNQUOTABLE.search(data.get(k, "")))
 
 
 def load_required(path) -> list:
@@ -192,6 +207,13 @@ def main(argv=None) -> None:
             sys.stderr.write("  MISSING (declared but not produced): {}\n".format(k))
         for k in extra:
             sys.stderr.write("  EXTRA (produced but not declared): {}\n".format(k))
+        raise SystemExit(1)
+
+    bad = unquotable(data)
+    if bad:
+        sys.stderr.write(
+            'may not contain ", \\ or a control character: {}\n'.format(", ".join(bad))
+        )
         raise SystemExit(1)
 
     text = render_configmap(data, args.name, args.namespace)

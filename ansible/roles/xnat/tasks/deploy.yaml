@@ -39,7 +39,8 @@
       - xnat_site_id | string is match('^[A-Za-z][A-Za-z0-9_]{0,23}$')
     fail_msg: >-
       xnat_site_id must start with a letter and contain only letters, digits and
-      underscores, at most 24 characters.
+      underscores, at most 24 characters. Put a name with spaces in
+      xnat_site_name instead.
     quiet: true
 
 # Plugin names/entries become Kubernetes object names (Secrets, volumes, init
@@ -217,6 +218,26 @@
         annotations:
           traefik.ingress.kubernetes.io/service.sticky.cookie: 'true'
           traefik.ingress.kubernetes.io/service.sticky.cookie.name: xnat_lb
+
+- name: Publish launchpad catalog entry
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: launchpad_catalog
+  vars:
+    catalog_configmap_name: xnat-launchpad
+    catalog_namespace: '{{ xnat_namespace }}'
+    catalog_document:
+      apiVersion: launchpad.scout.xnat.org/v1alpha1
+      kind: Catalog
+      chips:
+        - id: xnat
+          title: "{{ xnat_site_name | default('', true) | trim or 'XNAT Core Services' }}"
+          description: '{{ xnat_launchpad_description }}'
+          icon: archive
+          tone: cyan
+          link: { subdomain: xnat }
+          group: imaging
+          weight: 10
 
 # Point container-service at the Kubernetes backend (not the local Docker
 # socket). Post-deploy + idempotent; no-op unless CS is enabled.

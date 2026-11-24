@@ -18,6 +18,10 @@ spec:
     kind: OCIRepository
     name: scout-config
   postBuild:
+    # dq quotes the free-text values (see base/launchpad). Inline, so a site cannot
+    # redefine it.
+    substitute:
+      dq: '"'
     substituteFrom:
       - kind: ConfigMap
         name: cluster-vars

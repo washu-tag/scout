@@ -1034,6 +1034,14 @@ xnat_plugin_s3_secret_access_key: $(echo -n ... | ansible-vault encrypt_string -
 The remaining XNAT variables have sane defaults and only need to be set to override them:
 
 ```yaml
+# The name Scout shows users for this XNAT (default: XNAT Core Services)
+xnat_site_name: XNAT Core Services
+
+# The description on XNAT's launchpad chip, which is titled xnat_site_name. The
+# chip sits in the launchpad's Imaging section, which launchpad_imaging_group_title
+# and launchpad_imaging_group_description rename.
+xnat_launchpad_description: Store, organize, and process imaging studies
+
 # Site config seeded on XNAT's first boot (skips the setup wizard). The site ID
 # prefixes XNAT-generated IDs: a letter, then letters, digits and underscores,
 # at most 24 characters.

@@ -30,6 +30,8 @@
   "keycloak_namespace": "scout-core",
   "keycloak_realm_name": "scout",
   "lake_bucket": "lake",
+  "launchpad_imaging_group_description": "",
+  "launchpad_imaging_group_title": "",
   "loki_admin_bucket": "loki-admin",
   "loki_chunks_bucket": "loki-chunks",
   "loki_ruler_bucket": "loki-ruler",

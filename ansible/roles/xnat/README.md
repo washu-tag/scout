@@ -45,6 +45,10 @@ nothing XNAT is created — and the Keycloak realm omits the `xnat` client and t
    own — the chart renders one per plugin from the `plugins` map.
 5. **Helm install** via the shared `deploy_helm_chart` wrapper, with a 20-minute
    `--wait` to cover Hibernate's first-boot DDL.
+6. **Launchpad chip**: the `xnat-launchpad` ConfigMap puts XNAT in the launchpad's
+   Imaging section, titled `xnat_site_name` and described by
+   `xnat_launchpad_description`. Every Scout user sees it, but only users with
+   `xnat-access` can get in.
 
 ## Database
 
@@ -267,9 +271,9 @@ xnat_dicom_scp_receivers:
 
 See `defaults/main.yaml`. Commonly set in inventory: `enable_xnat`,
 `keycloak_xnat_client_secret`, `xnat_postgres_password`, `xnat_admin_password`,
-`xnat_site_id`, `xnat_admin_email`, `xnat_smtp_host`, `xnat_plugins`,
-`xnat_dicom_scp_receivers`, and the `xnat_postgres_*` sizing variables. Chart and
-image versions are pinned in
+`xnat_site_name`, `xnat_launchpad_description`, `xnat_site_id`, `xnat_admin_email`,
+`xnat_smtp_host`, `xnat_plugins`, `xnat_dicom_scp_receivers`, and the
+`xnat_postgres_*` sizing variables. Chart and image versions are pinned in
 `group_vars/all/versions.yaml`.
 
 Startup and readiness use the unauthenticated `/xapi/siteConfig/buildInfo`
