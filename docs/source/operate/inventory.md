@@ -737,6 +737,7 @@ tls_key_path: '/path/to/key.pem'    # Optional TLS key
 minio_volumes_per_server: 2  # Must be >= 2 if minio_hosts has > 1 node
 ```
 
+(valkey-config)=
 #### Valkey
 
 Scout runs two Valkey instances. The shared one holds data that must not be
@@ -827,7 +828,7 @@ Superset UI). For site-specific dashboards see the README in
 #### Report Viewer
 
 Report-viewer requires two secrets with no default — the deploy fails without either:
-its database password, and its cache Valkey password (see [Valkey](#valkey)):
+its database password, and its cache Valkey password (see {ref}`Valkey <valkey-config>`):
 
 ```yaml
 report_viewer_db_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
@@ -836,7 +837,7 @@ valkey_cache_report_viewer_password: $(openssl rand -hex 32 | ansible-vault encr
 
 It also caches each user's search cohorts, charts and accession lists in the cache
 Valkey, as that instance's `report-viewer` user (`valkey_cache_report_viewer_password`,
-see [Valkey](#valkey)), so reopening a search or clicking one of its action buttons
+see {ref}`Valkey <valkey-config>`), so reopening a search or clicking one of its action buttons
 skips the Trino query. A change to the user's permissions or the access policy makes
 older entries unreachable as soon as OPA has the change, and a write to any Delta table
 the query reads does within about a minute; otherwise an entry is served for up to
