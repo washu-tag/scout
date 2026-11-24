@@ -83,6 +83,19 @@ The **Terminal** option opens a full-window terminal instead. It runs in a tmux
 session that keeps running if you close the tab, so you can reopen it and pick up
 where you left off.
 
+**Pasting into the VS Code terminal.** Use Cmd+V (Ctrl+V or Ctrl+Shift+V on Windows and
+Linux). Right-click **Paste** reads the clipboard through a browser permission that
+some browsers refuse, showing "Unable to read from the browser's clipboard." Keyboard
+paste works because Scout's default `keybindings.json` hands it to the browser. If you
+already had a `keybindings.json` when Scout added that default, add these entries to it
+(**Preferences: Open Keyboard Shortcuts (JSON)**):
+
+```json
+{ "key": "ctrl+v", "command": "-workbench.action.terminal.paste" },
+{ "key": "cmd+v", "command": "-workbench.action.terminal.paste" },
+{ "key": "ctrl+shift+v", "command": "-workbench.action.terminal.paste" }
+```
+
 The Claude Code extension, the Claude Code CLI (`claude`), and the
 [Codex CLI](https://github.com/openai/codex) (`codex`) are preinstalled. Point them at
 an LLM gateway your organization provides. Their settings live in your home directory,

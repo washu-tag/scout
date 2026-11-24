@@ -66,6 +66,14 @@ jupyter_claude_available_models: []
 # so later changes reach new users only. Dicts and lists are written as JSON, strings as-is.
 jupyter_user_starter_files: {}
 
+# Starter VS Code keybindings.json. Unbinding terminal paste lets the browser's native
+# paste reach the terminal; the clipboard read it would otherwise use fails in Firefox.
+# A jupyter_user_starter_files entry at the same path wins. Empty ships no file.
+jupyter_vscode_keybindings:
+  - { key: 'ctrl+v', command: '-workbench.action.terminal.paste' }
+  - { key: 'cmd+v', command: '-workbench.action.terminal.paste' }
+  - { key: 'ctrl+shift+v', command: '-workbench.action.terminal.paste' }
+
 # Jupyter resources
 jupyter_hub_resources_default:
   requests:

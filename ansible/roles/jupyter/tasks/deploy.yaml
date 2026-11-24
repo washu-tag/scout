@@ -206,7 +206,10 @@
       {{ (_jupyter_starter_data | default({})) | combine({
            'file-' ~ idx: (item.value if item.value is string else item.value | to_nice_json)}) }}
     _jupyter_starter_manifest: "{{ (_jupyter_starter_manifest | default([])) + ['file-' ~ idx ~ ' ' ~ item.key] }}"
-  loop: '{{ jupyter_user_starter_files | dict2items }}'
+  loop: >-
+    {{ ({'.local/share/code-server/User/keybindings.json': jupyter_vscode_keybindings}
+        if jupyter_vscode_keybindings else {})
+       | combine(jupyter_user_starter_files) | dict2items }}
   loop_control:
     index_var: idx
     label: '{{ item.key }}'

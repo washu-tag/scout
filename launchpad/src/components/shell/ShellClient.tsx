@@ -630,7 +630,7 @@ export default function ShellClient({
             src={src}
             title={chip.title}
             sandbox={chip.sandbox ? FRAME_SANDBOX : undefined}
-            allow="clipboard-read; clipboard-write; fullscreen"
+            allow="clipboard-read *; clipboard-write *; fullscreen *"
             aria-hidden={chip.id !== active?.id}
             onLoad={() => {
               const next = leaving.current.get(chip.id);

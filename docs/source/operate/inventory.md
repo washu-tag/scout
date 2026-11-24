@@ -619,6 +619,12 @@ jupyter_user_starter_files:
     base_url = "https://llm-gateway.example.org/v1"
     env_key = "LLM_GATEWAY_KEY"
     wire_api = "responses"
+
+# Starter VS Code keybindings. The default unbinds the terminal's paste command so the
+# browser's own paste reaches the terminal, which works in every browser. Like other
+# starter files, it is copied only for users without a keybindings.json. To ship no
+# file:
+# jupyter_vscode_keybindings: []
 ```
 
 #### Other Services
