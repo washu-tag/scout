@@ -58,6 +58,7 @@ function fail(
 const MESSAGES: Record<string, string> = {
   missing_token: 'send a Bearer token from your client-credentials grant',
   invalid_token: 'the token is not a valid access token from this realm for the launchpad',
+  service_account_required: "send with your client's own client-credentials token, not a user's",
   missing_role: 'the token lacks the launchpad client role notifications-send',
   keys_unavailable: "the realm's signing keys could not be fetched; try again",
 };
