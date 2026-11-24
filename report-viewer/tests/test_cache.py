@@ -418,6 +418,67 @@ def test_chart_entries_hold_no_report_body_columns(
     assert "BODY" not in zlib.decompress(blob).decode()
 
 
+def _row_modalities(response) -> list[str]:
+    return [r["modality"] for r in response.json()["rows"]]
+
+
+def _same_permissions(monkeypatch) -> None:
+    """Both users get one fingerprint, as users with identical permissions do,
+    so only the user in the key keeps their entries apart."""
+
+    async def fingerprint(user: str) -> tuple[str, int]:
+        return "fp-shared", _AN_HOUR_AGO_MS
+
+    monkeypatch.setattr(cache, "_fingerprint", fingerprint)
+
+
+def test_identical_sql_is_cached_per_user(
+    client, auth_headers, other_auth_headers, fake_trino, env, monkeypatch
+):
+    _same_permissions(monkeypatch)
+    sql = "SELECT * FROM reports_latest WHERE 1=1"
+    mine = _create(client, auth_headers, fake_trino, sql)
+    mine_again = _create(client, auth_headers, fake_trino, sql)
+    theirs = _create(client, other_auth_headers, fake_trino, sql)
+
+    fake_trino(_columns(), _rows())
+    client.get(f"/api/searches/{mine}/rows", headers=auth_headers)
+    client.portal.call(cache.wait_pending)
+    calls = len(fake_trino.calls)
+
+    again = client.get(f"/api/searches/{mine_again}/rows", headers=auth_headers)
+    assert len(fake_trino.calls) == calls, "the same user's identical SQL hits"
+    assert _row_modalities(again) == ["CT"] * 3
+
+    fake_trino(_columns(), [{**r, "modality": "MR"} for r in _rows()])
+    r = client.get(f"/api/searches/{theirs}/rows", headers=other_auth_headers)
+    assert len(fake_trino.calls) == calls + 1, "another user's runs its own query"
+    assert _row_modalities(r) == ["MR"] * 3
+
+
+def test_identical_chart_sql_is_cached_per_user(
+    client, auth_headers, other_auth_headers, fake_trino, env, monkeypatch
+):
+    _same_permissions(monkeypatch)
+    from tests.test_plots import _create as create_plot, _queue_chart_query
+
+    columns = ["modality", "n"]
+    _queue_chart_query(fake_trino, columns, [{"modality": "CT", "n": 1}])
+    mine = create_plot(client, auth_headers).json()["id"]
+    _queue_chart_query(fake_trino, columns, [{"modality": "CT", "n": 1}])
+    theirs = create_plot(client, other_auth_headers).json()["id"]
+
+    fake_trino(columns, [{"modality": "CT", "n": 1}])
+    client.get(f"/api/plots/{mine}", headers=auth_headers)
+    client.portal.call(cache.wait_pending)
+    calls = len(fake_trino.calls)
+
+    fake_trino(columns, [{"modality": "MR", "n": 2}])
+    r = client.get(f"/api/plots/{theirs}", headers=other_auth_headers)
+    assert len(fake_trino.calls) == calls + 1
+    assert r.json()["rows"] == [{"modality": "MR", "n": 2}]
+
+
 # --- Action clicks -------------------------------------------------------------
 
 
