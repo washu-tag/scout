@@ -19,8 +19,7 @@ function readJson(file) {
   }
 }
 
-function chatModelsNeedKey(home) {
-  const providers = readJson(path.join(home, CHAT_MODELS));
+function chatModelsNeedKey(providers) {
   return (
     Array.isArray(providers) &&
     providers.some((provider) =>
@@ -38,7 +37,8 @@ function needsKey() {
   const claudeToken = readJson(path.join(home, '.claude', 'settings.json'))?.env
     ?.ANTHROPIC_AUTH_TOKEN;
   const codexKey = readJson(path.join(home, '.codex', 'auth.json'))?.OPENAI_API_KEY;
-  if (claudeToken === PLACEHOLDER || codexKey === PLACEHOLDER || chatModelsNeedKey(home)) {
+  const chatModels = readJson(path.join(home, CHAT_MODELS));
+  if (claudeToken === PLACEHOLDER || codexKey === PLACEHOLDER || chatModelsNeedKey(chatModels)) {
     return true;
   }
   return !claudeToken && !process.env.ANTHROPIC_AUTH_TOKEN && !!process.env.ANTHROPIC_BASE_URL;

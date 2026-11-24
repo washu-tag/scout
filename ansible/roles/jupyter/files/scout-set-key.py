@@ -14,7 +14,7 @@ from pathlib import Path
 PLACEHOLDER = "REPLACE_WITH_YOUR_GATEWAY_KEY"
 CLAUDE_SETTINGS = Path.home() / ".claude" / "settings.json"
 CODEX_AUTH = Path.home() / ".codex" / "auth.json"
-CHAT_MODELS = Path.home() / ".local" / "share" / "code-server" / "User" / "chatLanguageModels.json"
+CHAT_MODELS = Path.home() / ".local/share/code-server/User/chatLanguageModels.json"
 
 
 def read_json(path, kind=dict):
