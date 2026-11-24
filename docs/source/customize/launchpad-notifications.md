@@ -6,7 +6,7 @@ has finished. A notice names one or more users, or everyone holding one of your 
 own Keycloak roles. It shows in their open Scout tabs within a couple of seconds, and
 your app can withdraw it once it no longer applies.
 
-A notice is a short line of text and a link into your app. Your app keeps the details
+A notice is a short title, an optional note, and a link into your app. Your app keeps the details
 on its own pages, where it checks who may see them.
 
 :::{important}
@@ -29,7 +29,7 @@ by username.
 | Field         | Limit                                   | Notes                                                                                                  |
 | ------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | `title`       | 1-120 characters                        | Plain text on one line, shown as typed. HTML and Markdown are not rendered.                            |
-| `detail`      | up to 300 characters                    | Optional. Plain text on one line.                                                                      |
+| `detail`      | up to 1000 characters                   | Optional. Plain text, with lines broken by `\n`, shown as typed and selectable so people can copy it. |
 | `category`    | one of your registered categories       | Used later for people's preferences by kind of notice.                                                 |
 | `link`        | a path under one of your path prefixes  | Opens on your app's subdomain, inside the launchpad. No full URLs.                                      |
 | `recipients`  | usernames and roles of your own client  | At most 1000 people once roles are expanded (a site can change this).                                 |
@@ -179,8 +179,9 @@ nothing new.
 ## What people see
 
 The bell shows how many notices are new. Opening it lists them newest first and marks
-them seen, which clears the count. Opening a notice marks it read and opens its link
-in your app's frame, as a chip would. People can mark everything read and archive a
+them seen, which clears the count. Opening a notice's title marks it read and opens its
+link in your app's frame, as a chip would. The detail under it is text people can select
+and copy; a long one shows its first lines and opens with "Show more". People can mark everything read and archive a
 notice to remove it from their list. Read state is each person's own.
 
 ## Site settings

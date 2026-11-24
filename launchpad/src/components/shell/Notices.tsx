@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { HiOutlineArchive, HiOutlineBell } from 'react-icons/hi';
 import { reconnectDelay } from '@/lib/notifications/reconnect';
 import type { ListedNotice, Summary } from '@/lib/notifications/store';
@@ -84,6 +84,47 @@ function ago(iso: string): string {
     if (Math.abs(seconds) >= size) return format.format(Math.round(seconds / size), unit);
   }
   return 'just now';
+}
+
+// Selectable text, not part of the link, so it can be copied. A long detail
+// starts clamped and opens in place.
+function NoticeDetail({ text }: { text: string }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [overflows, setOverflows] = useState(false);
+
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element || expanded) return;
+    const measure = () => setOverflows(element.scrollHeight > element.clientHeight);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [text, expanded]);
+
+  return (
+    <>
+      <p
+        ref={ref}
+        className={`mt-0.5 select-text whitespace-pre-wrap break-words text-xs text-slate-500 dark:text-slate-400 ${
+          expanded ? '' : 'line-clamp-6'
+        }`}
+      >
+        {text}
+      </p>
+      {(overflows || expanded) && (
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={() => setExpanded(!expanded)}
+          className="mt-0.5 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400 cursor-pointer"
+        >
+          {expanded ? 'Show less' : 'Show more'}
+        </button>
+      )}
+    </>
+  );
 }
 
 interface PanelProps {
@@ -184,52 +225,52 @@ export function NoticesPanel({ summary, onSummary, onOpen, onClose }: PanelProps
               const url = new URL(href);
               const fallback = `/open/${url.host}${url.pathname}${url.search}${url.hash}`;
               return (
-                <li key={notice.id} className="group relative">
-                  <a
-                    href={fallback}
-                    onClick={(event) => {
-                      if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) {
-                        return;
-                      }
-                      event.preventDefault();
-                      open(notice, href, fallback);
-                    }}
-                    className="flex gap-2.5 rounded-lg px-2.5 py-2 pr-9 no-underline hover:bg-slate-100 dark:hover:bg-slate-800"
-                  >
-                    <span
-                      aria-hidden="true"
-                      className={`mt-1.5 h-2 w-2 flex-shrink-0 rounded-full ${
-                        notice.read ? '' : 'bg-indigo-500 dark:bg-indigo-400'
-                      }`}
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-baseline gap-2 text-xs text-slate-500 dark:text-slate-400">
-                        <span className="truncate">{notice.sender}</span>
-                        <time
-                          dateTime={notice.createdAt}
-                          title={new Date(notice.createdAt).toLocaleString()}
-                          className="flex-shrink-0"
-                        >
-                          {ago(notice.createdAt)}
-                        </time>
-                      </span>
-                      <span
-                        className={`block break-words text-sm ${
-                          notice.read
-                            ? 'text-slate-600 dark:text-slate-300'
-                            : 'font-semibold text-slate-900 dark:text-white'
-                        }`}
+                <li
+                  key={notice.id}
+                  className="group relative flex gap-2.5 rounded-lg px-2.5 py-2 pr-9 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`mt-1.5 h-2 w-2 flex-shrink-0 rounded-full ${
+                      notice.read ? '' : 'bg-indigo-500 dark:bg-indigo-400'
+                    }`}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <span className="flex items-baseline gap-2 text-xs text-slate-500 dark:text-slate-400">
+                      <span className="truncate">{notice.sender}</span>
+                      <time
+                        dateTime={notice.createdAt}
+                        title={new Date(notice.createdAt).toLocaleString()}
+                        className="flex-shrink-0"
                       >
-                        {!notice.read && <span className="sr-only">Unread: </span>}
-                        {notice.title}
-                      </span>
-                      {notice.detail && (
-                        <span className="mt-0.5 line-clamp-2 block break-words text-xs text-slate-500 dark:text-slate-400">
-                          {notice.detail}
-                        </span>
-                      )}
+                        {ago(notice.createdAt)}
+                      </time>
                     </span>
-                  </a>
+                    <a
+                      href={fallback}
+                      onClick={(event) => {
+                        if (
+                          event.metaKey ||
+                          event.ctrlKey ||
+                          event.shiftKey ||
+                          event.button !== 0
+                        ) {
+                          return;
+                        }
+                        event.preventDefault();
+                        open(notice, href, fallback);
+                      }}
+                      className={`block break-words text-sm no-underline hover:underline ${
+                        notice.read
+                          ? 'text-slate-600 dark:text-slate-300'
+                          : 'font-semibold text-slate-900 dark:text-white'
+                      }`}
+                    >
+                      {!notice.read && <span className="sr-only">Unread: </span>}
+                      {notice.title}
+                    </a>
+                    {notice.detail && <NoticeDetail text={notice.detail} />}
+                  </div>
                   <button
                     type="button"
                     title="Archive"
