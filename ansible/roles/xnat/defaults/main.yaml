@@ -43,8 +43,8 @@ xnat_volume_sizes:
 
 # --- Display name ----------------------------------------------------------
 # The name Scout shows users for this XNAT. Unlike xnat_site_id, it may contain
-# spaces.
-xnat_site_name: XNAT Core Services
+# spaces. Blank shows "XNAT Core Services".
+xnat_site_name: ''
 # The description on XNAT's launchpad chip, whose title is xnat_site_name.
 xnat_launchpad_description: Store, organize, and process imaging studies
 

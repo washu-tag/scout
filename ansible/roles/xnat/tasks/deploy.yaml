@@ -231,7 +231,7 @@
       kind: Catalog
       chips:
         - id: xnat
-          title: '{{ xnat_site_name }}'
+          title: "{{ xnat_site_name | default('', true) | trim or 'XNAT Core Services' }}"
           description: '{{ xnat_launchpad_description }}'
           icon: archive
           tone: cyan
