@@ -244,14 +244,18 @@ export function noticeStore(pool: Pool) {
       }));
     },
 
+    // Over the notices list returns, so opening the panel can clear the badge.
     async summary(username: string, hiddenSenders: string[]): Promise<Summary> {
       const { rows } = await pool.query<Summary>(
-        `SELECT count(*) FILTER (WHERE d.seen_at IS NULL)::int AS unseen,
-                count(*) FILTER (WHERE d.read_at IS NULL)::int AS unread,
+        `SELECT count(*) FILTER (WHERE seen_at IS NULL)::int AS unseen,
+                count(*) FILTER (WHERE read_at IS NULL)::int AS unread,
                 left(encode(sha256(convert_to(coalesce(string_agg(
-                  n.id::text || (d.read_at IS NULL)::text,
-                  ',' ORDER BY n.id), ''), 'UTF8')), 'hex'), 16) AS marker
-         ${VISIBLE}`,
+                  id::text || (read_at IS NULL)::text,
+                  ',' ORDER BY id), ''), 'UTF8')), 'hex'), 16) AS marker
+         FROM (SELECT n.id, d.seen_at, d.read_at
+               ${VISIBLE}
+               ORDER BY n.created_at DESC, n.id
+               LIMIT ${LIST_LIMIT}) shown`,
         [username, hiddenSenders],
       );
       return rows[0];

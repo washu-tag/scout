@@ -132,6 +132,21 @@ describe('notice store', { skip: needsDatabase }, () => {
     assert.equal((await store.summary('bob', [])).unread, 2);
   });
 
+  it('counts only the notices the list returns', async () => {
+    for (let i = 0; i < 105; i++) {
+      await store.send(notice({ recipients: new Map([['alice', null]]) }));
+    }
+    const listed = await store.list('alice', []);
+    assert.equal(listed.length, 100);
+    assert.equal((await store.summary('alice', [])).unseen, 100);
+    await store.mark(
+      'alice',
+      'seen',
+      listed.map((n) => n.id),
+    );
+    assert.equal((await store.summary('alice', [])).unseen, 0);
+  });
+
   it("replaces the sender's earlier notice with the same collapse key", async () => {
     await store.send(notice({ collapseKey: 'request-42' }));
     const second = await store.send(
