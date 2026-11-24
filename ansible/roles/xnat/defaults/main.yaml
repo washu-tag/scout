@@ -84,6 +84,13 @@ xnat_dicom_scp_receivers:
   - ae_title: XNAT
     port: 8104
 
+# --- Site-wide anonymization ----------------------------------------------
+# XNAT's site-wide DicomEdit script and whether XNAT applies it. After each
+# deploy the role makes XNAT match whichever of these is set; unset ('' / null)
+# leaves XNAT's current value alone.
+xnat_site_anon_script: ''
+xnat_site_anon_enabled: null
+
 # --- Postgres -------------------------------------------------------------
 # XNAT's own CNPG cluster, separate from Scout's shared one. Sized for dev;
 # size prod in inventory. Each XNAT replica opens up to 40 connections.
