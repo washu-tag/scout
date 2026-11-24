@@ -238,6 +238,9 @@ def _explainable(sql: str) -> str:
 async def _resolve_tables(user: str, sql: str) -> None:
     tables = None
     try:
+        # safe: sql is this user's own saved search, which /rows also runs as
+        # them; EXPLAIN only plans it, and OPA is the AuthZ boundary
+        # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
         _cols, rows = await trino_client.execute(
             f"EXPLAIN (TYPE IO, FORMAT JSON) {_explainable(sql)}", user=user
         )
