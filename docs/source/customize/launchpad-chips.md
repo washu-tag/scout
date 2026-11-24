@@ -220,7 +220,7 @@ Chips are grouped on the page into sections called Groups. A chip references a g
 if it references an undefined group the launchpad creates a new one with that id.
 
 The launchpad defines these sections itself, so any chip can join one by its id. The ids
-are stable; a site may rename a section, but its id stays the same.
+are stable: a site may rename the Imaging section, but its id stays `imaging`.
 
 | Group id  | Section       | Weight | For                                                      |
 | --------- | ------------- | ------ | -------------------------------------------------------- |
