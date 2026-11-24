@@ -2,13 +2,14 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSession, signIn } from 'next-auth/react';
+import AppBar, { BAR_TOOL } from '@/components/shell/AppBar';
 import { subdomainUrl } from '@/lib/subdomainUrl';
 import {
   HiCheckCircle,
   HiChevronLeft,
   HiChevronRight,
-  HiExternalLink,
   HiInformationCircle,
+  HiOutlineExternalLink,
   HiSearch,
   HiShieldCheck,
   HiTrash,
@@ -839,31 +840,21 @@ export default function UsersClient() {
   const actionLabel = tab === 'pending' ? 'Review' : 'Manage';
 
   return (
-    <div className="min-h-full w-full bg-gradient-to-br from-slate-50 via-white to-indigo-50/40 dark:from-slate-950 dark:via-slate-950 dark:to-indigo-950/30">
-      <main className="max-w-content content-2xl:max-w-content-wide mx-auto px-4 py-8 content-md:px-6 content-lg:px-8">
-        <div className="mb-6 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight">
-              User administration
-            </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Approve access requests, edit data-access attributes, manage admins, and offboard
-              users.
-            </p>
-          </div>
-          {kcConsole && (
-            <a
-              href={kcConsole}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden sm:inline-flex items-center gap-1.5 mt-1 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
-            >
-              <HiExternalLink className="text-base" />
-              Open in Keycloak
-            </a>
-          )}
-        </div>
-
+    <div className="min-h-full w-full bg-slate-50 dark:bg-slate-950">
+      <AppBar icon="cog" tone="slate" crumbs={[{ label: 'Admin Tools' }, { label: 'Users' }]}>
+        {kcConsole && (
+          <a
+            href={kcConsole}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`${BAR_TOOL} max-sm:w-[34px] max-sm:justify-center max-sm:px-0`}
+          >
+            <HiOutlineExternalLink className="h-4 w-4 flex-none" aria-hidden="true" />
+            <span className="max-sm:sr-only">Open in Keycloak</span>
+          </a>
+        )}
+      </AppBar>
+      <main className="px-8 pt-6 pb-8">
         {status === 'loading' || !session ? (
           <Notice>Loading…</Notice>
         ) : authExpired ? (
