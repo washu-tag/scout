@@ -95,7 +95,9 @@ curl -s https://keycloak.scout.example.edu/realms/scout/protocol/openid-connect/
 
 The token must hold the launchpad client's `notifications-send` role. The launchpad
 treats the client the token was issued to as the sender, so your app can only send as
-itself. Reuse a token until shortly before it expires.
+itself. Only a client-credentials token can send: a token Keycloak issues to one of your
+app's users is refused, even if it holds the role. Reuse a token until shortly before it
+expires.
 
 **Not yet available:** fragments can't ask for a service account or the send role yet.
 A fragment capability for notifications will add both.
@@ -168,7 +170,7 @@ nothing new.
 | ------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | 400    | `invalid_json`, `invalid_request`                                                | Fix the body. `message` names the field. Unknown fields are refused, so a misspelt key fails loudly.          |
 | 401    | `missing_token`, `invalid_token`                                                 | Send a fresh token from this realm.                                                                          |
-| 403    | `missing_role`, `unregistered_sender`, `sender_disabled`                         | Your client lacks the send role, has no registration, or the site has turned your notices off.              |
+| 403    | `service_account_required`, `missing_role`, `unregistered_sender`, `sender_disabled` | The token was issued to a user rather than your client, your client lacks the send role, has no registration, or the site has turned your notices off. |
 | 413    | `too_large`                                                                      | Keep the body under 128 KiB.                                                                                 |
 | 422    | `unknown_category`, `link_not_allowed`, `unknown_role`, `too_many_recipients`, `already_expired` | Use a registered category and prefix, one of your own roles, fewer people, or a later expiry.       |
 | 429    | `rate_limited`                                                                   | Wait the `Retry-After` seconds. Each app may make 60 calls a minute by default.                              |
