@@ -15,6 +15,25 @@ PLACEHOLDER = "REPLACE_WITH_YOUR_GATEWAY_KEY"
 CLAUDE_SETTINGS = Path.home() / ".claude" / "settings.json"
 CODEX_AUTH = Path.home() / ".codex" / "auth.json"
 CHAT_MODELS = Path.home() / ".local/share/code-server/User/chatLanguageModels.json"
+STARTER = Path("/opt/scout/user-starter")
+
+
+def restore_starter_files():
+    """Copy in any starter file the user no longer has, as server start does."""
+    try:
+        manifest = (STARTER / "manifest").read_text().splitlines()
+    except FileNotFoundError:
+        return
+    for line in manifest:
+        name, _, rel = line.strip().partition(" ")
+        rel = rel.strip()
+        target = Path.home() / rel
+        if not rel or target.exists() or target.is_symlink():
+            continue
+        target.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, "wb") as f:
+            f.write((STARTER / name).read_bytes())
 
 
 def read_json(path, kind=dict):
@@ -67,6 +86,7 @@ def main():
     if not key or key == PLACEHOLDER or any(c.isspace() for c in key):
         sys.exit("That doesn't look like a key; nothing was changed.")
 
+    restore_starter_files()
     claude = read_json(CLAUDE_SETTINGS)
     codex = read_json(CODEX_AUTH)
     chat = read_json(CHAT_MODELS, kind=list)
