@@ -459,9 +459,9 @@ class Reconciler:
             roles, new_roles = self._reconcile_roles(uuid, spec)
             self._reconcile_mappers(uuid, spec)
             self._reconcile_tier_edges(uuid, spec, roles=roles, new_roles=new_roles)
-            self._reconcile_client_scopes(
-                uuid, spec, linked=client.get("optionalClientScopes") or []
-            )
+            linked = client.get("optionalClientScopes") or []
+            self._reconcile_client_scopes(uuid, spec, linked=linked)
+            self._reconcile_notifications(uuid, spec, linked=linked)
         except KeycloakError as exc:
             level = log.warning if exc.retryable else log.error
             level("applying %s failed: %s", spec.client_id, exc)
@@ -715,6 +715,39 @@ class Reconciler:
                 f"add scope {name} to {spec.client_id}",
                 partial(self.admin.add_optional_client_scope, uuid, ids[name]),
             )
+
+    def _reconcile_notifications(
+        self, uuid: str, spec: ClientSpec, *, linked: list[str]
+    ) -> None:
+        """Last, because the scope is what lets the app send (ADR 0043).
+
+        The service account is already on or off by here, from the client
+        representation; without this scope its token carries nothing the
+        launchpad accepts. The scope belongs to the base realm, so it is only
+        ever linked or unlinked, the way an offered scope is.
+        """
+        name = translate.NOTIFICATIONS_SCOPE
+        want, have = spec.send_notifications, name in linked
+        if want == have:
+            return
+        ids = {s.get("name"): s.get("id") for s in self.admin.client_scopes()}
+        scope_id = ids.get(name)
+        if not want:
+            self._write(
+                f"remove scope {name} from {spec.client_id}",
+                partial(self.admin.remove_optional_client_scope, uuid, scope_id),
+            )
+            return
+        if not scope_id:
+            raise KeycloakError(
+                404,
+                f"sendNotifications needs the realm's {name} client scope, which "
+                "the realm does not have; apply the base realm",
+            )
+        self._write(
+            f"add scope {name} to {spec.client_id}",
+            partial(self.admin.add_optional_client_scope, uuid, scope_id),
+        )
 
     # --- garbage collection ---------------------------------------------
 

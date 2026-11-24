@@ -239,6 +239,15 @@
             "composite": false,
             "clientRole": true,
             "attributes": {}
+          },
+          {{- /* Held by no one: an app's token carries it through the
+              launchpad-notifications scope below (ADR 0043). */}}
+          {
+            "name": "notifications-send",
+            "description": "Sends launchpad notices (ADR 0043)",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
           }
         ]{{- if eq (.Values.enableXnat | toString) "true" }},
         "xnat": [
@@ -643,6 +652,9 @@
         "clientId": "launchpad",
         "clientAuthenticatorType": "client-secret",
         "secret": "$(env:launchpad_client)",
+        {{- /* Client credentials for the scout-users role-members endpoint,
+            which expands role-addressed notices (ADR 0043). */}}
+        "serviceAccountsEnabled": true,
         "redirectUris": [
           "https://$(env:server_hostname)/api/auth/callback/keycloak",
           "https://{{ .Values.oauth2ProxySubdomain }}.$(env:server_hostname)/oauth2/sign_out"
@@ -1474,6 +1486,45 @@
               "id.token.claim": "true",
               "access.token.claim": "true",
               "introspection.token.claim": "true"
+            }
+          }
+        ]
+      },
+      {{- /* What a fragment's sendNotifications becomes (ADR 0043). The fragment
+          reconciler links it to the app's client as optional, so only a token
+          that asks for it (the app's client-credentials token, not its users'
+          logins) carries the send role and aud=launchpad. The role is hardcoded
+          because granting it to the service account needs manage-users, which
+          the reconciler doesn't hold. */}}
+      {
+        "name": "launchpad-notifications",
+        "description": "Lets an app's service account send launchpad notices",
+        "protocol": "openid-connect",
+        "attributes": {
+          "include.in.token.scope": "true",
+          "display.on.consent.screen": "false"
+        },
+        "protocolMappers": [
+          {
+            "name": "notifications-send-role",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-hardcoded-role-mapper",
+            "consentRequired": false,
+            "config": {
+              "role": "launchpad.notifications-send"
+            }
+          },
+          {
+            "name": "launchpad-audience",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper",
+            "consentRequired": false,
+            "config": {
+              "included.client.audience": "launchpad",
+              "id.token.claim": "false",
+              "access.token.claim": "true",
+              "introspection.token.claim": "true",
+              "lightweight.claim": "false"
             }
           }
         ]
