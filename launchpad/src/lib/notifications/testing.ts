@@ -78,7 +78,7 @@ export async function testRealm(): Promise<Realm> {
         aud: LAUNCHPAD,
         typ: 'Bearer',
         azp: 'request-tracker',
-        client_id: 'request-tracker',
+        client_id: claims.azp ?? 'request-tracker',
         resource_access: { [LAUNCHPAD]: { roles: [SEND_ROLE] } },
         ...claims,
       })
