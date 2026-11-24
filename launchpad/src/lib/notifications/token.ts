@@ -18,13 +18,16 @@ function realmKeys(issuer: string): JWTVerifyGetKey {
 interface Claims {
   typ?: unknown;
   azp?: unknown;
+  client_id?: unknown;
   aud?: unknown;
   resource_access?: Record<string, { roles?: unknown } | undefined>;
 }
 
 // A Keycloak access token from the sender's own client (client-credentials
 // grant), signed by the realm, holding the launchpad's send role and addressed
-// to the launchpad. The sender is the client the token was issued to. The role
+// to the launchpad. The sender is the client the token was issued to. Only a
+// client-credentials token carries `client_id` (Keycloak's service_account
+// scope), so a token issued to one of the app's users can't send. The role
 // is checked before the audience: Keycloak addresses a token to the launchpad
 // only when it carries a launchpad role, so a missing role is the useful answer.
 export async function verifySenderToken(
@@ -50,6 +53,9 @@ export async function verifySenderToken(
   }
   if (claims.typ !== 'Bearer' || typeof claims.azp !== 'string' || !claims.azp) {
     return { ok: false, status: 401, error: 'invalid_token' };
+  }
+  if (claims.client_id !== claims.azp) {
+    return { ok: false, status: 403, error: 'service_account_required' };
   }
   const roles = claims.resource_access?.[clientId]?.roles;
   if (!Array.isArray(roles) || !roles.includes(SEND_ROLE)) {

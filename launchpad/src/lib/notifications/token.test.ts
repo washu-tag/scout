@@ -49,6 +49,16 @@ describe('verifySenderToken', () => {
     }
   });
 
+  it("refuses a token issued to one of the client's users", async () => {
+    for (const claims of [
+      { client_id: undefined, preferred_username: 'alice' },
+      { client_id: 'other-app' },
+    ]) {
+      const result = await verify(`Bearer ${await realm.token(claims)}`);
+      assert.deepEqual(result, { ok: false, status: 403, error: 'service_account_required' });
+    }
+  });
+
   it('needs the send role on the launchpad client, not on any other', async () => {
     const tokens = [
       await realm.token({ resource_access: {} }),

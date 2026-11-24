@@ -97,7 +97,9 @@ curl -s https://keycloak.scout.example.edu/realms/scout/protocol/openid-connect/
 The scope is what puts the launchpad client's `notifications-send` role in the token;
 a token requested without it is refused with `403 missing_role`. The launchpad treats
 the client the token was issued to as the sender, so your app can only send as itself.
-Reuse a token until shortly before it expires.
+Only a client-credentials token can send: a token Keycloak issues to one of your app's
+users is refused with `403 service_account_required`, even if it holds the role. Reuse
+a token until shortly before it expires.
 
 ## Send a notice
 
@@ -165,7 +167,7 @@ nothing new.
 | ------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | 400    | `invalid_json`, `invalid_request`                                                | Fix the body. `message` names the field. Unknown fields are refused, so a misspelt key fails loudly.          |
 | 401    | `missing_token`, `invalid_token`                                                 | Send a fresh token from this realm.                                                                          |
-| 403    | `missing_role`, `unregistered_sender`, `sender_disabled`                         | Your token didn't ask for `scope=launchpad-notifications`, your client has no registration, or the site has turned your notices off. |
+| 403    | `service_account_required`, `missing_role`, `unregistered_sender`, `sender_disabled` | The token was issued to a user rather than your client, your token didn't ask for `scope=launchpad-notifications`, your client has no registration, or the site has turned your notices off. |
 | 413    | `too_large`                                                                      | Keep the body under 128 KiB.                                                                                 |
 | 422    | `unknown_category`, `link_not_allowed`, `unknown_role`, `too_many_recipients`, `already_expired` | Use a registered category and prefix, one of your own roles, fewer people, or a later expiry.       |
 | 429    | `rate_limited`                                                                   | Wait the `Retry-After` seconds. Each app may make 60 calls a minute by default.                              |

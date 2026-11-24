@@ -176,8 +176,6 @@ export default function ShellClient({
 
   // The page each framed app last reported, so the address bar can follow it.
   const [locations, setLocations] = useState<Record<string, string>>({});
-  const locationsRef = useRef(locations);
-  locationsRef.current = locations;
   const frames = useRef(new Map<string, HTMLIFrameElement>());
   // Where a frame said it is navigating; used if the frame then loads a page that
   // can't report itself.
@@ -353,20 +351,31 @@ export default function ShellClient({
   }, [sections, openInShell]);
 
   // Going to a heading link's own address takes its frame back to the link's page, wherever
-  // the person had gone in it since.
-  useEffect(() => {
-    if (!active || !headingLink || pathname !== shellPath(active.id)) return;
-    const at = locationsRef.current[active.id];
-    if (!at || at === shellPath(active.id)) return;
-    const frame = frames.current.get(active.id);
-    if (frame?.getAttribute('src') === active.href) frame.src = active.href;
+  // the person had gone in it since. Decided while rendering, so the spinner covers the frame
+  // before the page it had left is ever shown; the reload itself waits for the effect.
+  const [reloading, setReloading] = useState<string | null>(null);
+  const [arrivedAt, setArrivedAt] = useState(pathname);
+  const arrived = pathname !== arrivedAt;
+  if (arrived) setArrivedAt(pathname);
+  const strayed =
+    arrived && active && headingLink && pathname === shellPath(active.id) ? active : null;
+  if (strayed && locations[strayed.id] && locations[strayed.id] !== shellPath(strayed.id)) {
+    setLocations((current) => ({ ...current, [strayed.id]: shellPath(strayed.id) }));
     setOpened((current) =>
       current.map((entry) =>
-        entry.chip.id === active.id ? { ...entry, src: active.href } : entry,
+        entry.chip.id === strayed.id ? { ...entry, src: strayed.href } : entry,
       ),
     );
-    setLocations((current) => ({ ...current, [active.id]: shellPath(active.id) }));
-  }, [pathname, active, headingLink]);
+    setLoaded((ids) => ids.filter((id) => id !== strayed.id));
+    setReloading(strayed.id);
+  }
+  useEffect(() => {
+    if (!reloading) return;
+    const frame = frames.current.get(reloading);
+    const chip = embeddedChip(sections, reloading);
+    if (frame && chip && frame.getAttribute('src') === chip.href) frame.src = chip.href;
+    setReloading(null);
+  }, [reloading, sections]);
 
   const activeLocation = active ? locations[active.id] : undefined;
   useEffect(() => {
