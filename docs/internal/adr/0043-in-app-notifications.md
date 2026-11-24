@@ -59,10 +59,16 @@ tables are handled like the rest of the platform's PHI-adjacent data.
   categories.
 - **Identity.** The app calls the launchpad with a token for its own Keycloak client
   (the client-credentials grant). Fragments can't enable service accounts today
-  (ADR 0037), so the fragment schema gains a notifications capability, which Scout
-  turns into a service account holding only the launchpad client's `notifications-send`
-  role. The sender of a notice is the token's client, matched to its registration; a
-  token without the role, or a client with no registration, is refused.
+  (ADR 0037), so the fragment schema gains a notifications capability. Scout turns it
+  into a service account and links a base-realm client scope to the app's client as
+  optional; the scope puts the launchpad client's `notifications-send` role in a token
+  that asks for it. Assigning the role to the service account instead would take
+  `manage-users`, which the fragment reconciler doesn't hold (ADR 0037) and which would
+  let it change any user's roles. A user's sign-in to the app could ask for the scope
+  too, so the launchpad accepts only client-credentials tokens: Keycloak marks them with
+  a `client_id` claim, which a user's token lacks. The sender of a notice is the token's
+  client, matched to its registration; a token without the role, a token issued to a
+  user, or a client with no registration is refused.
 - **Addressing.** Usernames, and the roles of the app's own client. Realm roles (such as
   `scout-admin`) and other clients' roles are refused, except for senders Scout
   registers itself in the launchpad chart. The launchpad expands a role through a new
@@ -118,9 +124,10 @@ to group by. Notice text stays free of patient data so it can leave Scout later.
 
 ## Security
 
-- A sender is a Keycloak client holding the send role, which Scout grants from the app's
-  fragment; the app can't grant it to itself. A token names its own client, so one app
-  can't send as another.
+- A sender is a Keycloak client whose client-credentials token carries the send role,
+  through a scope Scout links from the app's fragment; the app can't grant it to itself.
+  A token names its own client, so one app can't send as another, and a token issued to
+  one of the app's users can't send at all.
 - Apps address only usernames and their own client's roles.
 - Links stay on the app's own subdomain, under its registered prefixes.
 - Text is plain and length-capped.
@@ -137,7 +144,8 @@ to group by. Notice text stays free of patient data so it can leave Scout later.
   migrations at startup, and the database is backed up with the rest of the platform
   Postgres.
 - The fragment reconciler, the realm (the `notifications-send` role on the launchpad's
-  client) and the scout-users extension each change.
+  client and the client scope that carries it) and the scout-users extension each
+  change.
 - Every site serves the launchpad to browsers over HTTP/2.
 - Apps get an authoring guide for sending, beside the chip guide
   (`docs/source/customize/launchpad-chips.md`).
