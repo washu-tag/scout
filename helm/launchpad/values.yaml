@@ -52,6 +52,9 @@ notifications:
   # Comma-separated Keycloak client ids whose sends are refused and whose notices
   # are hidden: the switch for a sender that misbehaves.
   disabledSenders: ''
+  # Sends and withdrawals each sender may make a minute, across replicas. Empty
+  # keeps the launchpad's default, 60.
+  rateLimit: ''
 
 # Environment label shown next to the Scout brand (e.g. "synthetic", "production").
 # Empty string falls back to "local" in the UI.

@@ -185,8 +185,9 @@ notice to remove it from their list. Read state is each person's own.
 A site operator turns notices on with `enable_notifications`, which gives the launchpad
 its database; [Launchpad Notices](../operate/inventory.md#launchpad-notices)
 covers the database, HTTP/2 at the edge, and backups. The launchpad chart sets the
-variables below from those settings; the last two keep their defaults unless a site
-sets them through the chart's `env`.
+variables below from those settings, the disabled senders and rate limit from
+`launchpad_notification_disabled_senders` and `launchpad_notification_rate_limit`. The
+delivery cap keeps its default unless a site sets it through the chart's `env`.
 
 | Environment variable                     | Default | Meaning                                                                                                   |
 | ---------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------- |

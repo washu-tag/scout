@@ -96,6 +96,10 @@ spec:
             - name: LAUNCHPAD_NOTIFICATION_DISABLED_SENDERS
               value: {{ . | quote }}
             {{- end }}
+            {{- with .Values.notifications.rateLimit }}
+            - name: LAUNCHPAD_NOTIFICATION_RATE_LIMIT
+              value: {{ . | quote }}
+            {{- end }}
             {{- end }}
             {{- with .Values.env }}
             {{- toYaml . | nindent 12 }}

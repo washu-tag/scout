@@ -62,6 +62,8 @@ spec:
       enabled: '${enable_notifications:=false}'
       database:
         existingSecret: launchpad-db-secret
+      disabledSenders: '${launchpad_notification_disabled_senders:=}'
+      rateLimit: '${launchpad_notification_rate_limit:=}'
     scoutEnv: '${scout_env}'
     deployerName: '${deployer_name}'
     docsUrl: '${scout_docs_url}'

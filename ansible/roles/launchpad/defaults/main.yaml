@@ -32,3 +32,5 @@ launchpad_database: launchpad
 launchpad_postgres_user: launchpad
 # Comma-separated Keycloak client ids whose notices are refused and hidden.
 launchpad_notification_disabled_senders: ''
+# Sends and withdrawals each sender may make a minute. Empty keeps the default, 60.
+launchpad_notification_rate_limit: ''

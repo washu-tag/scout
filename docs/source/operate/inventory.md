@@ -868,13 +868,17 @@ reconciler of the same release.
   platform's other PHI-adjacent data. Notices are deleted after 90 days.
 - **Turn off one sender.** `launchpad_notification_disabled_senders` takes
   comma-separated Keycloak client ids. The launchpad refuses their sends and hides the
-  notices they already sent.
+  notices they already sent. Taking a client off the list shows its notices again.
+- **Limit how often an app calls.** `launchpad_notification_rate_limit` is the sends
+  and withdrawals each app may make a minute, across all launchpad replicas (default
+  60). Past it the launchpad answers `429` with `Retry-After`.
 - **Turn notices off.** Set `enable_notifications: false` and re-run
   `make install-launchpad`. The bell goes away. The database and `launchpad-db-secret`
   stay, so turning notices on again keeps what was there; drop them by hand to remove
   them.
 
-On a GitOps site the switch is the `enable_notifications` cluster-var, with
+On a GitOps site these are cluster-vars of the same names (`enable_notifications`,
+`launchpad_notification_disabled_senders`, `launchpad_notification_rate_limit`), with
 `launchpad_postgres_password` in the site's secret values; an aws site creates the
 database in RDS itself (`deploy/required-secrets.md`).
 

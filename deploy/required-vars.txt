@@ -3,8 +3,10 @@
 # postBuild.substituteFrom. Run the kustomize-controller with
 # StrictPostBuildSubstitutions so a missing key fails the build; without it a missing
 # key renders empty. s3_sse_type, s3_username, minio_oidc_enabled, temporal_web_auth,
-# scheduled_ingest_enabled, scheduled_ingest_cron and enable_notifications are the
-# exceptions: they default to NONE, minio, on, oidc, false, "0 6 * * *" and false.
+# scheduled_ingest_enabled, scheduled_ingest_cron, enable_notifications,
+# launchpad_notification_disabled_senders and launchpad_notification_rate_limit are the
+# exceptions: they default to NONE, minio, on, oidc, false, "0 6 * * *", false, empty
+# and empty (the launchpad's 60).
 # Auto-derived from the
 # ${...} vars used across deploy/ and enforced by validate-deploy.yaml; regenerate
 # with the snippet in that workflow when bases add
@@ -52,6 +54,8 @@ keycloak_namespace
 keycloak_realm_name
 keycloak_realm_url
 lake_bucket
+launchpad_notification_disabled_senders
+launchpad_notification_rate_limit
 loki_admin_bucket
 loki_chunks_bucket
 loki_ruler_bucket
