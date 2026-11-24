@@ -600,6 +600,37 @@ def test_filtered_history_is_never_recorded_as_a_version(delta):
     assert ("delta", "default", "reports_report_patient_mapping") not in cache._versions
 
 
+def test_table_memory_drops_the_least_recently_used_search(live, delta, monkeypatch):
+    monkeypatch.setattr(cache, "_TABLES_MAX", 2)
+    first, second, third = (
+        f"SELECT * FROM reports_latest WHERE n = {i}" for i in range(3)
+    )
+    for sql in (first, second, third):
+        delta.inputs[sql] = [("delta", "default", "reports_latest")]
+    _known(delta, reports_latest=2)
+
+    def explains(sql: str) -> int:
+        return sum(1 for c in delta.calls if c.startswith("EXPLAIN") and sql in c)
+
+    async def look(sql: str) -> cache.Lookup:
+        found = await cache.lookup("rows", "alice", sql)
+        await cache.wait_pending()
+        return found
+
+    async def go():
+        await look(first)
+        await look(second)
+        assert (await look(first)).digest is not None, "remembered, so a real lookup"
+        await look(third)
+        assert set(cache._tables) == {first, third}, "second was least recently used"
+        return await look(second)
+
+    again = asyncio.run(go())
+    assert again.digest is None and again.known is not None, "cold once forgotten"
+    assert explains(second) == 2
+    assert explains(first) == 1
+
+
 def test_warm_up_reads_every_table_and_skips_ones_without_history(live, delta):
     delta.listed = ["reports_latest", "reports_latest_spark_epic_view"]
     delta.views = [
