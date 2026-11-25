@@ -142,11 +142,12 @@ open_webui_csp_enabled: true
 # Postgres DB. Naively, env-var changes after first launch would be silent
 # no-ops because the admin UI is authoritative thereafter.
 #
-# To work around that, the bootstrap Job re-pushes the three inventory-tunable
+# To work around that, the bootstrap Job re-pushes these inventory-tunable
 # fields through OWUI's REST API on every deploy:
 #   - tool_server_connections   → POST /api/v1/configs/tool_servers
 #   - open_webui_default_model_id  → POST /api/v1/configs/models
 #   - open_webui_task_model_id     → POST /api/v1/tasks/config/update
+#   - open_webui_task_model_external_id → POST /api/v1/tasks/config/update
 # So these ARE fully declarative — change inventory, re-run make install-chat,
 # done. No SQL surgery on the `config` table needed.
 #
@@ -177,22 +178,17 @@ open_webui_enable_arena_models: false
 open_webui_show_release_notes: false
 open_webui_enable_version_update_check: false
 
-# Default selected model in the picker for new chats. MUST match an Ollama tag
-# exactly — point this at whichever Scout Explorer variant should be the default
-# first impression. The default `gemma4-31b-long` is resident, dense, no thinking-
-# step latency, and fast enough for most asks.
+# Model preselected in the picker for new chats.
 open_webui_default_model_id: '{{ ollama_default_model }}'
 
-# Model used for OWUI's auxiliary tasks (chat title generation, follow-up
-# question suggestions, tag generation, web-search/RAG query refinement).
-# Without this, OWUI uses whichever Scout Explorer the user selected — which
-# means a 5-word title generation can trigger a slow cold-load of a large model.
-#
-# Pick a model that's already preloaded (preload: true) so task gen reuses
-# VRAM. MUST match the `name` of a resident scout_models entry exactly — the
-# raw `gemma4:31b` would be a different Ollama model loaded into a separate
-# VRAM slot.
+# Models for background tasks (titles, tags, follow-ups): task_model_id for
+# Ollama chats, task_model_external_id for open_webui_openai_connections chats.
+# Use a resident scout_models `name` so tasks don't load a second model.
 open_webui_task_model_id: '{{ ollama_default_model }}'
+open_webui_task_model_external_id: '{{ open_webui_task_model_id }}'
+
+# Max tool calls per reply. Each call re-sends the full prompt to the model.
+open_webui_max_tool_call_iterations: 32
 
 # ----------------------------------------------------------------------------
 # Admin bootstrap

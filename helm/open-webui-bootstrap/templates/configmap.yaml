@@ -20,6 +20,7 @@ data:
         "tool_server_connections" (.Values.persistentConfig.tool_server_connections | default list)
         "default_model_id" (.Values.persistentConfig.default_model_id | default "")
         "task_model_id" (.Values.persistentConfig.task_model_id | default "")
+        "task_model_external_id" (.Values.persistentConfig.task_model_external_id | default "")
         "jwt_expires_in" (.Values.persistentConfig.jwt_expires_in | default "")
     | toJson }}
 
@@ -143,17 +144,16 @@ data:
     ) -}}
     {{- end -}}
     {{- if $m.ui -}}
-    {{- /* OWUI stores custom param values as JSON strings */ -}}
-    {{- $custom := dict -}}
-    {{- range $k, $v := (default (dict) $m.params) -}}
-    {{- $_ := set $custom $k (ternary $v (toJson $v) (kindIs "string" $v)) -}}
-    {{- end -}}
+    {{- /* Objects, not JSON strings, so model control options deep-merge into them */ -}}
     {{- $params := dict
         "system_file" $defaults.systemPromptFile
         "function_calling" (default $defaults.functionCalling $m.ui.function_calling)
-        "custom_params" $custom -}}
+        "custom_params" (default (dict) $m.params) -}}
     {{- if $m.ui.reasoning_effort -}}
     {{- $_ := set $params "reasoning_effort" $m.ui.reasoning_effort -}}
+    {{- end -}}
+    {{- if $m.ui.model_controls -}}
+    {{- $_ := set $params "model_controls" $m.ui.model_controls -}}
     {{- end -}}
     {{- if $m.ui.compact_token_threshold -}}
     {{- $_ := set $params "compact_token_threshold" ($m.ui.compact_token_threshold | int) -}}
