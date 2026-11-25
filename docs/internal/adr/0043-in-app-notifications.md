@@ -35,8 +35,8 @@ platform Postgres, beside Superset's and Temporal's (CloudNativePG on-prem, RDS 
 AWS). It holds:
 
 - **Notices:** the sender, a category, a title (at most 120 characters), an optional
-  detail line (at most 300), a link, an optional collapse key and idempotency key, the
-  time sent, and an optional expiry.
+  detail (at most 1,000, with line breaks), a link, an optional collapse key and
+  idempotency key, the time sent, and an optional expiry.
 - **Deliveries:** one per recipient, naming the notice, the username, the role it came
   through (if any), and when it was seen, read and archived.
 
