@@ -222,6 +222,19 @@ describe('send API', { skip: needsDatabase }, () => {
     assert.equal((await listFor('dana')).length, 1);
   });
 
+  it('replays an idempotency key after its notice has expired', async () => {
+    const sent = new Date();
+    const expiring = body({
+      idempotencyKey: 'request-43-opened',
+      expiresAt: new Date(sent.getTime() + 60_000).toISOString(),
+    });
+    const first = await send(expiring);
+    assert.equal(first.status, 201);
+    const later = await send(expiring, { now: () => new Date(sent.getTime() + 120_000) });
+    assert.deepEqual([later.status, later.body], [201, first.body]);
+    assert.equal(later.headers?.['Idempotent-Replayed'], 'true');
+  });
+
   it('replaces by collapse key and withdraws for everyone it reached', async () => {
     await send(body({ collapseKey: 'request-42', recipients: { roles: ['reviewer'] } }));
     const replaced = await send(

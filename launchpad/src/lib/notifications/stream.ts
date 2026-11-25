@@ -87,6 +87,11 @@ export function noticeStream(source: StreamSource): ReadableStream<Uint8Array> {
       };
       stop = close;
       source.signal.addEventListener('abort', close);
+      // A reader that left before the stream opened never fires abort.
+      if (source.signal.aborted) {
+        close();
+        return;
+      }
       counts(source.first);
     },
     cancel() {

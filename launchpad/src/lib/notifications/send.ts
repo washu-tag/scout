@@ -8,7 +8,7 @@ import { disabledSenders, maxDeliveries, sendRateLimit } from './settings';
 import { noticeStore, type NoticeStore } from './store';
 import { verifySenderToken } from './token';
 
-const BODY_MAX_BYTES = 128 * 1024;
+export const BODY_MAX_BYTES = 128 * 1024;
 
 export interface Reply {
   status: number;
@@ -132,7 +132,7 @@ function unavailable(err: unknown): Reply {
 
 export async function sendNotice(
   authorization: string | null,
-  readBody: () => Promise<string>,
+  readBody: () => Promise<string | null>,
   deps: SendDeps,
 ): Promise<Reply> {
   try {
@@ -140,7 +140,7 @@ export async function sendNotice(
     if ('status' in auth) return auth;
     const { sender, store } = auth;
     const text = await readBody();
-    if (Buffer.byteLength(text) > BODY_MAX_BYTES) {
+    if (text === null || Buffer.byteLength(text) > BODY_MAX_BYTES) {
       return fail(413, 'too_large', `the body may be at most ${BODY_MAX_BYTES} bytes`);
     }
     let json: unknown;
@@ -157,13 +157,13 @@ export async function sendNotice(
       return fail(400, 'invalid_request', reasons.join('; '));
     }
     const request = parsed.data;
-    const checked = checkRequest(request, sender, deps.now?.() ?? new Date());
-    if (!checked.ok) return fail(422, checked.error, checked.message);
     if (request.idempotencyKey) {
       const earlier = await store.replay(sender.clientId, request.idempotencyKey);
       if (earlier)
         return { status: 201, body: earlier, headers: { 'Idempotent-Replayed': 'true' } };
     }
+    const checked = checkRequest(request, sender, deps.now?.() ?? new Date());
+    if (!checked.ok) return fail(422, checked.error, checked.message);
     const found = await recipients(request.recipients, sender, deps);
     if (!(found instanceof Map)) return found;
     const { result, replayed } = await store.send(
