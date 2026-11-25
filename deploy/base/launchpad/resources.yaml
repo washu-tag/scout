@@ -62,8 +62,10 @@ spec:
       enabled: '${enable_notifications:=false}'
       database:
         existingSecret: launchpad-db-secret
-      disabledSenders: '${launchpad_notification_disabled_senders:=}'
-      rateLimit: '${launchpad_notification_rate_limit:=}'
+      # Flux drops template quotes before substituting, so ${sq} keeps a client id such
+      # as off or 0123 a string.
+      disabledSenders: ${sq}${launchpad_notification_disabled_senders:=}${sq}
+      rateLimit: ${sq}${launchpad_notification_rate_limit:=}${sq}
     scoutEnv: '${scout_env}'
     deployerName: '${deployer_name}'
     docsUrl: '${scout_docs_url}'

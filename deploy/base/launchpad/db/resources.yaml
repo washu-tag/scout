@@ -1,5 +1,5 @@
 # The launchpad's role and database for in-app notices (ADR 0043), on-prem. While
-# enable_notifications is not "true" the Job exits at once, so a site that leaves
+# enable_notifications is not true (true, True or TRUE, as YAML reads it) the Job exits at once, so a site that leaves
 # notices off gets no role and no database. A superuser Job rather than a CNPG managed
 # role and Database CR, which a flag can't leave out of the Cluster (ADR 0031: databases
 # added later are idempotent Jobs). Each run re-sets the role's password, so a rotated
@@ -67,10 +67,13 @@ spec:
             - sh
             - -ec
             - |
-              if [ "$$ENABLED" != true ]; then
-                echo "enable_notifications is off; nothing to provision"
-                exit 0
-              fi
+              case "$$ENABLED" in
+                true | True | TRUE) ;;
+                *)
+                  echo "enable_notifications is off; nothing to provision"
+                  exit 0
+                  ;;
+              esac
               if [ -z "$$LAUNCHPAD_PASSWORD" ]; then
                 echo "launchpad_postgres_password is empty" >&2
                 exit 1
