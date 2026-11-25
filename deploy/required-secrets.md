@@ -32,6 +32,8 @@ the secret analog of `required-vars.txt`. Namespaces below are the base's logica
 | `valkey-auth` | `password`, `password-file` | Valkey chart + exporter |
 | `launchpad-keycloak-secret` | `client-secret` | launchpad OIDC login (pod-side; = the realm's `launchpad_client` value, not that key) |
 | `launchpad-nextauth-secret` | `secret` | launchpad next-auth session signing (generate-once) |
+| `launchpad-db-secret` | `url` | launchpad notices database, read only while `enable_notifications` is `"true"` (ADR 0043). A `postgresql://` URL that reaches Postgres directly, not a transaction pooler; on-prem it is `postgresql://launchpad:<launchpad_postgres_password>@${postgres_host}:${db_port}/launchpad?sslmode=no-verify` |
+| `launchpad-db-owner` | `username`, `password` | on-prem only: the `launchpad-db-init` Job, which creates the `launchpad` role and database while `enable_notifications` is `"true"` (= the password in `launchpad-db-secret`) |
 | `opa-bundle-writer` | `access-key`, `secret-key` | Keycloak OPA bundle publisher (on-prem: MinIO creds; aws: present with **empty** values, else they shadow IRSA) |
 | `alb-oidc-keycloak` | `clientID`, `clientSecret` | aws only: ALB-native OIDC on launchpad (also in `${scout_analytics_namespace}` for superset and `${scout_extractor_namespace}` for the Temporal UI); the `oauth2-proxy` client |
 
@@ -99,9 +101,10 @@ the tool's validation on the values first is the simplest way.
 - every value uses only `A-Z a-z 0-9 . _ ~ + / = -`, which passes intact through the
   single-quoted templates, Flux substitution, the realm JSON config-cli parses and the
   `config.env` sh sources (`openssl rand -hex` and `-base64` output fits);
-- `valkey_password` and `superset_postgres_password` also leave out `+ / =`, because
-  the superset chart builds connection URLs from them (and valkey's also sits in the
-  exporter's `password-file` JSON);
+- `valkey_password`, `superset_postgres_password` and `launchpad_postgres_password`
+  also leave out `+ / =`, because the superset chart and the `launchpad-db-secret`
+  template build connection URLs from them (and valkey's also sits in the exporter's
+  `password-file` JSON);
 - MinIO: `s3_password` and each `s3_*_secret` at least 8 characters. `config.env` also
   reads two cluster-vars: `s3_username` (default `minio`) follows the same character
   rule with at least 3 characters, and `minio_oidc_enabled` (default `on`; `off` where
@@ -172,6 +175,11 @@ authorization listener, SELECT-only DB role).
   var, and the DB credential Secrets are materialized from RDS (same fixed names) instead of
   the operator. Temporal runs on Postgres (no Cassandra/Elasticsearch), so its history +
   visibility databases live in RDS too.
+- **Launchpad notices (`enable_notifications`).** Off by default, and nothing reads
+  `launchpad-db-secret` until a site turns them on. An aws site that does creates a
+  `launchpad` role owning a `launchpad` database in RDS, as it does the other app
+  databases, and materializes `launchpad-db-secret` pointing at the instance itself,
+  not at an RDS Proxy: the launchpad holds a `LISTEN` connection.
 - Several values are shared across secrets (e.g. one Postgres role password appears in
   its `cnpg-role-*` and in the app's DB secret; one lake credential appears under
   several key names). Provision the value once and template it into each Secret.

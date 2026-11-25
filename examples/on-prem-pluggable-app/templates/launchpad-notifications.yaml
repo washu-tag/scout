@@ -1,0 +1,24 @@
+{{- if .Values.notifications.enabled }}
+---
+# Registers the app as a sender of launchpad notices (ADR 0043). The launchpad
+# discovers this ConfigMap by its label, as it does the chip. Notices name the
+# app as displayName, and their links open on the app's own subdomain.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "example.fullname" . }}-notices
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "example.labels" . | nindent 4 }}
+    launchpad.scout.xnat.org/notifications: 'true'
+data:
+  sender.yaml: |
+    apiVersion: launchpad.scout.xnat.org/v1alpha1
+    kind: NotificationSender
+    displayName: {{ .Values.launchpad.title }}
+    clientId: {{ .Values.clientId }}
+    link:
+      subdomain: {{ .Values.subdomain }}
+      pathPrefixes: [/]
+    categories: [example]
+{{- end }}

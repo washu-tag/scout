@@ -833,6 +833,56 @@ two-secret auth scheme. This feature — and report-viewer's browser-facing UI i
 general — only works in on-prem mode today, because report-viewer has no aws-mode
 Ingress yet (ADR 0035).
 
+(launchpad-notices)=
+
+#### Launchpad Notices (optional)
+
+The launchpad can show notices from Scout services and Pluggable Apps under a bell in
+its rail ([Send Notices to the Scout Launchpad](../customize/launchpad-notifications.md)).
+They are off by default. Turning them on gives the launchpad a database on the platform
+Postgres:
+
+```yaml
+enable_notifications: true
+launchpad_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+```
+
+Then run `make install-launchpad`. It creates a `launchpad` role owning a `launchpad`
+database, puts the connection URL in the `launchpad-db-secret` Secret in the launchpad's
+namespace, and adds a sidecar that collects apps' sender registrations. The launchpad
+creates its tables when it starts. An app sends with a Keycloak service account that
+its fragment asks for, which needs the realm (`make install-auth`) and the fragment
+reconciler of the same release.
+
+- **Connect directly.** The URL names the Postgres primary (`db_host`). Don't point it
+  at a transaction-pooling proxy, such as PgBouncer in transaction mode or RDS Proxy:
+  each launchpad replica keeps a `LISTEN` connection open to hear about notices sent
+  through the others.
+- **Serve HTTP/2.** Each open Scout tab holds a stream to the launchpad. Over HTTP/1.1
+  a browser allows six connections to a host across all its tabs, so the seventh tab
+  stalls. Traefik offers HTTP/2 on its TLS entrypoint by default, and so do AWS ALBs; a
+  proxy in front of them that terminates TLS must offer it as well.
+  `curl -sI --http2 https://<server_hostname>/favicon.ico` should answer `HTTP/2 200`.
+- **Back it up.** The database lives in the platform Postgres, so whatever backs up that
+  cluster at your site covers it; Scout doesn't configure Postgres backups itself. It
+  records who was sent which notice and when they read it, so handle it like the
+  platform's other PHI-adjacent data. Notices are deleted after 90 days.
+- **Turn off one sender.** `launchpad_notification_disabled_senders` takes
+  comma-separated Keycloak client ids. The launchpad refuses their sends and hides the
+  notices they already sent. Taking a client off the list shows its notices again.
+- **Limit how often an app calls.** `launchpad_notification_rate_limit` is the sends
+  and withdrawals each app may make a minute, across all launchpad replicas (default
+  60). Past it the launchpad answers `429` with `Retry-After`.
+- **Turn notices off.** Set `enable_notifications: false` and re-run
+  `make install-launchpad`. The bell goes away. The database and `launchpad-db-secret`
+  stay, so turning notices on again keeps what was there; drop them by hand to remove
+  them.
+
+On a GitOps site these are cluster-vars of the same names (`enable_notifications`,
+`launchpad_notification_disabled_senders`, `launchpad_notification_rate_limit`), with
+`launchpad_postgres_password` in the site's secret values; an aws site creates the
+database in RDS itself (`deploy/required-secrets.md`).
+
 #### Ollama Models
 
 Specify which AI models to pull automatically:

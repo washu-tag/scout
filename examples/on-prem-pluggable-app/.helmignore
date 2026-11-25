@@ -1,2 +1,4 @@
 # The Flux example that installs this chart, not part of it.
 flux/
+# A dev helper that sends a notice as this app, not part of the chart.
+send-notice.sh

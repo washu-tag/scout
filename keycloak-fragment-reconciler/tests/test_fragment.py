@@ -43,6 +43,7 @@ clients:
       scout-user: [rich-user]
       scout-admin: [rich-admin]
     clientScopes: [xnat-audience]
+    sendNotifications: true
 """
 
 
@@ -108,6 +109,7 @@ class TestHappyPath:
         assert spec.client_scopes == []
         assert spec.grants == {}
         assert spec.description == ""
+        assert spec.send_notifications is False
 
 
 class TestVersionGate:
@@ -160,6 +162,26 @@ class TestUnknownFieldsAreRejected:
     def test_a_typo_is_not_silently_dropped(self):
         with pytest.raises(FragmentError, match="redirectUrls|Extra"):
             parse(fragment_text().replace("redirectUris:", "redirectUrls:"))
+
+
+class TestSendNotifications:
+    """The one way a fragment gets a service account, and only as Scout reads it."""
+
+    def test_it_parses(self):
+        assert parsed(with_fields("    sendNotifications: true")).send_notifications
+
+    @pytest.mark.parametrize("value", ['"true"', "1", "[]"])
+    def test_only_a_yaml_boolean_is_accepted(self, value):
+        with pytest.raises(FragmentError, match="sendNotifications"):
+            parse(with_fields(f"    sendNotifications: {value}"))
+
+    def test_it_does_not_open_the_service_account_switch(self):
+        with pytest.raises(FragmentError, match="Extra inputs|extra"):
+            parse(
+                with_fields(
+                    "    sendNotifications: true", "    serviceAccountsEnabled: true"
+                )
+            )
 
 
 class TestGrantsAreConstrained:
@@ -510,6 +532,7 @@ class TestNestingDepth:
             "scout-admin": ["rich-admin"],
         }
         assert spec.client_scopes == ["xnat-audience"]
+        assert spec.send_notifications is True
 
     def test_one_level_past_the_cap_names_the_limit(self):
         with pytest.raises(FragmentError, match=f"{MAX_DEPTH}-level limit"):

@@ -1,0 +1,29 @@
+# on-prem: the launchpad's notices database (ADR 0043) on the CNPG cluster, created by a
+# Job that does nothing until the site sets enable_notifications. aws sites create the
+# role and database in RDS with their other databases (required-secrets.md). The
+# launchpad doesn't dependsOn this: it retries its database until one answers.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: launchpad-db
+  namespace: flux-system
+spec:
+  interval: 30m
+  path: ./base/launchpad/db
+  prune: true
+  wait: true
+  timeout: 5m
+  sourceRef:
+    kind: OCIRepository
+    name: scout-config
+  postBuild:
+    # sq quotes the Job's env values (see base/launchpad/db). Inline, so a site
+    # cannot redefine it.
+    substitute:
+      sq: "'"
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+  dependsOn:
+    - name: postgres-ready
+    - name: secrets-ready # superuser-secret + launchpad-db-owner
