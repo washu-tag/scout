@@ -19,7 +19,7 @@ sends notices includes reviewing what it sends.
 
 :::{note}
 Notices are off unless the site has turned them on ([site settings](#site-settings)).
-On a site without them, the launchpad has no bell and its notices API answers `404`.
+On a site without them, the launchpad has no Activity bell and its notices API answers `404`.
 :::
 
 ## What a notice holds
