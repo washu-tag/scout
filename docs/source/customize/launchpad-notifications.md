@@ -126,8 +126,9 @@ curl -s -X POST http://launchpad.scout-core.svc.cluster.local:3000/api/notificat
 `recipients.users` are Scout usernames. `recipients.roles` are role names of your own
 client, as in your fragment's `roles`; the launchpad delivers to everyone who holds the
 role when you send, directly or through a group. Someone who gets the role later
-doesn't see notices sent before. Each person gets the notice once, however many ways it
-reaches them.
+doesn't see notices sent before, and someone who loses it keeps the notices they already
+have until you withdraw them or they expire. Each person gets the notice once, however
+many ways it reaches them.
 
 **Not yet available:** sending to a role needs a Keycloak extension that isn't
 released. Until it is, a send naming a role answers `503 role_lookup_unavailable`.
