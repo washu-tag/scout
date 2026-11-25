@@ -8,11 +8,18 @@ import { REAUTH_REQUIRED } from './keycloakToken';
  * - `ask`: a load balancer's OIDC sign-in redirected, or the launchpad reported its own session
  *   gone (440). Either way, going to sign-in starts an attempt that expires within minutes, so a
  *   page left on it fails when finally used. The shell waits for a click instead.
+ * - `sign-in`: the launchpad reported its own session gone (440) on the first page after the edge's
+ *   sign-in. That sign-in has just started Keycloak's session, so the launchpad's own passes
+ *   without a page, and asking would only add a second click.
  */
-export type SessionRecovery = 'none' | 'reload' | 'ask';
+export type SessionRecovery = 'none' | 'reload' | 'ask' | 'sign-in';
 
-export function sessionRecovery(response: Pick<Response, 'status' | 'type'>): SessionRecovery {
+export function sessionRecovery(
+  response: Pick<Response, 'status' | 'type'>,
+  afterEdgeSignIn = false,
+): SessionRecovery {
   if (response.status === 401) return 'reload';
+  if (response.status === REAUTH_REQUIRED && afterEdgeSignIn) return 'sign-in';
   if (response.type === 'opaqueredirect' || response.status === REAUTH_REQUIRED) return 'ask';
   return 'none';
 }
