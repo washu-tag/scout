@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signIn, signOut } from 'next-auth/react';
@@ -37,6 +37,8 @@ interface ShellClientProps {
 }
 
 const ACCOUNT_MENU = '@account';
+const MENU_PANEL = 'scout-rail-menu';
+const MENU_MARGIN = 12;
 const SESSION_CHECK_MS = 60_000;
 const RECOVERY_KEY = 'scout-shell-session-recovery';
 const RECOVERY_BACKOFF_MS = 60_000;
@@ -47,7 +49,7 @@ const MAX_OPEN_APPS = 3;
 const FRAME_SANDBOX = 'allow-scripts allow-same-origin allow-forms allow-modals allow-downloads';
 
 const MENU =
-  'fixed left-[76px] z-30 w-80 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-900';
+  'fixed left-[76px] z-30 w-80 max-h-[calc(100vh-24px)] overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-900';
 const MENU_ITEM =
   'flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm text-slate-700 no-underline hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer';
 const MENU_ICON = 'text-base text-slate-500 dark:text-slate-400';
@@ -141,6 +143,8 @@ export default function ShellClient({
   const router = useRouter();
   const { data: session, status } = useSession();
   const railRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuTrigger = useRef<HTMLElement | null>(null);
   const signingOut = useRef(false);
   const lastSession = useRef(session);
   if (session) lastSession.current = session;
@@ -378,20 +382,44 @@ export default function ShellClient({
       if (!railRef.current?.contains(event.target as Node)) close();
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') close();
+      if (event.key !== 'Escape') return;
+      close();
+      menuTrigger.current?.focus();
+    };
+    const onFocusIn = (event: FocusEvent) => {
+      if (!railRef.current?.contains(event.target as Node)) close();
     };
     document.addEventListener('pointerdown', onPointerDown);
     document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('focusin', onFocusIn);
     // A click inside an app's frame never reaches this document; it blurs the window.
     window.addEventListener('blur', close);
     return () => {
       document.removeEventListener('pointerdown', onPointerDown);
       document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('focusin', onFocusIn);
       window.removeEventListener('blur', close);
     };
   }, [menuOpen]);
 
+  const menuId = menu?.id;
+  useLayoutEffect(() => {
+    if (menuId) menuRef.current?.querySelector<HTMLElement>('a[href], button')?.focus();
+  }, [menuId]);
+
+  // A group's menu opens beside its button, moved up as far as it needs to stay on screen.
+  useLayoutEffect(() => {
+    const panel = menuRef.current;
+    if (!menu || menu.id === ACCOUNT_MENU || !panel) return;
+    const top = Math.max(
+      MENU_MARGIN,
+      Math.min(menu.top, window.innerHeight - panel.offsetHeight - MENU_MARGIN),
+    );
+    if (top !== menu.top) setMenu({ ...menu, top });
+  }, [menu]);
+
   const toggleMenu = (id: string, event: React.MouseEvent<HTMLElement>) => {
+    menuTrigger.current = event.currentTarget;
     const top = event.currentTarget.getBoundingClientRect().top;
     setMenu((current) => (current?.id === id ? null : { id, top }));
   };
@@ -467,8 +495,8 @@ export default function ShellClient({
       <button
         key={section.id}
         type="button"
-        aria-haspopup="menu"
         aria-expanded={isOpen}
+        aria-controls={isOpen ? MENU_PANEL : undefined}
         title={section.title}
         onClick={(event) => toggleMenu(section.id, event)}
         className={railItemClass(isOpen || current !== undefined)}
@@ -534,8 +562,8 @@ export default function ShellClient({
           <div className="mt-auto flex w-full flex-col items-center border-t border-slate-200 pt-2 dark:border-slate-800">
             <button
               type="button"
-              aria-haspopup="menu"
               aria-expanded={menu?.id === ACCOUNT_MENU}
+              aria-controls={menu?.id === ACCOUNT_MENU ? MENU_PANEL : undefined}
               title={user?.name || user?.username || 'Account'}
               onClick={(event) => toggleMenu(ACCOUNT_MENU, event)}
               className={railItemClass(menu?.id === ACCOUNT_MENU)}
@@ -554,12 +582,7 @@ export default function ShellClient({
         </nav>
 
         {openSection && menu && (
-          <div
-            role="menu"
-            aria-label={openSection.title}
-            className={MENU}
-            style={{ top: menu.top }}
-          >
+          <div ref={menuRef} id={MENU_PANEL} className={MENU} style={{ top: menu.top }}>
             {menuBlocks(openSection).map((block, index) => (
               <div
                 key={block.id}
@@ -579,7 +602,6 @@ export default function ShellClient({
                     <ChipAnchor
                       key={chip.id}
                       chip={chip}
-                      role="menuitem"
                       onClick={() => setMenu(null)}
                       aria-current={current ? 'page' : undefined}
                       className={`${MENU_ITEM} ${current ? 'bg-slate-100 dark:bg-slate-800' : ''}`}
@@ -612,7 +634,7 @@ export default function ShellClient({
         )}
 
         {menu?.id === ACCOUNT_MENU && (
-          <div role="menu" aria-label="Account" className={`${MENU} bottom-3`}>
+          <div ref={menuRef} id={MENU_PANEL} className={`${MENU} bottom-3`}>
             <div className="mb-1 border-b border-slate-200 px-2.5 pb-2 pt-1 dark:border-slate-700">
               <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
                 {user?.name || user?.username || 'User'}
@@ -626,12 +648,11 @@ export default function ShellClient({
                 <p className="truncate text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
               )}
             </div>
-            <button role="menuitem" type="button" onClick={toggleTheme} className={MENU_ITEM}>
+            <button type="button" onClick={toggleTheme} className={MENU_ITEM}>
               {dark ? <FaSun className={MENU_ICON} /> : <FaMoon className={MENU_ICON} />}
               {dark ? 'Light mode' : 'Dark mode'}
             </button>
             <a
-              role="menuitem"
               href={docsUrl}
               target="_blank"
               rel="noopener noreferrer"
@@ -641,7 +662,7 @@ export default function ShellClient({
               <FaBook className={MENU_ICON} />
               Documentation
             </a>
-            <button role="menuitem" type="button" onClick={signOutOfScout} className={MENU_ITEM}>
+            <button type="button" onClick={signOutOfScout} className={MENU_ITEM}>
               <FaSignOutAlt className={MENU_ICON} />
               Sign out
             </button>
