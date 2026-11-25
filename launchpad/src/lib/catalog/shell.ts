@@ -244,9 +244,11 @@ function canAskToOpen(launchpad: URL, origin: string): boolean {
   return !host.slice(0, -launchpad.hostname.length - 1).includes('.');
 }
 
-// A `scout:open` request: the framed app and launchpad address for `href`, when the
-// sender may ask (canAskToOpen), `href` is on the launchpad's host or a subdomain of
-// it, and a chip owns `href`. A sandboxed chip's origin can't ask: its pages may run
+// A `scout:open` request: the framed app, launchpad address and frame URL for `href`,
+// when the sender may ask (canAskToOpen), `href` is on the launchpad's host or a
+// subdomain of it, and a chip owns `href`. `href` may also be the launchpad's own
+// address for a chip's page, /app/<id>/<page>, so an app can link to another by id
+// without knowing its host. A sandboxed chip's origin can't ask: its pages may run
 // content the app didn't write.
 export function openRequest(
   sections: ShellSection[],
@@ -260,9 +262,11 @@ export function openRequest(
   const chips = routableChips(sections);
   if (chips.some((chip) => chip.sandbox && isChipOrigin(chip, origin))) return null;
   const url = new URL(href);
-  const chip = chipForUrl(sections, url);
-  const address = chip ? shellLocation(chip, url.href) : null;
-  return chip && address ? { chip, address, href: url.href } : null;
+  const own = url.origin === launchpad.origin ? /^\/app\/([^/]+)/.exec(url.pathname) : null;
+  const chip = own ? embeddedChip(sections, own[1]) : chipForUrl(sections, url);
+  const page = own && chip ? frameUrl(chip, deepPath(chip.id, url)) : url.href;
+  const address = chip ? shellLocation(chip, page) : null;
+  return chip && address ? { chip, address, href: page } : null;
 }
 
 // The most recently used app ids, newest last, at most `max`.

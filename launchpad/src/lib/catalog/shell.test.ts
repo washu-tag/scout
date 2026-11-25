@@ -609,6 +609,21 @@ describe('openRequest', () => {
     );
   });
 
+  it("opens the launchpad's own address for a chip's page in that chip", () => {
+    const sender = 'https://report-viewer.scout.example.edu';
+    const request = open(sender, 'https://scout.example.edu/app/notebooks/user/alice/lab?x=1');
+    assert.strictEqual(request?.chip.id, 'notebooks');
+    assert.strictEqual(request?.href, 'https://jupyter.scout.example.edu/user/alice/lab?x=1');
+    assert.strictEqual(request?.address, '/app/notebooks/user/alice/lab?x=1');
+    assert.strictEqual(open(sender, 'https://scout.example.edu/app/chat')?.address, '/app/chat');
+    assert.strictEqual(open(sender, 'https://scout.example.edu/app/nope/x'), null);
+    assert.strictEqual(open(sender, 'https://scout.example.edu/app/~report-viewer/report/1'), null);
+    assert.strictEqual(
+      open('https://chat.scout.example.edu', 'https://scout.example.edu/app/notebooks/'),
+      null,
+    );
+  });
+
   it("opens a page on a JupyterHub user's server in the notebooks app", () => {
     assert.strictEqual(
       open(

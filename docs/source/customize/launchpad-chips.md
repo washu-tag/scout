@@ -209,7 +209,9 @@ window.top.postMessage(
 ```
 
 The launchpad opens the page in the chip that owns it and answers the sender with
-`{ type: 'scout:opened', href }`. It accepts the request from any frame, nested ones
+`{ type: 'scout:opened', href }`. `href` can also be the launchpad's own address for a
+chip's page, `https://scout.example.edu/app/<chip id>/<path>`, so you can link to
+another service by its chip id without knowing its host. It accepts the request from any frame, nested ones
 included, whose origin is the launchpad's or a single-label subdomain of its host,
 except a chip with `sandbox: true`, and ignores pages no chip owns. Without an answer,
 open the page as you otherwise would. This also works from a page your service shows
