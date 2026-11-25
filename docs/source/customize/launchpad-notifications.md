@@ -126,8 +126,9 @@ curl -s -X POST http://launchpad.scout-core.svc.cluster.local:3000/api/notificat
 client, as in your fragment's `roles`; the launchpad delivers to everyone who holds the
 role when you send, directly, through a group, or through a composite role such as a
 `grants` entry in your fragment. Disabled accounts are left out. Someone who gets the
-role later doesn't see notices sent before. Each person gets the notice once, however
-many ways it reaches them.
+role later doesn't see notices sent before, and someone who loses it keeps the notices
+they already have until you withdraw them or they expire. Each person gets the notice
+once, however many ways it reaches them.
 
 A send answers `201` with the notice's id and how many people it reached:
 

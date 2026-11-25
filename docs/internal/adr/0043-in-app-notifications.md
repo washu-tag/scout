@@ -35,16 +35,17 @@ platform Postgres, beside Superset's and Temporal's (CloudNativePG on-prem, RDS 
 AWS). It holds:
 
 - **Notices:** the sender, a category, a title (at most 120 characters), an optional
-  detail line (at most 300), a link, an optional collapse key and idempotency key, the
-  time sent, and an optional expiry.
+  detail (at most 1,000, with line breaks), a link, an optional collapse key and
+  idempotency key, the time sent, and an optional expiry.
 - **Deliveries:** one per recipient, naming the notice, the username, the role it came
   through (if any), and when it was seen, read and archived.
 
 Roles are expanded when a notice is sent. The launchpad resolves each role to the users
 who hold it at that moment, directly or through a group or composite role, and writes
 one delivery per user, without duplicates. Each person's read state is their own. A
-delivery that came through a role is hidden once its person no longer holds the role;
-someone who gains the role later doesn't see older notices.
+delivery stays until the sender withdraws the notice or it expires, even once its person
+no longer holds the role it came through; the page behind the link checks their access
+as always. Someone who gains the role later doesn't see older notices.
 
 Notices are kept for 90 days, or until their expiry if sooner, and then deleted with
 their deliveries. Who was told what, and when they read it, is itself sensitive, so the
@@ -151,6 +152,8 @@ to group by. Notice text stays free of patient data so it can leave Scout later.
   (`docs/source/customize/launchpad-chips.md`).
 - New holders of a role don't see notices sent before they had it. A service whose work
   queue matters to them keeps the queue on its own pages.
+- Someone who loses a role keeps the notices it brought them until the sender withdraws
+  them or they expire. The page behind each link checks their access.
 - Withdrawing a notice is the sender's job. One that never withdraws leaves stale
   "needs review" notices until they expire.
 
