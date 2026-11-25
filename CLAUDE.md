@@ -242,6 +242,7 @@ the ADR itself before changing anything it covers.
 - **0040** XNAT plugins from private S3 — one `type: s3` declaration; connected clusters download from S3, air-gapped ones from a copy the staging run puts in Nexus. Read before adding a plugin from S3 or changing how plugin jars reach an air-gapped cluster
 - **0041** Pluggable App private images — an app's registry logins are used only for its own pods' pulls, through a namespace-scoped admission policy that adds a pull Secret when connected and sends images to a per-app Harbor project when air-gapped. Read before changing how Pluggable Apps or air-gapped nodes pull images
 - **0042** launchpad shell — every service opens framed beside the launchpad's rail, deep links go through `/open/<service host>`, and services talk to the launchpad only through checked `scout:location`/`scout:open` messages; chat's frame is sandboxed. Read before changing framing headers, the deep-link edge, a service's launchpad messages, or chat exfiltration controls
+- **0043** Forgejo builds (proposed, work in progress) — users' code and images live in a Forgejo Pluggable App that builds on locked-down runners and takes one-time imports from GitHub only. Read before changing Forgejo's auth routes, builds or what it can reach outside Scout
 
 For 0030/0031 start with `docs/internal/adr/0030-0031-tldr.md`; the phased migration plan
 is `docs/internal/gitops-implementation-plan.md`.
