@@ -92,6 +92,7 @@ const chipBase = {
   link: linkSchema,
   newTab: z.boolean(),
   sandbox: z.boolean(),
+  crossOriginClipboard: z.boolean(),
   group: idSchema,
   weight: z.number(),
   audience: audienceSchema,
@@ -143,6 +144,7 @@ const CHIP_FALLBACKS = {
   tone: DEFAULT_TONE,
   newTab: true,
   sandbox: false,
+  crossOriginClipboard: false,
   group: DEFAULT_GROUP,
   weight: 100,
   audience: 'user',
@@ -223,6 +225,11 @@ const chipSchema = z.object({
   // Fails closed like audience: an invalid value rejects the chip rather than
   // dropping the sandbox.
   sandbox: chipBase.sandbox.default(CHIP_FALLBACKS.sandbox),
+  crossOriginClipboard: caught(
+    'crossOriginClipboard',
+    chipBase.crossOriginClipboard,
+    CHIP_FALLBACKS.crossOriginClipboard,
+  ),
   group: caught('group', chipBase.group, CHIP_FALLBACKS.group),
   weight: caught('weight', chipBase.weight, CHIP_FALLBACKS.weight),
   // Visibility fails closed: no .catch() here, so an invalid value rejects

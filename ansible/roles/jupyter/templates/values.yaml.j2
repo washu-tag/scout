@@ -173,7 +173,7 @@ ingress:
     traefik.ingress.kubernetes.io/router.middlewares: >-
       kube-system-oauth2-proxy-error@kubernetescrd,
       kube-system-oauth2-proxy-auth@kubernetescrd,
-      kube-system-security-headers@kubernetescrd
+      {{ jupyter_namespace }}-jupyter-security-headers@kubernetescrd
   hosts:
     - 'jupyter.{{ server_hostname }}'
     - '*.jupyter.{{ server_hostname }}'
@@ -203,7 +203,11 @@ singleuser:
       ephemeral-storage: 10Mi
     limits:
       ephemeral-storage: '{{ jupyter_singleuser_ephemeral_storage_limit }}'
-  profileList: {{ jupyter_profiles | to_json }}
+{% set _profiles = [] %}
+{% for _profile in jupyter_profiles %}
+{%   set _ = _profiles.append(_profile | combine({'profile_options': jupyter_interfaces | combine(_profile.profile_options | default({}), recursive=True)})) %}
+{% endfor %}
+  profileList: {{ _profiles | to_json }}
 {% if jupyter_target_node_name is defined %}
   nodeSelector:
     kubernetes.io/hostname: '{{ jupyter_target_node_name }}'
@@ -255,6 +259,20 @@ singleuser:
               chown -h $NB_USER:$NB_GID /home/$NB_USER/Scout
             fi
 
+            starter=/opt/scout/user-starter
+            if [ -f $starter/manifest ]; then
+              while read -r key rel; do
+                if [ -n "$rel" ] && [ ! -e "/home/$NB_USER/$rel" ]; then
+                  install -D -m 0600 "$starter/$key" "/home/$NB_USER/$rel"
+                fi
+              done < $starter/manifest
+            fi
+
+            codex_key_hook='[ -r /opt/scout/gateway-key/codex-key.sh ] && . /opt/scout/gateway-key/codex-key.sh'
+            if ! grep -qsF "$codex_key_hook" /home/$NB_USER/.bashrc; then
+              printf '\n%s\n' "$codex_key_hook" >> /home/$NB_USER/.bashrc
+            fi
+
             # #496: surface branding into ~/.jupyter/custom via symlink instead
             # of mounting there. A subPath mount under ~/.jupyter makes kubelet
             # create the dir as root on first spawn, blocking ~/.jupyter/lab and
@@ -267,31 +285,43 @@ singleuser:
                 chown -h $NB_USER:$NB_GID /home/$NB_USER/.jupyter/custom/$asset
               fi
             done
-  extraEnv:
+{#
+  Scout's own notebook env. No TRINO_USER: the scout SDK sends the user's Keycloak
+  access token as the Bearer. The staging CA bundle is built by the staging-ca-setup
+  init container.
+#}
+{% set _scout_env = {
+  'HF_HOME': '/home/jovyan/models',
+  'TRINO_HOST': 'trino.' ~ trino_namespace,
+  'TRINO_PORT': trino_https_port | string,
+  'TRINO_SCHEME': 'https',
+  'TRINO_CATALOG': 'delta',
+  'TRINO_SCHEMA': 'default',
+  'TRINO_CA_CERT': '/etc/trino-ca/ca.crt',
+  'OLLAMA_URL': 'http://ollama.' ~ chatbot_namespace ~ ':11434',
+  'OLLAMA_MODEL': ollama_default_model,
+} %}
 {% if _package_proxy_needs_staging_cert | default(false) | bool %}
-    # Combined CA bundle (system CAs + staging CA) — built by staging-ca-setup init container.
-    # These env vars ensure all Python HTTP clients (requests, urllib3, pip, conda)
-    # trust the staging self-signed cert without needing root access.
-    REQUESTS_CA_BUNDLE: '/etc/pki/staging/ca-bundle.crt'
-    SSL_CERT_FILE: '/etc/pki/staging/ca-bundle.crt'
-    CURL_CA_BUNDLE: '/etc/pki/staging/ca-bundle.crt'
+{% set _scout_env = _scout_env | combine({
+  'REQUESTS_CA_BUNDLE': '/etc/pki/staging/ca-bundle.crt',
+  'SSL_CERT_FILE': '/etc/pki/staging/ca-bundle.crt',
+  'CURL_CA_BUNDLE': '/etc/pki/staging/ca-bundle.crt',
+}) %}
 {% endif %}
-    # HuggingFace model cache directory - models downloaded from HF Hub are stored here
-    # This directory is created in postStart hook and persists with user's home directory
-    HF_HOME: '/home/jovyan/models'
-    # Trino connection params consumed by the scout SDK (installed in the
-    # scout-notebook image). No TRINO_USER: per-user identity comes from
-    # the user's Keycloak access_token (fetched via the Hub API and sent
-    # as the Bearer; Trino reads the `sub` claim).
-    TRINO_HOST: 'trino.{{ trino_namespace }}'
-    TRINO_PORT: '{{ trino_https_port }}'
-    TRINO_SCHEME: 'https'
-    TRINO_CATALOG: 'delta'
-    TRINO_SCHEMA: 'default'
-    TRINO_CA_CERT: '/etc/trino-ca/ca.crt'
-    # Ollama service for LLM calls from notebooks
-    OLLAMA_URL: 'http://ollama.{{ chatbot_namespace }}:11434'
-    OLLAMA_MODEL: '{{ ollama_default_model }}'
+{% if jupyter_singleuser_https_proxy %}
+{% set _scout_env = _scout_env | combine({
+  'HTTPS_PROXY': jupyter_singleuser_https_proxy,
+  'NO_PROXY': jupyter_singleuser_no_proxy,
+}) %}
+{% endif %}
+{% if jupyter_extension_manager_mode != 'enabled' %}
+{% set _scout_env = _scout_env | combine({'CODE_EXTENSIONSDIR': '/opt/code-server/extensions'}) %}
+{% endif %}
+  # Site values in jupyter_singleuser_environment override Scout's.
+  extraEnv:
+{% for _name, _value in (_scout_env | combine(jupyter_singleuser_environment)).items() %}
+    {{ _name }}: {{ _value | string | to_json }}
+{% endfor %}
   extraFiles:
     jupyter-server-config:
       mountPath: /etc/jupyter/jupyter_server_config.py
@@ -363,6 +393,47 @@ singleuser:
         configMap:
           name: scout-quickstart-samples
           defaultMode: 0644
+      claude-code-managed:
+        name: claude-code-managed
+        configMap:
+          name: claude-code-managed
+          defaultMode: 0644
+{% if jupyter_codex_requirements %}
+      codex-requirements:
+        name: codex-requirements
+        configMap:
+          name: scout-codex-requirements
+          defaultMode: 0644
+{% endif %}
+      user-starter:
+        name: user-starter
+        configMap:
+          name: scout-user-starter-files
+          defaultMode: 0644
+      code-server-extension:
+        name: code-server-extension
+        configMap:
+          name: scout-code-server-extension
+          defaultMode: 0644
+      gateway-key:
+        name: gateway-key
+        configMap:
+          name: scout-gateway-key
+          defaultMode: 0755
+{% if jupyter_vscode_chat_models %}
+      vscode-chat-models:
+        name: vscode-chat-models
+        configMap:
+          name: scout-vscode-chat-models
+          defaultMode: 0644
+{% endif %}
+{% if jupyter_extension_manager_mode != 'enabled' %}
+      vscode-extensions:
+        name: vscode-extensions
+        configMap:
+          name: scout-code-server-extensions
+          defaultMode: 0644
+{% endif %}
       frame-location:
         name: frame-location
         configMap:
@@ -403,6 +474,63 @@ singleuser:
         name: scout-samples
         mountPath: /opt/scout/samples
         readOnly: true
+      claude-code-managed:
+        name: claude-code-managed
+        mountPath: /etc/claude-code
+        readOnly: true
+{% if jupyter_codex_requirements %}
+      codex-requirements:
+        name: codex-requirements
+        mountPath: /etc/codex/requirements.toml
+        subPath: requirements.toml
+        readOnly: true
+{% endif %}
+      user-starter:
+        name: user-starter
+        mountPath: /opt/scout/user-starter
+        readOnly: true
+      code-server-extension-package:
+        name: code-server-extension
+        mountPath: /usr/lib/code-server/lib/vscode/extensions/scout/package.json
+        subPath: package.json
+        readOnly: true
+      code-server-extension-main:
+        name: code-server-extension
+        mountPath: /usr/lib/code-server/lib/vscode/extensions/scout/extension.js
+        subPath: extension.js
+        readOnly: true
+      code-server-extension-chat-models:
+        name: code-server-extension
+        mountPath: /usr/lib/code-server/lib/vscode/extensions/scout/chat-models.js
+        subPath: chat-models.js
+        readOnly: true
+{% if jupyter_vscode_chat_models %}
+      vscode-chat-models:
+        name: vscode-chat-models
+        mountPath: /opt/scout/chat-models.json
+        subPath: chat-models.json
+        readOnly: true
+{% endif %}
+      gateway-key:
+        name: gateway-key
+        mountPath: /opt/scout/gateway-key
+        readOnly: true
+      gateway-key-command:
+        name: gateway-key
+        mountPath: /usr/local/bin/scout-set-key
+        subPath: scout-set-key
+        readOnly: true
+      gateway-key-login:
+        name: gateway-key
+        mountPath: /etc/profile.d/scout-codex-key.sh
+        subPath: codex-key.sh
+        readOnly: true
+{% if jupyter_extension_manager_mode != 'enabled' %}
+      vscode-extensions:
+        name: vscode-extensions
+        mountPath: /opt/code-server/extensions
+        readOnly: true
+{% endif %}
       # A prebuilt JupyterLab extension that keeps the launchpad's address bar on the open page.
       frame-location:
         name: frame-location
