@@ -320,6 +320,21 @@ export default function ShellClient({
       checkSession();
   }, [gate, checkSession]);
 
+  // next-auth refetches its session in every tab when another tab signs in. A tab still asking
+  // to sign in checks again then, and reloads with its apps once the launchpad's session works.
+  useEffect(() => {
+    if (!ended || !session) return;
+    let current = true;
+    fetch('/api/session', { cache: 'no-store', redirect: 'manual' })
+      .then((response) => {
+        if (current && response.ok) window.location.reload();
+      })
+      .catch(() => {});
+    return () => {
+      current = false;
+    };
+  }, [ended, session]);
+
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState === 'visible') checkSession();
