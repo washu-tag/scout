@@ -1,5 +1,12 @@
 ---
 # MinIO Operator and Tenant deployment
+- name: Add the site's buckets, users and policies to Scout's
+  ansible.builtin.set_fact:
+    _minio_buckets: '{{ minio_buckets + minio_extra_buckets }}'
+    _minio_users: '{{ minio_users + minio_extra_users }}'
+    _minio_policies: '{{ minio_policies + minio_extra_policies }}'
+  no_log: true
+
 - name: Deploy MinIO Operator
   ansible.builtin.include_role:
     name: scout_common
@@ -59,7 +66,7 @@
       stringData:
         CONSOLE_ACCESS_KEY: '{{ item.access_key }}'
         CONSOLE_SECRET_KEY: '{{ item.secret_key }}'
-  loop: '{{ minio_users }}'
+  loop: '{{ _minio_users }}'
 
 - name: Deploy MinIO Tenant
   ansible.builtin.include_role:
@@ -113,7 +120,7 @@
           protocol: http
         certificate:
           requestAutoCert: false
-        buckets: '{{ minio_buckets }}'
+        buckets: '{{ _minio_buckets }}'
         # No users: the bootstrap Job creates them. The operator would set each
         # one's policy to consoleAdmin, replacing what it has, at a moment that
         # races the Job's attach/detach.
@@ -197,7 +204,7 @@
               }
             ]
           }
-  loop: '{{ minio_policies }}'
+  loop: '{{ _minio_policies }}'
 
 - name: Build list of projected ConfigMaps for MinIO policies
   set_fact:
@@ -206,7 +213,7 @@
         policy_sources | default([]) +
         [ { 'configMap': { 'name': 'policy-' + item.name } } ]
       }}
-  loop: '{{ minio_policies }}'
+  loop: '{{ _minio_policies }}'
 
 - name: Build per-user-creds volume mounts for the bootstrap Job
   # The bootstrap Job's `mc admin user add` step reads each user's
@@ -228,7 +235,7 @@
         'name': 'usercreds-' ~ item.access_key,
         'secret': {'secretName': item.access_key ~ '-creds'}
       }] }}
-  loop: '{{ minio_users }}'
+  loop: '{{ _minio_users }}'
 
 - name: Bootstrap MinIO IAM (policies + bindings)
   kubernetes.core.k8s:
@@ -243,7 +250,7 @@
           app: minio-bootstrap
         # Add a unique value to force job recreation when policies change
         annotations:
-          minio-iam-config-hash: "{{ minio_policies | to_json | hash('md5') }}"
+          minio-iam-config-hash: "{{ _minio_policies | to_json | hash('md5') }}"
       spec:
         ttlSecondsAfterFinished: 600
         backoffLimit: 3
@@ -284,14 +291,14 @@
                     # Create each user before attaching policies. mc admin
                     # user add is idempotent (re-runs on existing user
                     # succeed quietly).
-                    {% for u in minio_users %}
+                    {% for u in _minio_users %}
                     echo "Ensuring user {{ u.access_key }} exists..."
                     mc admin user add local {{ u.access_key | quote }} "$(cat /usercreds/{{ u.access_key }}/CONSOLE_SECRET_KEY)"
                     {% endfor %}
 
                     # Ensure buckets exist (tenant.buckets is honored on
                     # first install only).
-                    {% for b in minio_buckets %}
+                    {% for b in _minio_buckets %}
                     echo "Ensuring bucket {{ b.name }} exists..."
                     mc mb --ignore-existing local/{{ b.name }}
                     {% if b.name in minio_versioned_buckets %}
@@ -306,7 +313,7 @@
                     # want to strip it; users created via mc admin user add never
                     # had it, so the detach is a no-op and shouldn't fail
                     # the script.
-                    {% for p in minio_policies %}
+                    {% for p in _minio_policies %}
                     echo "Creating policy {{ p.name }}..."
                     mc admin policy create local {{ p.name }} /policies/{{ p.name }}.json || \
                       mc admin policy update local {{ p.name }} /policies/{{ p.name }}.json

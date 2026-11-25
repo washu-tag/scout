@@ -1,0 +1,65 @@
+# Shared build for Scout repos. A repo opts in with a workflow like:
+#
+#   on:
+#     push:
+#       branches: [main]
+#       tags: ['v*']
+#   jobs:
+#     build:
+#       uses: scout/ci/.forgejo/workflows/build.yml@main
+#       secrets: inherit
+#
+# Pushes to main build <repo>:main, tags build <repo>:<tag>. A repo without a Dockerfile
+# is built with repo2docker (requirements.txt, environment.yml, apt.txt, postBuild, ...).
+# An xnat-command.json goes into the image as its org.nrg.commands label, for XNAT.
+# Every build gets a fresh runner, so the image carries its own layer cache for the next build.
+on:
+  workflow_call:
+jobs:
+  build:
+    runs-on: scout-build
+    steps:
+      - name: build and push
+        shell: sh
+        env:
+          TOKEN: ${{ github.token }}
+          REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -eu
+          host="${GITHUB_SERVER_URL#https://}"
+          image="$host/$(echo "$GITHUB_REPOSITORY" | tr A-Z a-z):$GITHUB_REF_NAME"
+          git clone --depth 1 --branch "$GITHUB_REF_NAME" "https://${GITHUB_ACTOR}:${TOKEN}@${host}/${GITHUB_REPOSITORY}.git" src
+          mkdir -p ~/.docker
+          printf '{"auths":{"%s":{"auth":"%s"}}}' "$host" "$(printf '%s:%s' "$OWNER" "$REGISTRY_TOKEN" | base64 | tr -d '\n')" > ~/.docker/config.json
+          set --
+          for arg in PIP_INDEX_URL PIP_TRUSTED_HOST CONDA_CHANNEL_ALIAS APT_MIRROR APT_SECURITY_MIRROR; do
+            eval "value=\${$arg:-}"
+            [ -z "$value" ] || set -- "$@" --opt "build-arg:$arg=$value"
+          done
+          context=src
+          if [ ! -f src/Dockerfile ]; then
+            echo "no Dockerfile, rendering one with repo2docker"
+            tools=$(mktemp -d)
+            cp -L /opt/scout-build/repo2docker/* "$tools"
+            buildctl-daemonless.sh build --frontend dockerfile.v0 --local context=src \
+              --local dockerfile="$tools" --local tools="$tools" --opt context:tools=local:tools "$@" \
+              --output type=local,dest=repo2docker
+            context=repo2docker
+            set -- "$@" --opt build-arg:NB_USER=jovyan --opt build-arg:NB_UID=1000
+          fi
+          if [ -f src/xnat-command.json ]; then
+            commands=$(cat src/xnat-command.json)
+            case "$(printf '%s' "$commands" | tr -d ' \t\r\n' | cut -c1)" in
+              '[') ;;
+              *) commands="[$commands]" ;;
+            esac
+            set -- "$@" --opt "label:org.nrg.commands=$commands"
+          fi
+          echo "building $image"
+          set -- "$@" --import-cache "type=registry,ref=$image" --export-cache type=inline
+          [ "$GITHUB_REF_NAME" = main ] || set -- "$@" --import-cache "type=registry,ref=${image%:*}:main"
+          buildctl-daemonless.sh build --frontend dockerfile.v0 --local context="$context" --local dockerfile="$context" "$@" \
+            --output "type=image,name=$image,push=true" --metadata-file metadata.json
+          digest=$(sed -n 's/.*"containerimage.digest": *"\([^"]*\)".*/\1/p' metadata.json)
+          echo "pushed $image@$digest"

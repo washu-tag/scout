@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: forgejo-scout-templates
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo.labels" . | nindent 4 }}
+data:
+  header.tmpl: |
+    <style>
+      .migrate-entry:not([href*="service_type=1&"]):not([href*="service_type=2&"]) { display: none; }
+    </style>
+    {{- with .Values.signOutUrl }}
+    <script>
+      document.addEventListener('click', (e) => {
+        const link = e.target.closest('a.link-action[data-url$="/user/logout"]');
+        if (!link) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        fetch(link.dataset.url, {method: 'POST', headers: {'X-Csrf-Token': window.config.csrfToken}})
+          .finally(() => { window.top.location.href = {{ . | toJson }}; });
+      }, true);
+    </script>
+    {{- end }}
+    {{- if .Values.launchpad.frameLocation }}
+    <script>
+    {{- .Files.Get "files/frame-location.js" | replace "${server_hostname}" .Values.domain | nindent 4 }}
+    </script>
+    {{- end }}

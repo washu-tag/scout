@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: forgejo-launchpad
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo.labels" . | nindent 4 }}
+    launchpad.scout.xnat.org/catalog: 'true'
+data:
+  apps.yaml: |
+    apiVersion: launchpad.scout.xnat.org/v1alpha1
+    kind: Catalog
+    chips:
+      - id: {{ .Values.clientId }}
+        title: {{ .Values.launchpad.title }}
+        description: {{ .Values.launchpad.description }}
+        icon: {{ .Values.launchpad.icon }}
+        tone: {{ .Values.launchpad.tone }}
+        link: { subdomain: {{ .Values.subdomain }} }

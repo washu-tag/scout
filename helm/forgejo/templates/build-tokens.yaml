@@ -1,0 +1,50 @@
+{{- if .Values.buildTokens.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: forgejo-build-tokens
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo.labels" . | nindent 4 }}
+data:
+  build-tokens.sh: {{ .Files.Get "files/build-tokens.sh" | quote }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forgejo-build-tokens
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: forgejo-build-tokens
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: forgejo-build-tokens
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: api-client
+      annotations:
+        checksum/script: {{ .Files.Get "files/build-tokens.sh" | sha256sum }}
+    spec:
+      {{- include "forgejo.apiClientPod" . | nindent 6 }}
+      containers:
+        - name: build-tokens
+          image: {{ .Values.apiClientImage }}
+          command: [sh, /scripts/build-tokens.sh]
+          env:
+            - name: INTERVAL_SECONDS
+              value: {{ .Values.buildTokens.intervalSeconds | quote }}
+            {{- include "forgejo.apiClientEnv" . | nindent 12 }}
+          volumeMounts:
+            - { name: scripts, mountPath: /scripts, readOnly: true }
+          {{- include "forgejo.apiClientContainer" . | nindent 10 }}
+      volumes:
+        - name: scripts
+          configMap:
+            name: forgejo-build-tokens
+{{- end }}

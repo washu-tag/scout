@@ -58,6 +58,12 @@ nexus_blob_stores:
     softQuota:
       type: spaceRemainingQuota
       limit: 5368709120 # 5 GB
+  - name: apt-store
+    type: file
+    path: apt-store
+    softQuota:
+      type: spaceRemainingQuota
+      limit: 5368709120 # 5 GB
 
 # Cleanup policy — purge packages not downloaded in this many days
 nexus_cleanup_last_downloaded_days: 90
@@ -86,6 +92,17 @@ nexus_yum_repos:
   - name: nvidia-container-toolkit
     remoteUrl: https://nvidia.github.io/libnvidia-container/stable/rpm/x86_64/
     blobStoreName: yum-store
+
+# Ubuntu, for image builds on the Forgejo runners (repo2docker builds on Ubuntu 24.04).
+nexus_apt_repos:
+  - name: ubuntu
+    remoteUrl: http://archive.ubuntu.com/ubuntu/
+    distribution: noble
+    blobStoreName: apt-store
+  - name: ubuntu-security
+    remoteUrl: http://security.ubuntu.com/ubuntu/
+    distribution: noble-security
+    blobStoreName: apt-store
 
 # Maven proxies. Maven and Gradle both resolve from Maven-format repositories,
 # so a single set of Maven proxies (aggregated by nexus_maven_group below)

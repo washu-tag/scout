@@ -412,7 +412,8 @@
           "roles",
           "basic",
           "email",
-          "trino-audience"
+          "trino-audience"{{- if eq (.Values.forgejoAudience | toString) "true" }},
+          "forgejo-audience"{{- end }}
         ],
         "optionalClientScopes": [
           "address",
@@ -1478,6 +1479,34 @@
           }
         ]
       },
+      {{- if eq (.Values.forgejoAudience | toString) "true" }}
+      {{- /* Adds aud=forgejo to JupyterHub access tokens, so a notebook's git
+          credential helper can present the user's token to Forgejo's git gate. */}}
+      {
+        "name": "forgejo-audience",
+        "description": "Adds aud=forgejo to access tokens for clients pushing to Forgejo",
+        "protocol": "openid-connect",
+        "attributes": {
+          "include.in.token.scope": "false",
+          "display.on.consent.screen": "false"
+        },
+        "protocolMappers": [
+          {
+            "name": "forgejo-audience-mapper",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper",
+            "consentRequired": false,
+            "config": {
+              "included.custom.audience": "forgejo",
+              "id.token.claim": "false",
+              "access.token.claim": "true",
+              "introspection.token.claim": "true",
+              "lightweight.claim": "false"
+            }
+          }
+        ]
+      },
+      {{- end }}
       {{- if eq (.Values.enableXnat | toString) "true" }}
       {{- /* Adds aud=xnat to access tokens, and through its clientScopeMappings
           entry puts xnat-access in scope, so the token passes both of the openid

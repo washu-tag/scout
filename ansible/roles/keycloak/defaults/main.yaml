@@ -58,3 +58,6 @@ keycloak_minio_token_lifespan: '{{ keycloak_token_lifespan }}'
 # report_viewer_svc) — ADR 0022. Deliberately ~4h so token minting stays
 # off the per-query hot path; the client helpers re-mint before expiry.
 keycloak_trino_svc_token_lifespan: 14400
+
+# Adds aud=forgejo to JupyterHub tokens, for sites running the Forgejo Pluggable App.
+keycloak_forgejo_audience: false

@@ -19,6 +19,7 @@ lifespans:
   trinoServiceToken: '{{ keycloak_trino_svc_token_lifespan }}'
 
 enableXnat: '{{ enable_xnat | default(false) | bool | lower }}'
+forgejoAudience: '{{ keycloak_forgejo_audience | bool | lower }}'
 
 # A configured client id is what enables a broker in this lane, so the chart
 # takes the conclusion rather than re-deriving it from a credential.

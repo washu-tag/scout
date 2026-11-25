@@ -1,0 +1,37 @@
+---
+# The Forgejo the runners take jobs from, e.g. https://git.<domain>. Required.
+forgejoUrl: ''
+# Pins the Forgejo host to this address, e.g. Traefik's ClusterIP, so runners reach it
+# inside the cluster when its name resolves somewhere else.
+forgejoAddress: ''
+# Secret with the instance runner registration token under `token`, from
+# `forgejo actions generate-runner-token` in the Forgejo pod.
+registrationSecret: forgejo-runner-registration
+
+# Workflows pick these runners with `runs-on: <label>`.
+label: scout-build
+# Idle runners waiting for a job. Each runs one job in a fresh pod.
+replicas: 2
+
+runnerImage: code.forgejo.org/forgejo/runner:13.2.2
+buildkitImage: moby/buildkit:v0.35.1-rootless
+resources:
+  requests: { cpu: 500m, memory: 1Gi }
+  limits: { memory: 8Gi }
+
+# Pulls through a mirror per registry, e.g. docker.io: harbor.example.org/dockerhub-proxy.
+registryMirrors: {}
+# PEM of an extra CA to trust, e.g. a staging node's self-signed certificate.
+caCert: ''
+# Environment for build steps. The shared build passes PIP_INDEX_URL, PIP_TRUSTED_HOST,
+# CONDA_CHANNEL_ALIAS, APT_MIRROR and APT_SECURITY_MIRROR to builds as build args, and
+# points repo2docker builds at them.
+buildEnv: {}
+
+networkPolicy:
+  enabled: true
+  traefikNamespace: kube-system
+  traefikPort: 8443
+  # Other destinations builds may reach on 443, e.g. a staging node's registry and
+  # package proxies.
+  egressCIDRs: []

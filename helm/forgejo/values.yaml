@@ -1,0 +1,211 @@
+---
+# Forgejo answers at `<subdomain>.<domain>`. The container registry needs the root of a
+# host, so Forgejo cannot live under a path. `domain` has no default; pass the site's.
+domain: ''
+subdomain: git
+
+clientId: forgejo
+
+reconcilerServiceAccount: scout-keycloak-fragment-reconciler
+reconcilerNamespace: scout-core
+
+database:
+  host: ''
+  port: 5432
+  name: forgejo
+  user: forgejo
+  sslMode: require
+
+launchpad:
+  # Keeps the launchpad's address bar on the Forgejo page shown in its frame (ADR 0042).
+  frameLocation: true
+  title: Git
+  description: Code repositories, container images and build pipelines
+  icon: git
+  tone: slate
+
+ingress:
+  enabled: true
+  className: traefik
+  annotations: {}
+  middlewares:
+    - kube-system-security-headers@kubernetescrd
+  # Scout's oauth2-proxy, in front of the web UI only. Git, registry, runner and package
+  # clients have no browser session and use a route without it (templates/ingress.yaml).
+  authMiddlewares:
+    - kube-system-oauth2-proxy-error@kubernetescrd
+    - kube-system-oauth2-proxy-auth@kubernetescrd
+  # Sends /user/login straight to Scout sign-in, so users never see Forgejo's login page.
+  ssoRedirect: true
+
+# Where Sign Out lands after Forgejo ends its own session, e.g. Scout's
+# https://auth.<domain>/oauth2/sign_out. Empty keeps Forgejo's default.
+signOutUrl: ''
+
+# Keeps container images and other packages in an S3/MinIO bucket instead of on
+# Forgejo's volume. Changing it needs a restart of the Forgejo pod.
+packageStorage:
+  enabled: false
+  endpoint: ''
+  bucket: forgejo-packages
+  accessKey: ''
+  secretKey: ''
+  useSSL: false
+
+networkPolicy:
+  enabled: true
+  traefikNamespace: kube-system
+
+# Runs the jobs below, which call the Forgejo API as its admin.
+apiClientImage: curlimages/curl:8.23.0
+
+# Gives every user a package-push token as their REGISTRY_TOKEN Actions secret
+# (templates/build-tokens.yaml).
+buildTokens:
+  enabled: true
+  intervalSeconds: 60
+
+# Keeps files/ci/build.yml in <org>/<repo>, public so any repo can `uses:` it. Its
+# `runs-on` matches the forgejo-runner chart's label.
+sharedWorkflow:
+  enabled: true
+  org: scout
+  repo: ci
+
+upstream:
+  nameOverride: forgejo
+  fullnameOverride: forgejo
+  test:
+    enabled: false
+  strategy:
+    type: Recreate
+  extraVolumes:
+    - name: scout-templates
+      configMap:
+        name: forgejo-scout-templates
+  extraContainerVolumeMounts:
+    - name: scout-templates
+      mountPath: /data/gitea/templates/custom/header.tmpl
+      subPath: header.tmpl
+      readOnly: true
+  # Validates Scout tokens on git requests and names the user (templates/git-gate.yaml).
+  extraContainers:
+    - name: git-gate
+      image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.6
+      args:
+        - --provider=keycloak-oidc
+        - --skip-jwt-bearer-tokens=true
+        - --set-xauthrequest=true
+        - --email-domain=*
+        - --upstream=static://202
+        - --http-address=0.0.0.0:4180
+        - --reverse-proxy=true
+      envFrom:
+        - configMapRef:
+            name: forgejo-git-gate
+      env:
+        - name: OAUTH2_PROXY_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef: { name: forgejo-oidc, key: secret }
+        - name: OAUTH2_PROXY_COOKIE_SECRET
+          valueFrom:
+            secretKeyRef: { name: forgejo-git-gate, key: cookie-secret }
+      ports:
+        - name: git-gate
+          containerPort: 4180
+      readinessProbe:
+        httpGet: { path: /ping, port: git-gate }
+      resources:
+        requests: { cpu: 10m, memory: 32Mi }
+        limits: { memory: 128Mi }
+      securityContext:
+        runAsNonRoot: true
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities: { drop: [ALL] }
+  persistence:
+    size: 20Gi
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 1Gi }
+  gitea:
+    # app.ini. A site overrides single keys here; the host and database come from
+    # `domain` and `database` above.
+    config:
+      APP_NAME: Scout Git
+      server:
+        DISABLE_SSH: true
+        START_SSH_SERVER: false
+        OFFLINE_MODE: true
+        LFS_START_SERVER: true
+        LANDING_PAGE: login
+      service:
+        DISABLE_REGISTRATION: false
+        ALLOW_ONLY_EXTERNAL_REGISTRATION: true
+        ENABLE_INTERNAL_SIGNIN: false
+        SHOW_REGISTRATION_BUTTON: false
+        REQUIRE_SIGNIN_VIEW: true
+        ENABLE_NOTIFY_MAIL: false
+        DEFAULT_KEEP_EMAIL_PRIVATE: true
+        # Forgejo trusts the username header from any source. Only the git-gate
+        # route may set it; every other route strips it (templates/git-gate.yaml).
+        ENABLE_REVERSE_PROXY_AUTHENTICATION: true
+        ENABLE_REVERSE_PROXY_AUTHENTICATION_API: true
+        ENABLE_REVERSE_PROXY_AUTO_REGISTRATION: false
+      oauth2_client:
+        ENABLE_AUTO_REGISTRATION: true
+        USERNAME: nickname
+        ACCOUNT_LINKING: auto
+        UPDATE_AVATAR: false
+      openid:
+        ENABLE_OPENID_SIGNIN: false
+        ENABLE_OPENID_SIGNUP: false
+      repository:
+        DEFAULT_PRIVATE: private
+        ENABLE_PUSH_CREATE_USER: true
+        ENABLE_PUSH_CREATE_ORG: true
+        DISABLE_MIGRATIONS: false
+      mirror:
+        ENABLED: false
+        DISABLE_NEW_PULL: true
+        DISABLE_NEW_PUSH: true
+      # One-time imports from GitHub only.
+      migrations:
+        ALLOWED_DOMAINS: github.com,*.github.com,*.githubusercontent.com
+        ALLOW_LOCALNETWORKS: false
+      security:
+        DISABLE_WEBHOOKS: true
+        REVERSE_PROXY_AUTHENTICATION_USER: X-Auth-Request-Preferred-Username
+      packages:
+        ENABLED: true
+      actions:
+        ENABLED: true
+        DEFAULT_ACTIONS_URL: self
+      picture:
+        DISABLE_GRAVATAR: true
+        ENABLE_FEDERATED_AVATAR: false
+    # A site sets autoDiscoverUrl to its realm's
+    # https://keycloak.<domain>/realms/scout/.well-known/openid-configuration.
+    oauth:
+      - name: Scout
+        provider: openidConnect
+        existingSecret: forgejo-oidc
+        autoDiscoverUrl: ''
+        scopes: openid profile email
+        groupClaimName: groups
+        adminGroup: forgejo-admin
+        requiredClaimName: groups
+        requiredClaimValue: forgejo-user
+    admin:
+      username: forgejo-admin
+      email: forgejo-admin@localhost
+      passwordMode: initialOnlyNoReset
+    additionalConfigSources:
+      - secret:
+          secretName: forgejo-scout-config
+    additionalConfigFromEnvs:
+      - name: FORGEJO__DATABASE__PASSWD
+        valueFrom:
+          secretKeyRef:
+            name: forgejo-database
+            key: password

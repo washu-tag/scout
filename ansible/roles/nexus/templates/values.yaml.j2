@@ -102,6 +102,31 @@ config:
         enabled: true
         timeToLive: 1440
 {% endfor %}
+{% for repo in nexus_apt_repos | default([]) %}
+    - name: {{ repo.name }}
+      format: apt
+      type: proxy
+      online: true
+      storage:
+        blobStoreName: {{ repo.blobStoreName }}
+        strictContentTypeValidation: true
+      cleanup:
+        policyNames:
+          - purge-unused
+      apt:
+        distribution: {{ repo.distribution }}
+        flat: false
+      proxy:
+        remoteUrl: {{ repo.remoteUrl }}
+        contentMaxAge: 1440
+        metadataMaxAge: 60
+      httpClient:
+        blocked: false
+        autoBlock: true
+      negativeCache:
+        enabled: true
+        timeToLive: 1440
+{% endfor %}
 {% for repo in nexus_maven_repos | default([]) %}
     - name: {{ repo.name }}
       format: maven

@@ -273,14 +273,15 @@ see is exactly what renders:
 | ![cube](../images/launchpad/icons/cube.svg) | `cube` | ![database](../images/launchpad/icons/database.svg) | `database` | ![docker](../images/launchpad/icons/docker.svg) | `docker` |
 | ![document-text](../images/launchpad/icons/document-text.svg) | `document-text` | ![download](../images/launchpad/icons/download.svg) | `download` | ![external-link](../images/launchpad/icons/external-link.svg) | `external-link` |
 | ![eye](../images/launchpad/icons/eye.svg) | `eye` | ![film](../images/launchpad/icons/film.svg) | `film` | ![folder](../images/launchpad/icons/folder.svg) | `folder` |
-| ![github](../images/launchpad/icons/github.svg) | `github` | ![globe](../images/launchpad/icons/globe.svg) | `globe` | ![grafana](../images/launchpad/icons/grafana.svg) | `grafana` |
-| ![heart](../images/launchpad/icons/heart.svg) | `heart` | ![jupyter](../images/launchpad/icons/jupyter.svg) | `jupyter` | ![key](../images/launchpad/icons/key.svg) | `key` |
-| ![kubernetes](../images/launchpad/icons/kubernetes.svg) | `kubernetes` | ![lightning-bolt](../images/launchpad/icons/lightning-bolt.svg) | `lightning-bolt` | ![link](../images/launchpad/icons/link.svg) | `link` |
-| ![mail](../images/launchpad/icons/mail.svg) | `mail` | ![minio](../images/launchpad/icons/minio.svg) | `minio` | ![photograph](../images/launchpad/icons/photograph.svg) | `photograph` |
-| ![postgresql](../images/launchpad/icons/postgresql.svg) | `postgresql` | ![puzzle](../images/launchpad/icons/puzzle.svg) | `puzzle` | ![python](../images/launchpad/icons/python.svg) | `python` |
-| ![search](../images/launchpad/icons/search.svg) | `search` | ![server](../images/launchpad/icons/server.svg) | `server` | ![shield-check](../images/launchpad/icons/shield-check.svg) | `shield-check` |
-| ![sparkles](../images/launchpad/icons/sparkles.svg) | `sparkles` | ![table](../images/launchpad/icons/table.svg) | `table` | ![temporal](../images/launchpad/icons/temporal.svg) | `temporal` |
-| ![terminal](../images/launchpad/icons/terminal.svg) | `terminal` | ![upload](../images/launchpad/icons/upload.svg) | `upload` | ![user-group](../images/launchpad/icons/user-group.svg) | `user-group` |
+| ![git](../images/launchpad/icons/git.svg) | `git` | ![github](../images/launchpad/icons/github.svg) | `github` | ![globe](../images/launchpad/icons/globe.svg) | `globe` |
+| ![grafana](../images/launchpad/icons/grafana.svg) | `grafana` | ![heart](../images/launchpad/icons/heart.svg) | `heart` | ![jupyter](../images/launchpad/icons/jupyter.svg) | `jupyter` |
+| ![key](../images/launchpad/icons/key.svg) | `key` | ![kubernetes](../images/launchpad/icons/kubernetes.svg) | `kubernetes` | ![lightning-bolt](../images/launchpad/icons/lightning-bolt.svg) | `lightning-bolt` |
+| ![link](../images/launchpad/icons/link.svg) | `link` | ![mail](../images/launchpad/icons/mail.svg) | `mail` | ![minio](../images/launchpad/icons/minio.svg) | `minio` |
+| ![photograph](../images/launchpad/icons/photograph.svg) | `photograph` | ![postgresql](../images/launchpad/icons/postgresql.svg) | `postgresql` | ![puzzle](../images/launchpad/icons/puzzle.svg) | `puzzle` |
+| ![python](../images/launchpad/icons/python.svg) | `python` | ![search](../images/launchpad/icons/search.svg) | `search` | ![server](../images/launchpad/icons/server.svg) | `server` |
+| ![shield-check](../images/launchpad/icons/shield-check.svg) | `shield-check` | ![sparkles](../images/launchpad/icons/sparkles.svg) | `sparkles` | ![table](../images/launchpad/icons/table.svg) | `table` |
+| ![temporal](../images/launchpad/icons/temporal.svg) | `temporal` | ![terminal](../images/launchpad/icons/terminal.svg) | `terminal` | ![upload](../images/launchpad/icons/upload.svg) | `upload` |
+| ![user-group](../images/launchpad/icons/user-group.svg) | `user-group` |  |  |  |  |
 
 <!-- generated:icons:end -->
 

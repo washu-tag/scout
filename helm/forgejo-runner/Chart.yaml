@@ -1,0 +1,6 @@
+apiVersion: v2
+name: forgejo-runner
+description: Ephemeral Forgejo Actions runners that build images with rootless BuildKit, as a Pluggable App
+type: application
+version: 0.0.0-dev
+appVersion: '13.2.2'

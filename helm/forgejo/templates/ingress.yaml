@@ -1,0 +1,70 @@
+{{- if .Values.ingress.enabled }}
+{{- $host := include "forgejo.host" . }}
+{{- $middlewares := append .Values.ingress.middlewares (printf "%s-forgejo-strip-user@kubernetescrd" .Release.Namespace) }}
+{{- $middlewares = concat $middlewares .Values.ingress.authMiddlewares }}
+{{- if .Values.ingress.ssoRedirect }}
+{{- $middlewares = append $middlewares (printf "%s-forgejo-sso-redirect@kubernetescrd" .Release.Namespace) }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: forgejo-sso-redirect
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo.labels" . | nindent 4 }}
+spec:
+  redirectRegex:
+    regex: ^https?://[^/]+/user/login/?(\?.*)?$
+    replacement: https://{{ $host }}/user/oauth2/{{ (index .Values.upstream.gitea.oauth 0).name }}${1}
+{{- end }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: forgejo
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo.labels" . | nindent 4 }}
+    launchpad.scout.xnat.org/deep-link: 'true'
+  annotations:
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- with $middlewares }}
+    traefik.ingress.kubernetes.io/router.middlewares: {{ join ", " . | quote }}
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - host: {{ $host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "forgejo.serviceName" . }}
+                port:
+                  name: http
+---
+# Clients without a browser session: git over HTTPS with a Forgejo token, the container
+# registry, runners and package uploads. Forgejo authenticates each of them itself.
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: forgejo-clients
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo.labels" . | nindent 4 }}
+spec:
+  entryPoints: [websecure]
+  routes:
+    - kind: Rule
+      match: Host(`{{ $host }}`) && (PathPrefix(`/v2/`) || PathPrefix(`/api/actions/`) || PathPrefix(`/api/packages/`) || PathRegexp(`^/[^/]+/[^/]+/(info/refs|git-upload-pack|git-receive-pack|info/lfs/.*)$`))
+      priority: 900
+      middlewares:
+        - name: forgejo-strip-user
+      services:
+        - name: {{ include "forgejo.serviceName" . }}
+          port: http
+{{- end }}

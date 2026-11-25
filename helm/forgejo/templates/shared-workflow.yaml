@@ -1,0 +1,55 @@
+{{- if .Values.sharedWorkflow.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: forgejo-shared-workflow
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo.labels" . | nindent 4 }}
+data:
+  shared-workflow.sh: {{ .Files.Get "files/shared-workflow.sh" | quote }}
+  build.yml: {{ .Files.Get "files/ci/build.yml" | quote }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: forgejo-shared-workflow
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forgejo.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 900
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: forgejo-shared-workflow
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: api-client
+    spec:
+      restartPolicy: Never
+      {{- include "forgejo.apiClientPod" . | nindent 6 }}
+      containers:
+        - name: shared-workflow
+          image: {{ .Values.apiClientImage }}
+          command: [sh, /scripts/shared-workflow.sh]
+          env:
+            - { name: ORG, value: {{ .Values.sharedWorkflow.org | quote }} }
+            - { name: REPO, value: {{ .Values.sharedWorkflow.repo | quote }} }
+            {{- include "forgejo.apiClientEnv" . | nindent 12 }}
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts/shared-workflow.sh
+              subPath: shared-workflow.sh
+            - name: scripts
+              mountPath: /workflow/build.yml
+              subPath: build.yml
+          {{- include "forgejo.apiClientContainer" . | nindent 10 }}
+      volumes:
+        - name: scripts
+          configMap:
+            name: forgejo-shared-workflow
+{{- end }}
