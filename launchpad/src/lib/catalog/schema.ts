@@ -105,7 +105,7 @@ const groupBase = {
   description: z.string().trim(),
   icon: z.enum(ICON_NAMES as [string, ...string[]], { error: 'unknown icon name' }),
   weight: z.number(),
-  layout: z.enum(['cards', 'rows', 'tiles']),
+  layout: z.enum(['cards', 'carousel', 'rows', 'tiles']),
   maxColumns: z.number().int().min(1).max(4),
   width: z.enum(['full', 'half']),
   audience: audienceSchema,
@@ -459,6 +459,7 @@ export function validateDocument(input: unknown, source: string, sourceRank = 0)
 export function defaultColumns(layout: GroupLayout): number {
   switch (layout) {
     case 'cards':
+    case 'carousel':
       return 3;
     case 'tiles':
       return 2;

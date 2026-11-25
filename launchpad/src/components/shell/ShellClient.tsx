@@ -590,8 +590,8 @@ export default function ShellClient({
           <div
             role="menu"
             aria-label={openSection.title}
-            className={MENU}
-            style={{ top: menu.top }}
+            className={`${MENU} overflow-y-auto overscroll-contain`}
+            style={{ top: menu.top, maxHeight: `calc(100dvh - ${menu.top}px - 0.75rem)` }}
           >
             {menuBlocks(openSection).map((block, index) => (
               <div
