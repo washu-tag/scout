@@ -150,12 +150,10 @@ data:
     {{- $params := dict
         "system_file" $defaults.systemPromptFile
         "function_calling" (default $defaults.functionCalling $m.ui.function_calling)
-        "custom_params" (default (dict) $m.params) -}}
+        "custom_params" (default (dict) $m.params)
+        "model_controls" (default (dict) $m.ui.model_controls) -}}
     {{- if $m.ui.reasoning_effort -}}
     {{- $_ := set $params "reasoning_effort" $m.ui.reasoning_effort -}}
-    {{- end -}}
-    {{- if $m.ui.model_controls -}}
-    {{- $_ := set $params "model_controls" $m.ui.model_controls -}}
     {{- end -}}
     {{- if $m.ui.compact_token_threshold -}}
     {{- $_ := set $params "compact_token_threshold" ($m.ui.compact_token_threshold | int) -}}

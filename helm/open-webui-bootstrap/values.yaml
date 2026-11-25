@@ -133,7 +133,7 @@ connectionSecretName: open-webui-connection-secrets
 #       ui:
 #         name: 'Scout Explorer (Some Model)'
 #         description: ''
-#         # Optional per-chat picker; an option's params merge into `params`.
+#         # Optional picker, saved per user per model; an option's params merge into `params`.
 #         model_controls:
 #           reasoning:
 #             label: Effort
