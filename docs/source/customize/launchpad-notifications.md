@@ -1,6 +1,6 @@
 # Send Notices to the Scout Launchpad
 
-The launchpad rail has a bell. Your app can put a notice under it for the people who
+The launchpad rail has Activity, a bell. Your app can put a notice there for the people who
 need to act on something, such as a new request waiting for review or a long job that
 has finished. A notice names one or more users, or everyone holding one of your app's
 own Keycloak roles. It shows in their open Scout tabs within a couple of seconds, and
@@ -179,7 +179,7 @@ nothing new.
 
 ## What people see
 
-The bell shows how many notices are new. Opening it lists them newest first and marks
+Activity's bell shows how many notices are new. Opening it lists them newest first and marks
 them seen, which clears the count. Opening a notice's title marks it read and opens its
 link in your app's frame, as a chip would. The detail under it is text people can select
 and copy; a long one shows its first lines and opens with "Show more". People can mark everything read and archive a
@@ -188,7 +188,7 @@ notice to remove it from their list. Read state is each person's own.
 ## Site settings
 
 Notices are off unless the launchpad has a database. With none, the launchpad has no
-bell and its notices API answers `404`.
+Activity bell and its notices API answers `404`.
 
 | Environment variable                     | Default | Meaning                                                                                                   |
 | ---------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------- |
