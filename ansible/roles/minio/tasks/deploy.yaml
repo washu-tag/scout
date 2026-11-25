@@ -64,27 +64,13 @@
 # The operator mounts public.crt of each externalCaCertSecret into MinIO's CA directory.
 - name: Mirror Traefik TLS cert into the MinIO namespace as a CA bundle
   when: minio_trust_traefik_ca | bool
-  block:
-    - name: Read Traefik TLS secret
-      no_log: true
-      kubernetes.core.k8s_info:
-        api_version: v1
-        kind: Secret
-        name: '{{ traefik_tls_secret_name }}'
-        namespace: '{{ traefik_namespace }}'
-      register: _traefik_tls_secret
-    - name: Create minio-trusted-ca secret
-      no_log: true
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: v1
-          kind: Secret
-          metadata:
-            name: minio-trusted-ca
-            namespace: '{{ minio_tenant_namespace }}'
-          data:
-            public.crt: '{{ _traefik_tls_secret.resources[0].data["tls.crt"] }}'
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: traefik_ca_secret
+  vars:
+    traefik_ca_secret_name: minio-trusted-ca
+    traefik_ca_secret_namespace: '{{ minio_tenant_namespace }}'
+    traefik_ca_secret_key: public.crt
 
 - name: Deploy MinIO Tenant
   ansible.builtin.include_role:
