@@ -11,6 +11,50 @@
       Use vault encryption. Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
     quiet: true
 
+# JupyterHub's singleuser network policy blocks these ranges unless jupyter_egress_allow_cidr opens one.
+- name: Check whether notebook pods can reach the Squid proxy
+  when:
+    - jupyter_singleuser_https_proxy | length > 0
+    - jupyter_egress_allow_cidr | default('') | length == 0
+  ansible.builtin.command:
+    argv:
+      - python3
+      - -c
+      - |
+        import ipaddress, socket, sys
+        try:
+            ip = ipaddress.ip_address(socket.gethostbyname(sys.argv[1]))
+        except OSError:
+            print('unresolved')
+        else:
+            blocked = ('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16')
+            print('blocked' if any(ip in ipaddress.ip_network(n) for n in blocked) else 'allowed')
+      - "{{ jupyter_singleuser_https_proxy | urlsplit('hostname') }}"
+  register: _jupyter_squid_egress
+  changed_when: false
+  check_mode: false
+
+- name: Validate notebook egress to the Squid proxy
+  when: _jupyter_squid_egress is not skipped
+  ansible.builtin.assert:
+    that:
+      - _jupyter_squid_egress.stdout != 'blocked'
+    fail_msg: >
+      Notebook pods send outbound HTTPS through {{ jupyter_singleuser_https_proxy }}, whose host is
+      on a private network. JupyterHub's network policy blocks private IPs, so set
+      jupyter_egress_allow_cidr in inventory.yaml to a CIDR that covers the staging node
+      (e.g. '10.27.107.145/32').
+    quiet: true
+
+- name: Warn when the Squid proxy host does not resolve on the cluster node
+  when: _jupyter_squid_egress is not skipped and _jupyter_squid_egress.stdout == 'unresolved'
+  ansible.builtin.debug:
+    msg: >-
+      WARNING: {{ jupyter_singleuser_https_proxy | urlsplit('hostname') }} does not resolve on
+      {{ inventory_hostname }}, so the egress check was skipped. If notebook pods resolve it to a
+      private IP, set jupyter_egress_allow_cidr to a CIDR that covers the staging node, or their
+      outbound HTTPS will fail.
+
 - name: Create namespace
   ansible.builtin.include_role:
     name: scout_common
@@ -98,12 +142,25 @@
     _staging_ca_cert_pod_path: /etc/pki/staging-secret/ca.crt
   when: _package_proxy_needs_staging_cert | default(false) | bool
 
+- name: Create Jupyter security headers middleware
+  delegate_to: localhost
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'security-headers-middleware.yaml.j2') | from_yaml }}"
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+  vars:
+    _vscode_resource: 'https://*.vscode-resource.vscode-cdn.net'
+
 - name: Discover quickstart sample files
   delegate_to: localhost
   ansible.builtin.find:
     paths: '{{ jupyter_samples_dir }}'
     file_type: file
   register: _jupyter_sample_files
+
+- name: Initialize quickstart samples data
+  ansible.builtin.set_fact:
+    _jupyter_samples_data: {}
 
 # Samples in the repo link to the latest docs; rewrite those links to
 # scout_docs_url so deployed copies can point at a pinned docs version.
@@ -125,6 +182,126 @@
         namespace: '{{ jupyter_namespace }}'
       data: '{{ _jupyter_samples_data }}'
     kubeconfig: '{{ local_kubeconfig_yaml }}'
+
+- name: Check that shared chat models and starter files hold only the key placeholder
+  ansible.builtin.assert:
+    that: _jupyter_shared_key_fields == ''
+    fail_msg: >-
+      These fields are copied to every notebook pod, so they must be
+      REPLACE_WITH_YOUR_GATEWAY_KEY, which each user's own key replaces:
+      {{ _jupyter_shared_key_fields }}
+    quiet: true
+  vars:
+    _jupyter_shared_key_fields: >-
+      {%- set placeholder = 'REPLACE_WITH_YOUR_GATEWAY_KEY' -%}
+      {%- set ns = namespace(bad=[]) -%}
+      {%- set starter_chat = jupyter_user_starter_files.get('.local/share/code-server/User/chatLanguageModels.json', []) -%}
+      {%- for source, providers in [('jupyter_vscode_chat_models', jupyter_vscode_chat_models), ('starter chatLanguageModels.json', starter_chat)] -%}
+      {%- for provider in (providers if providers is sequence and providers is not string else []) if provider is mapping -%}
+      {%- if 'apiKey' in provider and provider.apiKey != placeholder -%}
+      {%- set ns.bad = ns.bad + [source ~ ' ' ~ provider.name | default('?') ~ ' apiKey'] -%}
+      {%- endif -%}
+      {%- for model in provider.models | default([]) if model is mapping -%}
+      {%- for header, value in (model.requestHeaders | default({})).items() if header | lower == 'x-api-key' and value != placeholder -%}
+      {%- set ns.bad = ns.bad + [source ~ ' ' ~ provider.name | default('?') ~ ' ' ~ model.id | default('?') ~ ' x-api-key'] -%}
+      {%- endfor -%}
+      {%- endfor -%}
+      {%- endfor -%}
+      {%- endfor -%}
+      {%- set claude = jupyter_user_starter_files.get('.claude/settings.json', {}) -%}
+      {%- set claude_env = claude.env | default({}) if claude is mapping else {} -%}
+      {%- for name in ['ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_API_KEY'] if name in claude_env and claude_env[name] != placeholder -%}
+      {%- set ns.bad = ns.bad + ['starter .claude/settings.json ' ~ name] -%}
+      {%- endfor -%}
+      {%- set codex = jupyter_user_starter_files.get('.codex/auth.json', {}) -%}
+      {%- if codex is mapping and 'OPENAI_API_KEY' in codex and codex.OPENAI_API_KEY != placeholder -%}
+      {%- set ns.bad = ns.bad + ['starter .codex/auth.json OPENAI_API_KEY'] -%}
+      {%- endif -%}
+      {{ ns.bad | join(', ') }}
+
+- name: Create ConfigMap with Claude Code managed settings
+  delegate_to: localhost
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: claude-code-managed
+        namespace: '{{ jupyter_namespace }}'
+      data: >-
+        {{ {'managed-settings.json': jupyter_claude_managed_settings
+              | combine({'availableModels': jupyter_claude_available_models} if jupyter_claude_available_models else {})
+              | combine({'env': _jupyter_claude_gateway_env} if _jupyter_claude_gateway_env else {}, recursive=True)
+              | to_nice_json} }}
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+  vars:
+    _jupyter_claude_gateway_env: >-
+      {{ jupyter_singleuser_environment | dict2items
+         | selectattr('key', 'match', '^ANTHROPIC_')
+         | rejectattr('key', 'in', ['ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_API_KEY'])
+         | items2dict }}
+
+- name: Build starter files for user home directories
+  ansible.builtin.set_fact:
+    _jupyter_starter_data: >-
+      {{ (_jupyter_starter_data | default({})) | combine({
+           'file-' ~ idx: (item.value if item.value is string else item.value | to_nice_json)}) }}
+    _jupyter_starter_manifest: "{{ (_jupyter_starter_manifest | default([])) + ['file-' ~ idx ~ ' ' ~ item.key] }}"
+  loop: >-
+    {{ ({'.local/share/code-server/User/keybindings.json': jupyter_vscode_keybindings}
+        if jupyter_vscode_keybindings else {})
+       | combine(jupyter_user_starter_files) | dict2items }}
+  loop_control:
+    index_var: idx
+    label: '{{ item.key }}'
+
+- name: Create ConfigMap with starter files for user home directories
+  delegate_to: localhost
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: scout-user-starter-files
+        namespace: '{{ jupyter_namespace }}'
+      data: "{{ _jupyter_starter_data | default({}) | combine({'manifest': (_jupyter_starter_manifest | default([]) + ['']) | join('\n')}) }}"
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+
+- name: Create ConfigMaps for VS Code and the terminal
+  delegate_to: localhost
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: '{{ item.name }}'
+        namespace: '{{ jupyter_namespace }}'
+      data: '{{ item.data }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+  loop:
+    - name: scout-code-server-extension
+      data:
+        package.json: "{{ lookup('file', 'code-server-scout/package.json') }}"
+        extension.js: "{{ lookup('file', 'code-server-scout/extension.js') }}"
+        chat-models.js: "{{ lookup('file', 'code-server-scout/chat-models.js') }}"
+    - name: scout-gateway-key
+      data:
+        scout-set-key: "{{ lookup('file', 'scout-set-key.py') }}"
+        codex-key.sh: "{{ lookup('file', 'codex-key.sh') }}"
+    - name: scout-code-server-extensions
+      data:
+        extensions.json: '[]'
+    - name: scout-codex-requirements
+      data:
+        requirements.toml: '{{ jupyter_codex_requirements }}'
+    - name: scout-vscode-chat-models
+      data:
+        chat-models.json: '{{ jupyter_vscode_chat_models | to_nice_json }}'
+  loop_control:
+    label: '{{ item.name }}'
 
 - name: Publish launchpad frame-location script
   ansible.builtin.include_role:
