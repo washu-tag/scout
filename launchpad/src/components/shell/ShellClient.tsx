@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { FaBook, FaMoon, FaSignOutAlt, FaSun } from 'react-icons/fa';
-import { HiOutlineExternalLink } from 'react-icons/hi';
+import { HiArrowRight, HiOutlineExternalLink } from 'react-icons/hi';
 import { ChipIcon } from '@/components/catalog/CatalogSections';
 import { ChipAnchor } from '@/components/shell/ChipAnchor';
 import { NoticeBell, NoticesPanel, useNoticeSummary } from '@/components/shell/Notices';
@@ -54,6 +54,7 @@ const MENU =
 const MENU_ITEM =
   'flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm text-slate-700 no-underline hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer';
 const MENU_ICON = 'text-base text-slate-500 dark:text-slate-400';
+const MENU_MARGIN = 12;
 
 function railItemClass(highlighted: boolean) {
   return `flex w-16 flex-col items-center gap-1 rounded-xl px-1 py-1.5 no-underline transition-colors cursor-pointer ${
@@ -405,6 +406,22 @@ export default function ShellClient({
     };
   }, [menuOpen]);
 
+  // A section menu starts level with its rail button and moves up as far as it must to fit the
+  // window; one taller than the window scrolls.
+  const sectionMenu = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const element = sectionMenu.current;
+    if (!element || !menu) return;
+    const place = () => {
+      element.style.maxHeight = `${window.innerHeight - 2 * MENU_MARGIN}px`;
+      const lowest = window.innerHeight - MENU_MARGIN - element.offsetHeight;
+      element.style.top = `${Math.max(MENU_MARGIN, Math.min(menu.top, lowest))}px`;
+    };
+    place();
+    window.addEventListener('resize', place);
+    return () => window.removeEventListener('resize', place);
+  }, [menu]);
+
   const toggleMenu = (id: string, event: React.MouseEvent<HTMLElement>) => {
     const top = event.currentTarget.getBoundingClientRect().top;
     setMenu((current) => (current?.id === id ? null : { id, top }));
@@ -502,7 +519,7 @@ export default function ShellClient({
       <div ref={railRef} className="flex-shrink-0">
         <nav
           aria-label="Scout"
-          className="flex h-full w-[72px] flex-col items-center gap-1 overflow-y-auto border-r border-slate-200 bg-white py-3 dark:border-slate-800 dark:bg-slate-900"
+          className="flex h-full w-[72px] flex-col items-center gap-1 overflow-y-auto border-r [scrollbar-width:none] [&::-webkit-scrollbar]:hidden border-slate-200 bg-white py-3 dark:border-slate-800 dark:bg-slate-900"
         >
           <Link
             href="/"
@@ -588,10 +605,10 @@ export default function ShellClient({
 
         {openSection && menu && (
           <div
+            ref={sectionMenu}
             role="menu"
             aria-label={openSection.title}
-            className={`${MENU} overflow-y-auto overscroll-contain`}
-            style={{ top: menu.top, maxHeight: `calc(100dvh - ${menu.top}px - 0.75rem)` }}
+            className={`${MENU} overflow-y-auto overscroll-contain [scrollbar-color:var(--color-slate-300)_transparent] [scrollbar-width:thin] dark:[scrollbar-color:var(--color-slate-600)_transparent]`}
           >
             {menuBlocks(openSection).map((block, index) => (
               <div
@@ -602,9 +619,23 @@ export default function ShellClient({
                   index > 0 ? 'mt-1 border-t border-slate-200 pt-1 dark:border-slate-700' : ''
                 }
               >
-                <p className="px-2.5 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                  {block.title}
-                </p>
+                <div className="sticky -top-1.5 z-10 flex items-baseline justify-between gap-3 bg-white px-2.5 pb-1 pt-1.5 dark:bg-slate-900">
+                  <p className="min-w-0 truncate text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                    {block.title}
+                  </p>
+                  {block.footer && (
+                    <ChipAnchor
+                      chip={block.footer.chip}
+                      role="menuitem"
+                      onClick={() => setMenu(null)}
+                      aria-current={isCurrent(block.footer.chip) ? 'page' : undefined}
+                      className="inline-flex flex-shrink-0 items-center gap-1 text-xs font-medium text-indigo-700 no-underline hover:text-indigo-900 dark:text-indigo-300 dark:hover:text-indigo-200"
+                    >
+                      {block.footer.text}
+                      <HiArrowRight />
+                    </ChipAnchor>
+                  )}
+                </div>
                 {block.chips.map((chip) => {
                   const tone = TONES[chip.tone];
                   const current = isCurrent(chip);

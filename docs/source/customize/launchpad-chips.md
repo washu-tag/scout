@@ -242,7 +242,7 @@ groups:
 | `width`       | no       | `full`                         | Consecutive `half` groups pair side by side; an unpaired `half` renders full.                       |
 | `audience`    | no       | `user`                         | A group also hides automatically whenever it has no visible chips.                                  |
 | `railMenu`    | no       | —                              | Another group's id: the rail lists this group in that group's menu, under its own heading, rather than as its own entry. Ignored when that group isn't shown. |
-| `footerLink`  | no       | —                              | A link in the section heading: `{text, url}`, opened in a new tab, or `{text, link}` with a chip destination (see [links](#links)), so a Scout service opens inside the launchpad under the section's rail entry. A launchpad from before `link` drops a `{text, link}` footerLink with a diagnostic. |
+| `footerLink`  | no       | —                              | A link in the section heading, and beside the group's heading in a rail menu: `{text, url}`, opened in a new tab, or `{text, link}` with a chip destination (see [links](#links)), so a Scout service opens inside the launchpad under the section's rail entry. A launchpad from before `link` drops a `{text, link}` footerLink with a diagnostic. |
 
 Several documents may define the same group id (two services can both put chips in
 `imaging` and both ship the definition). The launchpad's own catalog wins a definition
