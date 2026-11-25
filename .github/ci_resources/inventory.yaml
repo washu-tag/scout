@@ -62,7 +62,8 @@ k3s_cluster:
           }
         }
 
-    # OIDC config
+    # OIDC config. smoke-test-analytics turns MinIO's on (with minio_trust_traefik_ca);
+    # deploy-and-test runs no Keycloak.
     minio_oidc_enabled: false
     temporal_oidc_enabled: false
 
@@ -84,6 +85,7 @@ k3s_cluster:
     grafana_storage_size: 1Gi
     grafana_admin_password: ci-grafana-admin-password
     grafana_alerts_enabled: false
+    grafana_trust_traefik_ca: true
 
     # Jupyter config
     jupyter_hub_storage_size: 1Gi

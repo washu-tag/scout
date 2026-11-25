@@ -126,12 +126,15 @@ test.describe('Authorized Non-Admin User', () => {
     test.skip(skipped.includes('minio'), 'MinIO console has no SSO button (AUTH_TEST_SKIP)');
     await signInToScout(page, url, authorizedUser);
 
-    // Trigger MinIO SSO via the login page's SSO button (use loose selector, not exact text)
+    // MinIO refuses the SSO login because the user's ID token has no policy claim
     const minio = await openInFrame(page, url);
-    await minio.locator('button:has-text("Login")').click({ timeout: 15000 });
-    await page.waitForLoadState('networkidle', { timeout: 60000 });
+    const login = page.waitForResponse(
+      (resp) => resp.url() === `https://minio.${hostname}/api/v1/login/oauth2/auth`,
+      { timeout: 60000 },
+    );
+    await minio.getByRole('button', { name: /SSO/ }).click({ timeout: 15000 });
+    expect((await login).ok()).toBe(false);
 
-    // After SSO, MinIO API should reject users without policy claim
     const response = await page.request.get(`https://minio.${hostname}/api/v1/buckets`);
     expect(response.status()).toBe(403);
   });

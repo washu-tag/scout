@@ -61,6 +61,31 @@
         CONSOLE_SECRET_KEY: '{{ item.secret_key }}'
   loop: '{{ minio_users }}'
 
+# The operator mounts public.crt of each externalCaCertSecret into MinIO's CA directory.
+- name: Mirror Traefik TLS cert into the MinIO namespace as a CA bundle
+  when: minio_trust_traefik_ca | bool
+  block:
+    - name: Read Traefik TLS secret
+      no_log: true
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Secret
+        name: '{{ traefik_tls_secret_name }}'
+        namespace: '{{ traefik_namespace }}'
+      register: _traefik_tls_secret
+    - name: Create minio-trusted-ca secret
+      no_log: true
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: minio-trusted-ca
+            namespace: '{{ minio_tenant_namespace }}'
+          data:
+            public.crt: '{{ _traefik_tls_secret.resources[0].data["tls.crt"] }}'
+
 - name: Deploy MinIO Tenant
   ansible.builtin.include_role:
     name: scout_common
@@ -113,6 +138,9 @@
           protocol: http
         certificate:
           requestAutoCert: false
+          externalCaCertSecret: >-
+            {{ [{'name': 'minio-trusted-ca', 'type': 'Opaque'}]
+            if minio_trust_traefik_ca | bool else [] }}
         buckets: '{{ minio_buckets }}'
         # No users: the bootstrap Job creates them. The operator would set each
         # one's policy to consoleAdmin, replacing what it has, at a moment that

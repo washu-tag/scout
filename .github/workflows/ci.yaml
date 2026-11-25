@@ -1178,9 +1178,11 @@ jobs:
           - side: analytics
             subdomains: superset,chat,keycloak,auth,minio,report-viewer
             san_extra: ''
-            # '+' runs playbooks concurrently (.github/scripts/run-playbooks.sh)
-            playbooks: k3s traefik postgres valkey auth+lake trino superset+chatbot+report-viewer+launchpad
+            # '+' runs playbooks concurrently (.github/scripts/run-playbooks.sh).
+            # lake follows auth here: with SSO on, MinIO's IAM waits for Keycloak.
+            playbooks: k3s traefik postgres valkey auth lake trino superset+chatbot+report-viewer+launchpad
             netpol_include: '--include trino-rw,opa-trino,report-viewer-ingress'
+            minio_sso: true
           - side: notebooks
             # testuser.jupyter is the per-user singleuser pod ingress
             subdomains: jupyter,grafana,keycloak,auth,playbooks,testuser.jupyter
@@ -1214,6 +1216,8 @@ jobs:
           } | sudo tee -a /etc/hosts
       - name: 'Prepare inventory.yaml'
         shell: bash
+        env:
+          MINIO_SSO: ${{ matrix.minio_sso }}
         run: |
           NODE_IP=$(hostname -I | awk '{print $1}')
           echo "Node IP for CoreDNS: $NODE_IP"
@@ -1221,6 +1225,10 @@ jobs:
             -e "s:WORK_DIR:$(pwd):" -e "s/NODE_IP/$NODE_IP/g" \
             -e "s:K3S_DATA_DIR:$K3S_DATA_DIR:g" \
             .github/ci_resources/inventory.yaml > ansible/inventory.yaml
+          if [ "$MINIO_SSO" = true ]; then
+            yq -i '.k3s_cluster.vars.minio_oidc_enabled = true
+              | .k3s_cluster.vars.minio_trust_traefik_ca = true' ansible/inventory.yaml
+          fi
       - name: 'ansible-galaxy dependencies'
         shell: bash
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-galaxy install -r collections/requirements.yaml
@@ -1436,9 +1444,6 @@ jobs:
           AUTHORIZED_USER_USERNAME: scout-authorized-ci-user
           TEST_USER_PASSWORD: ci-test-user-password-1234
           AUTH_TEST_SUBDOMAINS: ${{ matrix.subdomains }}
-          # Grafana's token exchange doesn't trust the CI cert; the Silo MinIO console
-          # puts SSO in a menu the test doesn't drive yet (#1013).
-          AUTH_TEST_SKIP: grafana-api,minio
           SIDE: ${{ matrix.side }}
         run: |
           set -euo pipefail
