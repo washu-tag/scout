@@ -144,7 +144,7 @@ data:
     ) -}}
     {{- end -}}
     {{- if $m.ui -}}
-    {{- /* Objects, not JSON strings, so model control options deep-merge into them */ -}}
+    {{- /* Objects, not JSON strings, so model control options merge in */ -}}
     {{- $params := dict
         "system_file" $defaults.systemPromptFile
         "function_calling" (default $defaults.functionCalling $m.ui.function_calling)
