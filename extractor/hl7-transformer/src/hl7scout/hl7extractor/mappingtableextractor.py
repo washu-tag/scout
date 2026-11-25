@@ -219,11 +219,30 @@ class MappingTableExtractor:
     def process_stage_1(self, df: DataFrame) -> DataFrame:
         """
         Current DataFrame status: all incoming reports, other than reports we have already seen in a previous run.
-        Goal: Find reports we can defer until the end to update in a bulk action defined by:
+        Goal: Create a "consistent" row for each report with neither `mpi` nor `epic_mrn`, since nothing can link it to another report.
+        Of the rest, find reports we can defer until the end to update in a bulk action defined by:
             1. Any incoming report with an exact match (both `mpi` and `epic_mrn`) in the mapping table already, OR
             2. Any incoming report with duplicated IDs among the rest of the incoming reports _except_ the first report.
         :param df: DataFrame of data to be processed
         """
+
+        no_id_condition = F.col("mpi").isNull() & F.col("epic_mrn").isNull()
+        no_id_reports_df = df.filter(no_id_condition)
+        no_id_count = no_id_reports_df.count()
+        if no_id_count > 0:
+            activity.logger.info(
+                "Inserting mapping for %d reports without patient IDs", no_id_count
+            )
+            self.merge_to_dt(
+                no_id_reports_df.select(
+                    F.expr("uuid()").alias("scout_patient_id"),
+                    "primary_report_identifier",
+                    "mpi",
+                    "epic_mrn",
+                    F.lit(True).alias("consistent"),
+                )
+            )
+        df = df.filter(~no_id_condition)
 
         exact_match_condition = create_exact_match_condition(
             df, self.existing_mapping_df
