@@ -644,6 +644,53 @@ k3s_cluster:
     #               extra_resource_limits:
     #                 nvidia.com/gpu: '1'
 
+    # Site-wide env for notebook pods, e.g. an LLM gateway for coding agents. Its
+    # ANTHROPIC_* keys, other than credentials, also go into Claude Code's managed
+    # settings, so users can't override them.
+    # jupyter_singleuser_environment:
+    #   ANTHROPIC_BASE_URL: 'https://llm-gateway.example.org/anthropic'
+    #   CLAUDE_CODE_AUTO_CONNECT_IDE: 'true'
+
+    # Claude Code model allowlist, enforced through managed settings (prefix match).
+    # jupyter_claude_available_models:
+    #   - claude-sonnet-5-direct
+    #   - claude-haiku-4-5-direct
+
+    # Codex's gateway, mounted at /etc/codex/requirements.toml. Users can't override it.
+    # jupyter_codex_requirements: |
+    #   model_provider = "gateway"
+    #
+    #   [model_providers.gateway]
+    #   name = "LLM gateway"
+    #   base_url = "https://llm-gateway.example.org/v1"
+    #   env_key = "LLM_GATEWAY_KEY"
+    #   wire_api = "responses"
+
+    # VS Code chat models, merged into each user's chatLanguageModels.json whenever
+    # VS Code starts. Key fields must be REPLACE_WITH_YOUR_GATEWAY_KEY.
+    # jupyter_vscode_chat_models:
+    #   - name: 'LLM gateway'
+    #     vendor: customendpoint
+    #     apiKey: 'REPLACE_WITH_YOUR_GATEWAY_KEY'
+    #     apiType: responses
+    #     models:
+    #       - id: gpt-5.4-mini
+    #         url: https://llm-gateway.example.org/v1/responses
+    #         requestHeaders:
+    #           x-api-key: 'REPLACE_WITH_YOUR_GATEWAY_KEY'
+
+    # Starter files for users' home directories, copied in at pod start only when
+    # missing. Use them for per-user values such as key placeholders; put shared
+    # values in the variables above, since users' copies never update.
+    # jupyter_user_starter_files:
+    #   .claude/settings.json:
+    #     env:
+    #       ANTHROPIC_AUTH_TOKEN: 'REPLACE_WITH_YOUR_GATEWAY_KEY'
+    #   .codex/auth.json:
+    #     OPENAI_API_KEY: 'REPLACE_WITH_YOUR_GATEWAY_KEY'
+    #   .codex/config.toml: |
+    #     model = "gpt-5.4-mini"
+
     # JupyterLab Extension Manager configuration
     # Controls whether users can install/manage JupyterLab extensions
     # jupyter_extension_manager_mode: 'disabled'  # Options: 'disabled' (Scout default), 'readonly', 'enabled'

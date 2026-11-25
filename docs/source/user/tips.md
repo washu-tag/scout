@@ -71,6 +71,78 @@ Every environment you create must include `ipykernel` for `nb_conda_kernels` to 
 In air-gapped deployments, package requests are routed through a proxy transparently -- no extra configuration is needed.
 ```
 
+### VS Code, Claude Code, and Codex
+
+Your notebook server also runs VS Code in the browser (code-server), with the same
+Python environment, Scout SDK, and home directory as JupyterLab, so `scout.query()` and
+your notebooks work the same in both. Your server opens in VS Code unless you pick
+**JupyterLab** under **Interface** on the server options page. You can also open
+VS Code from the JupyterLab launcher and keep both open in separate tabs.
+
+The **Terminal** option opens a full-window terminal instead. It runs in a tmux
+session that keeps running if you close the tab, so you can reopen it and pick up
+where you left off.
+
+The Claude Code extension, the Claude Code CLI (`claude`), and the
+[Codex CLI](https://github.com/openai/codex) (`codex`) are preinstalled. Point them at
+an LLM gateway your organization provides. Their settings live in your home directory,
+so they persist across server restarts.
+
+**Adding your key.** Claude Code and Codex share one gateway key. When VS Code opens
+and your key isn't set yet, it asks for it: click **Add Key** and paste the key. If you
+choose **Later**, click **Add AI Gateway Key** in the status bar when you're ready. Until
+the key is set, new terminals also print a reminder to run `scout-set-key`. To change it
+later, run **Scout: Set AI Gateway Key** from the Command Palette, or run
+`scout-set-key` in a terminal. Either saves the key to `~/.claude/settings.json` and
+`~/.codex/auth.json`, and to any VS Code chat model in
+`~/.local/share/code-server/User/chatLanguageModels.json` that holds the placeholder or
+your previous key. Each file is readable only by you. Then reload the VS Code window and
+open a new terminal.
+
+If your site provides VS Code chat models, VS Code keeps them up to date each time it
+starts and asks you to reload the window when they change. Chat models you add yourself
+are kept, as long as their names differ from your site's.
+
+**Claude Code.** Your settings live in `~/.claude/settings.json`. If your site sets up
+a gateway, your server already points Claude Code at it, and you only need to add your
+key. Otherwise, create the file with the gateway URL and your key:
+
+```json
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://llm-gateway.example.org/anthropic",
+    "ANTHROPIC_AUTH_TOKEN": "your-key"
+  }
+}
+```
+
+**Codex.** Codex reads your key from the environment variable named by the gateway
+provider's `env_key`, and new terminals set that variable from the key saved in
+`~/.codex/auth.json`. If your site sets up a gateway, Codex already uses it, and you
+only need to add your key. Otherwise, add the gateway as a provider in
+`~/.codex/config.toml`:
+
+```toml
+model = "gpt-5.4-mini"
+model_provider = "gateway"
+
+[model_providers.gateway]
+name = "LLM gateway"
+base_url = "https://llm-gateway.example.org/v1"
+env_key = "LLM_GATEWAY_KEY"
+wire_api = "responses"
+```
+
+Then add your key with `scout-set-key` and open a new terminal.
+
+To use another model the gateway serves, run `codex -m gpt-5.4`, or pick one with
+`/model` inside Codex.
+
+```{important}
+Anything a coding agent reads, including query results, is sent to the model provider you
+configure. Only use a provider your organization has approved for the data you work with.
+```
+
 ### Working with Report Sections
 
 The Delta Lake schema includes parsed report sections:
