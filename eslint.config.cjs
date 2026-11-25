@@ -28,6 +28,12 @@ module.exports = tseslint.config(
       "react/react-in-jsx-scope": "off",
       "react/jsx-uses-react": "off"
     }
+  },
+  {
+    files: ["ansible/roles/jupyter/files/code-server-scout/**/*.js"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off"
+    }
   }
 );
 

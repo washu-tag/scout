@@ -48,6 +48,10 @@ const MAX_OPEN_APPS = 3;
 // A sandboxed app keeps scripts, its own origin, forms, dialogs and downloads, but
 // can't open popups or navigate the launchpad window.
 const FRAME_SANDBOX = 'allow-scripts allow-same-origin allow-forms allow-modals allow-downloads';
+const FRAME_ALLOW = 'clipboard-read; clipboard-write; fullscreen';
+// Chrome ignores wildcard origins here, so an app whose frame moves to per-user
+// subdomains needs '*'; the CSP's frame-src still keeps it on Scout's subdomains.
+const CROSS_ORIGIN_FRAME_ALLOW = 'clipboard-read *; clipboard-write *; fullscreen *';
 
 const MENU =
   'fixed left-[76px] z-30 w-80 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-900 max-sm:left-2 max-sm:right-2 max-sm:w-auto';
@@ -813,7 +817,7 @@ export default function ShellClient({
             src={src}
             title={chip.title}
             sandbox={chip.sandbox ? FRAME_SANDBOX : undefined}
-            allow="clipboard-read; clipboard-write; fullscreen"
+            allow={chip.crossOriginClipboard ? CROSS_ORIGIN_FRAME_ALLOW : FRAME_ALLOW}
             aria-hidden={chip.id !== active?.id}
             onLoad={() => {
               const next = leaving.current.get(chip.id);

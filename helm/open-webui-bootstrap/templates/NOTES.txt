@@ -7,6 +7,9 @@ The Job runs as a Helm post-install/post-upgrade hook and:
        - tool_server_connections ({{ len .Values.persistentConfig.tool_server_connections }} entries)
        - DEFAULT_MODELS={{ .Values.persistentConfig.default_model_id }}
        - TASK_MODEL={{ .Values.persistentConfig.task_model_id }}
+       - TASK_MODEL_EXTERNAL={{ .Values.persistentConfig.task_model_external_id }}
+       - ENABLE_TAGS_GENERATION={{ .Values.persistentConfig.enable_tags_generation }}
+       - ENABLE_FOLLOW_UP_GENERATION={{ .Values.persistentConfig.enable_follow_up_generation }}
   4. Reconciles {{ len .Values.filterFunctions }} filter function(s) and {{ len .Values.scoutModels }} Scout model(s).
 
 Watch progress:

@@ -164,10 +164,11 @@
 
 # A top-level page load of a Scout service URL goes to the launchpad, which opens it
 # inside the shell at the same page (ADR 0042): a bookmark or shared link, a new tab
-# from another app, a sign-in callback. Same-origin navigation, frame loads, form posts
-# and API clients (which send no Sec-Fetch headers) reach the service directly. Created
-# here, after the launchpad that serves /open is up, so no link is sent to a launchpad
-# without it.
+# from another app, a sign-in callback. Frame loads, form posts and API clients (which
+# send no Sec-Fetch headers) reach the service directly, as does same-origin navigation
+# everywhere but JupyterHub, whose VS Code and terminal pages can't reopen themselves.
+# Created here, after the launchpad that serves /open is up, so no link is sent to a
+# launchpad without it.
 - name: Create open-in-launchpad Middleware
   kubernetes.core.k8s:
     state: present
@@ -179,7 +180,7 @@
         namespace: '{{ traefik_namespace }}'
       spec:
         redirectRegex:
-          regex: '^https://([a-z0-9-]+\.{{ server_hostname | regex_escape }})/(.*)'
+          regex: '^https://((?:[a-z0-9-]+\.)?[a-z0-9-]+\.{{ server_hostname | regex_escape }})/(.*)'
           replacement: 'https://{{ server_hostname }}/open/${1}/${2}'
           permanent: false
 
@@ -204,6 +205,19 @@
               && Method(`GET`)
               && Header(`Sec-Fetch-Dest`, `document`)
               && HeaderRegexp(`Sec-Fetch-Site`, `^(none|cross-site|same-site)$`)
+            priority: 10000
+            middlewares:
+              - name: security-headers
+              - name: open-in-launchpad
+            services:
+              - kind: TraefikService
+                name: noop@internal
+          - kind: Rule
+            match: >-
+              HostRegexp(`^([a-z0-9-]+\.)?jupyter\.{{ server_hostname | regex_escape }}$`)
+              && Method(`GET`)
+              && Header(`Sec-Fetch-Dest`, `document`)
+              && HeaderRegexp(`Sec-Fetch-Site`, `^(none|cross-site|same-site|same-origin)$`)
             priority: 10000
             middlewares:
               - name: security-headers
