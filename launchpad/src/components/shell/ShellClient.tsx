@@ -243,6 +243,8 @@ export default function ShellClient({
   // pages cannot render, so the top window checks and recovers (sessionRecovery).
   const checkSession = useCallback(async () => {
     if (skipAuth || signingOut.current || endedRef.current) return;
+    const afterSignIn = afterEdgeSignIn.current;
+    afterEdgeSignIn.current = false;
     let response: Response;
     try {
       response = await fetch('/api/session', { cache: 'no-store', redirect: 'manual' });
@@ -250,8 +252,7 @@ export default function ShellClient({
       return;
     }
     if (endedRef.current) return;
-    const recovery = sessionRecovery(response, afterEdgeSignIn.current);
-    afterEdgeSignIn.current = false;
+    const recovery = sessionRecovery(response, afterSignIn);
     if (recovery === 'none') return;
     if (recovery === 'ask') {
       askToSignIn();
