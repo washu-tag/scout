@@ -1,6 +1,6 @@
 # Everything below is bundled inside the upstream
-# quay.io/jupyter/scipy-notebook base image (or vendored inside its
-# dependencies' assets, including pip's), not code we write. There is no fixed
+# quay.io/jupyter/scipy-notebook base image or code-server (or vendored inside
+# their dependencies' assets, including pip's), not code we write. There is no fixed
 # release to bump to and no rebuilt base adopting the fixes yet. Recurring
 # linux-libc-dev kernel-header CVEs are handled separately, by package, in
 # .trivyignore.rego — not enumerated here. Revisit when a newer
@@ -30,7 +30,7 @@ vulnerabilities:
   - id: CVE-2026-97687
     purls:
       - pkg:pypi/urllib3@2.7.0
-    expired_at: 2026-12-01
+    expired_at: 2027-01-31
     statement: >-
       pip 26.2.2 still vendors urllib3 2.7.0. Scout uses an HTTPS package index,
       not the advisory's separately configured HTTPS forwarding proxy.
@@ -38,7 +38,7 @@ vulnerabilities:
   - id: CVE-2026-97689
     purls:
       - pkg:pypi/urllib3@2.7.0
-    expired_at: 2026-12-01
+    expired_at: 2027-01-31
     statement: >-
       pip 26.2.2 still vendors urllib3 2.7.0. A malicious package server can exhaust
       a pip process through an unbounded chunk-size line. Accept this install-time
@@ -46,8 +46,32 @@ vulnerabilities:
   - id: CVE-2026-114613
     purls:
       - pkg:pypi/msgpack@1.1.2
-    expired_at: 2026-12-01
+    expired_at: 2027-01-31
     statement: >-
       msgpack 1.1.2 vendored in pip 26.2.2, used only to read pip's own HTTP
       cache. pip 26.3 vendors msgpack 1.2.4 but is not on conda-forge yet; raise
       the pip floor in the Dockerfile and remove this when it is.
+  - id: CVE-2026-87018
+    paths:
+      - usr/lib/code-server/lib/vscode/node_modules/undici/package.json
+    expired_at: 2027-01-31
+    statement: &undici-statement >-
+      undici 7.29.1 bundled in VS Code core inside code-server; 4.146.0, the
+      newest release, still ships it. Replacing it would mean patching
+      code-server's install. Remove when a code-server release ships undici
+      >=7.30.1.
+  - id: CVE-2026-109383
+    paths:
+      - usr/lib/code-server/lib/vscode/node_modules/undici/package.json
+    expired_at: 2027-01-31
+    statement: *undici-statement
+  - id: CVE-2026-109829
+    paths:
+      - usr/lib/code-server/lib/vscode/node_modules/undici/package.json
+    expired_at: 2027-01-31
+    statement: *undici-statement
+  - id: CVE-2026-109869
+    paths:
+      - usr/lib/code-server/lib/vscode/node_modules/undici/package.json
+    expired_at: 2027-01-31
+    statement: *undici-statement

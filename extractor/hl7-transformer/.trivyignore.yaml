@@ -31,10 +31,12 @@ vulnerabilities:
   # another local user writing the same temp dir. The worker's tmpdir is the
   # container's private /tmp, used only by its single spark user. Fixed in 1.11.4.
   - id: CVE-2026-106451 # at.yawk.lz4:lz4-java 1.11.0
-  # ReDoS in JLine's interactive built-in `grep` (a REPL command). Spark bundles
-  # jline 3.29.0 for spark-shell and hadoop-client-runtime shades 3.9.0; the
-  # headless worker never starts a REPL, and neither upstream has moved yet.
+  # ReDoS in JLine's interactive built-ins `grep` and the `less` pager's search
+  # (REPL commands). Spark bundles jline 3.29.0 for spark-shell and
+  # hadoop-client-runtime shades 3.9.0; the headless worker never starts a REPL,
+  # and neither upstream has moved yet.
   - id: CVE-2026-77422 # org.jline:jline-builtins 3.29.0 (Spark) / 3.9.0 (shaded in hadoop-client-runtime)
+  - id: CVE-2026-77423 # org.jline:jline-builtins, the same two jars
   # jackson bundled by Spark (2.21.2, also in the yarn-shuffle jar), parquet-jackson
   # (2.19.2) and hadoop-client-runtime (2.18.6). Fixed in 2.21.7 / 2.22.3; no
   # Spark release ships a fixed Jackson yet.

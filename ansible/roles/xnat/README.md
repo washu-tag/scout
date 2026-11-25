@@ -62,9 +62,35 @@ Each XNAT replica opens up to 40 database connections, so keep `max_connections`
 above 40 × `xnat_replica_count` with some headroom. The database's metrics appear
 on Grafana's CloudNativePG dashboard (namespace `xnat`).
 
-An XNAT deployed with the chart's bundled database has to be wiped before it
-moves to this one, because Helm deletes the bundled cluster on upgrade. The role
-stops with the steps if it finds one.
+An XNAT deployed with the chart's bundled database has to be wiped or migrated
+before it moves to this one, because Helm deletes the bundled cluster on upgrade.
+The role stops with the wipe steps if it finds one.
+
+### Migrating the chart's database
+
+To keep the data, hand the existing cluster to the role instead of wiping it:
+
+1. Stop XNAT (`kubectl -n xnat scale statefulset xnat --replicas=0`) and back up
+   the database: `pg_dump`, or hibernate the cluster (annotation
+   `cnpg.io/hibernation=on`), copy its volume, and remove the annotation.
+2. Take the cluster out of the Helm release so the next upgrade keeps it and the
+   role's check passes: annotate the `xnat-postgres` Cluster and the chart's
+   `xnat-postgres-app-credentials` Secret with `helm.sh/resource-policy=keep`, and
+   remove the Cluster's `app.kubernetes.io/managed-by` label and its
+   `meta.helm.sh/release-name` and `meta.helm.sh/release-namespace` annotations.
+3. Upgrade Postgres in place to the major version of `postgres_image_tag`
+   (CloudNativePG 1.26 or later). The upgrade needs the old and new images built
+   on the same OS, and the chart's image is older, so first set the Cluster's
+   `spec.imageName` to a Postgres image of the current major version on the same
+   OS as `postgres_image_tag` (for example `15.20-system-trixie` before
+   `18.3-system-trixie`) and wait for the cluster to be healthy. Then set it to
+   `postgres_image:postgres_image_tag`.
+4. Run `make install-xnat`. The role applies its spec to the cluster, with
+   credentials in `xnat-postgres-credentials` (the same `xnat_postgres_password`),
+   and brings XNAT back.
+
+The chart's `xnat-postgres-app-credentials` Secret is unused afterwards and can be
+deleted.
 
 ## Plugins
 

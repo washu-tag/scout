@@ -5,8 +5,8 @@
 # directory. Everything else builds from its own subproject context and is
 # unaffected by this file.
 #
-# scout-notebook's Dockerfile only COPYs sdk/python; aggressive exclusion
-# is safe.
+# scout-notebook's Dockerfile only COPYs sdk/python and its own
+# helm/scout-notebook/ files; aggressive exclusion is safe.
 
 # Local dev artifacts (node_modules can be hundreds of MB; build/ + caches
 # slow context tar without contributing to the image)
@@ -29,7 +29,7 @@
 # OS junk
 **/.DS_Store
 
-# Everything not relevant to scout-notebook's COPY of sdk/python
+# Everything not relevant to scout-notebook's COPYs
 ansible
 docs
 tests
