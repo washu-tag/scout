@@ -207,12 +207,15 @@
       "matchDepNames": ["goharbor/harbor-core"],
       "allowedVersions": "/^v2\\.15\\./"
     },
-    // The Jupyter extension depends on the Python one. Open VSX's API gives no release
-    // dates, so a minimum age would hold these updates forever.
+    // Open VSX's API gives no release dates, so a minimum age would hold these
+    // updates forever. The Jupyter extension depends on the Python one.
     {
       "matchDatasources": ["custom.open-vsx"],
-      "groupName": "VS Code Python + Jupyter extensions",
       "minimumReleaseAge": null
+    },
+    {
+      "matchDepNames": ["ms-python/python", "ms-toolsai/jupyter"],
+      "groupName": "VS Code Python + Jupyter extensions"
     },
     // A new Postgres major is a database major upgrade, which needs planning;
     // keep Renovate on the running major. To move majors, change
@@ -278,8 +281,8 @@
       ]
     },
     // scout-notebook pins its downloaded tools as annotated Dockerfile ARGs:
-    //   # renovate: datasource=npm depName=@anthropic-ai/claude-code
-    //   ARG CLAUDE_CODE_VERSION=1.2.3
+    //   # renovate: datasource=github-releases depName=jesseduffield/lazygit extractVersion=^v(?<version>.+)$
+    //   ARG LAZYGIT_VERSION=1.2.3
     {
       "customType": "regex",
       "managerFilePatterns": ["helm/scout-notebook/Dockerfile"],

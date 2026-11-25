@@ -1025,7 +1025,7 @@ Nexus itself is configured in the `staging` vars section of the inventory (see {
 
 #### Notebook Egress Network Policy
 
-By default, JupyterHub's network policy blocks notebook pod egress to private IP ranges (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) while allowing public internet access. When the staging node is on a private network, notebook pods cannot reach the Nexus proxy, or the Squid proxy that carries their outbound HTTPS in air-gapped deployments, without an explicit egress allowance. In that case the Jupyter deploy fails until this is set.
+By default, JupyterHub's network policy blocks notebook pod egress to private IP ranges (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) while allowing public internet access. When the staging node is on a private network, notebook pods cannot reach the Nexus proxy, or the Squid proxy that carries their outbound HTTPS in air-gapped deployments with a coding-agent gateway configured, without an explicit egress allowance. In that case the Jupyter deploy fails until this is set.
 
 ```yaml
 # CIDR notation required — use /32 for a single IP

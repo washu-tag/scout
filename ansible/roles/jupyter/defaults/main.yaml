@@ -127,7 +127,14 @@ jupyter_profiles:
 # Site-wide env for notebook pods, such as ANTHROPIC_BASE_URL for coding agents.
 jupyter_singleuser_environment: {}
 # Outbound HTTPS from notebook pods goes through Squid, which limits it to the allowlist.
-jupyter_singleuser_https_proxy: '{{ squid_proxy_url }}'
+# Only on when a coding-agent gateway is configured; otherwise air-gapped pods get none.
+jupyter_singleuser_https_proxy: >-
+  {{ squid_proxy_url
+     if (jupyter_claude_available_models
+         or jupyter_codex_requirements
+         or jupyter_vscode_chat_models
+         or jupyter_singleuser_environment.ANTHROPIC_BASE_URL is defined)
+     else '' }}
 jupyter_singleuser_no_proxy: >-
   {{ (squid_no_proxy + [server_hostname, '.' ~ server_hostname]
       + (([conda_channel_alias, pip_proxy_url] | select | map('urlsplit', 'hostname') | select | list)

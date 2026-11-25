@@ -3,7 +3,7 @@ FROM quay.io/jupyter/scipy-notebook:python-3.13.18
 ARG TARGETARCH
 # renovate: datasource=github-releases depName=coder/code-server extractVersion=^v(?<version>.+)$
 ARG CODE_SERVER_VERSION=4.145.0
-# renovate: datasource=npm depName=@anthropic-ai/claude-code
+# renovate: datasource=custom.open-vsx depName=Anthropic/claude-code/linux-x64
 ARG CLAUDE_CODE_VERSION=2.1.312
 # renovate: datasource=custom.open-vsx depName=ms-python/python
 ARG PYTHON_EXTENSION_VERSION=2026.4.0
