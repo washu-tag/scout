@@ -21,6 +21,8 @@ data:
         "default_model_id" (.Values.persistentConfig.default_model_id | default "")
         "task_model_id" (.Values.persistentConfig.task_model_id | default "")
         "task_model_external_id" (.Values.persistentConfig.task_model_external_id | default "")
+        "enable_tags_generation" .Values.persistentConfig.enable_tags_generation
+        "enable_follow_up_generation" .Values.persistentConfig.enable_follow_up_generation
         "jwt_expires_in" (.Values.persistentConfig.jwt_expires_in | default "")
     | toJson }}
 

@@ -148,6 +148,7 @@ open_webui_csp_enabled: true
 #   - open_webui_default_model_id  → POST /api/v1/configs/models
 #   - open_webui_task_model_id     → POST /api/v1/tasks/config/update
 #   - open_webui_task_model_external_id → POST /api/v1/tasks/config/update
+#   - open_webui_enable_tags_generation, open_webui_enable_follow_up_generation → same
 # So these ARE fully declarative — change inventory, re-run make install-chat,
 # done. No SQL surgery on the `config` table needed.
 #
@@ -186,6 +187,10 @@ open_webui_default_model_id: '{{ ollama_default_model }}'
 # scout_models `name` so tasks don't load a second model.
 open_webui_task_model_id: '{{ ollama_default_model }}'
 open_webui_task_model_external_id: ''
+
+# Chat tags and follow-up suggestions after each reply.
+open_webui_enable_tags_generation: false
+open_webui_enable_follow_up_generation: false
 
 # Max tool calls per reply.
 open_webui_max_tool_call_iterations: 32

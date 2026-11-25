@@ -150,7 +150,7 @@ kubectl logs -n scout-analytics -l app.kubernetes.io/name=open-webui-bootstrap -
 **Event Functions** — installed and enabled on every deploy:
 - **Scout UI Defaults** — pins per-user OWUI interface settings on account creation and as a deploy-time backfill. **Required**, no opt-out: the report-viewer iframe-sandbox flags ([ADR 0029](../../../docs/internal/adr/0029-report-viewer.md)), which the viewer breaks without. **Optional**, opt out per cluster: `showChangelog` (`open_webui_show_release_notes`) and `showUpdateToast` (`open_webui_enable_version_update_check`).
 
-**PersistentConfig** — re-POSTed on every deploy: `tool_server_connections`, `DEFAULT_MODELS` (from `open_webui_default_model_id`), `TASK_MODEL` (from `open_webui_task_model_id`), `TASK_MODEL_EXTERNAL` (from `open_webui_task_model_external_id`, when set), `JWT_EXPIRES_IN` (capped to `keycloak_token_lifespan`).
+**PersistentConfig** — re-POSTed on every deploy: `tool_server_connections`, `DEFAULT_MODELS` (from `open_webui_default_model_id`), `TASK_MODEL` (from `open_webui_task_model_id`), `TASK_MODEL_EXTERNAL` (from `open_webui_task_model_external_id`, when set), `ENABLE_TAGS_GENERATION` and `ENABLE_FOLLOW_UP_GENERATION` (off by default), `JWT_EXPIRES_IN` (capped to `keycloak_token_lifespan`).
 
 **Other** — Arena Model evaluation off (`ENABLE_EVALUATION_ARENA_MODELS=false`); native context compaction on (`ENABLE_CONTEXT_COMPACTION`, replacing the former context_summarization filter); OWUI's own release notes off (`open_webui_show_release_notes`, `open_webui_enable_version_update_check`).
 

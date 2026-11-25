@@ -60,6 +60,9 @@ persistentConfig:
   task_model_id: ''
   # Task model for chats on openaiConnections models. Empty = skip.
   task_model_external_id: ''
+  # true/false; null = skip.
+  enable_tags_generation: null
+  enable_follow_up_generation: null
   # OWUI's session JWT lifetime, e.g. '28800s'. Empty = skip.
   jwt_expires_in: ''
 
