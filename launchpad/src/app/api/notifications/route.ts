@@ -1,7 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { database } from '@/lib/notifications/db';
-import { NO_STORE, notFound, reader, reauth, reply, unavailable } from '@/lib/notifications/http';
-import { defaultSendDeps, sendNotice, withdrawNotice } from '@/lib/notifications/send';
+import {
+  NO_STORE,
+  notFound,
+  readLimited,
+  reader,
+  reauth,
+  reply,
+  unavailable,
+} from '@/lib/notifications/http';
+import {
+  BODY_MAX_BYTES,
+  defaultSendDeps,
+  sendNotice,
+  withdrawNotice,
+} from '@/lib/notifications/send';
 import { disabledSenders, notificationsEnabled } from '@/lib/notifications/settings';
 import { noticeStore } from '@/lib/notifications/store';
 
@@ -29,7 +42,11 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   if (!notificationsEnabled()) return notFound();
   return reply(
-    await sendNotice(req.headers.get('authorization'), () => req.text(), defaultSendDeps()),
+    await sendNotice(
+      req.headers.get('authorization'),
+      () => readLimited(req, BODY_MAX_BYTES),
+      defaultSendDeps(),
+    ),
   );
 }
 

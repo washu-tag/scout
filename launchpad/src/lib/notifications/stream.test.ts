@@ -20,8 +20,12 @@ async function readUntil(reader: ReadableStreamDefaultReader<Uint8Array>, text: 
   return { seen, done: false };
 }
 
-function harness({ live = async () => true }: { live?: () => Promise<boolean> } = {}) {
+function harness({
+  live = async () => true,
+  gone = false,
+}: { live?: () => Promise<boolean>; gone?: boolean } = {}) {
   const controller = new AbortController();
+  if (gone) controller.abort();
   let current = summary(1);
   let onChange: () => void = () => {};
   let subscribed = 0;
@@ -85,6 +89,16 @@ describe('noticeStream', () => {
     assert.equal(twice.done, false);
     assert.doesNotMatch(twice.seen, /event: session/);
     h.abort();
+  });
+
+  it('never starts when the reader left before it opened', async () => {
+    const h = harness({ gone: true });
+    try {
+      assert.equal(h.subscribed(), 0);
+      assert.equal((await h.reader.read()).done, true);
+    } finally {
+      await h.reader.cancel();
+    }
   });
 
   it('stops listening when the reader goes away', async () => {
