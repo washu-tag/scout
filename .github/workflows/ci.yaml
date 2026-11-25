@@ -459,6 +459,8 @@ jobs:
         run: cd report-viewer/frontend && npm ci && npm run build
       - name: 'Unit tests: launchpad'
         shell: bash
+        env:
+          LAUNCHPAD_TEST_DATABASE_URL: postgresql://postgres:test@localhost:5432/report_viewer_test
         run: cd launchpad && npm ci && npm test
       - name: 'Unit tests: verify-node'
         shell: bash

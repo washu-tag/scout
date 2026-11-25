@@ -1,7 +1,7 @@
 import type { ToneName } from './tones';
 
 export type Audience = 'user' | 'admin';
-export type GroupLayout = 'cards' | 'rows' | 'tiles';
+export type GroupLayout = 'cards' | 'carousel' | 'rows' | 'tiles';
 export type GroupWidth = 'full' | 'half';
 
 export interface ChipLink {

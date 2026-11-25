@@ -239,12 +239,12 @@ groups:
 | `description` | no       | `""`                           | Section subtitle, max 200 characters.                                                               |
 | `icon`        | no       | `folder`                       | Small icon beside the heading.                                                                      |
 | `weight`      | no       | `100`                          | Section order on the page.                                                                          |
-| `layout`      | no       | `cards`                        | `cards` (large), `rows` (compact list with arrows), or `tiles` (compact grid).                      |
-| `maxColumns`  | no       | `cards` 3, `tiles` 2, `rows` 1 | Rendered columns = `min(visible chips, maxColumns)`.                                                |
+| `layout`      | no       | `cards`                        | `cards` (large), `carousel` (large cards in one row that scrolls sideways, with arrow buttons), `rows` (compact list with arrows), or `tiles` (compact grid). A launchpad from before `carousel` shows `cards` with a diagnostic. |
+| `maxColumns`  | no       | `cards` and `carousel` 3, `tiles` 2, `rows` 1 | Rendered columns = `min(visible chips, maxColumns)`; for `carousel`, the cards shown across before the row scrolls. |
 | `width`       | no       | `full`                         | Consecutive `half` groups pair side by side; an unpaired `half` renders full.                       |
 | `audience`    | no       | `user`                         | A group also hides automatically whenever it has no visible chips.                                  |
 | `railMenu`    | no       | —                              | Another group's id: the rail lists this group in that group's menu, under its own heading, rather than as its own entry. Ignored when that group isn't shown. |
-| `footerLink`  | no       | —                              | A link in the section heading: `{text, url}`, opened in a new tab, or `{text, link}` with a chip destination (see [links](#links)), so a Scout service opens inside the launchpad under the section's rail entry. A launchpad from before `link` drops a `{text, link}` footerLink with a diagnostic. |
+| `footerLink`  | no       | —                              | A link in the section heading, and beside the group's heading in a rail menu: `{text, url}`, opened in a new tab, or `{text, link}` with a chip destination (see [links](#links)), so a Scout service opens inside the launchpad under the section's rail entry. A launchpad from before `link` drops a `{text, link}` footerLink with a diagnostic. |
 
 Several documents may define the same group id (two services can both put chips in
 `imaging` and both ship the definition). The launchpad's own catalog wins a definition
