@@ -138,9 +138,9 @@ connectionSecretName: open-webui-connection-secrets
 #           reasoning:
 #             label: Effort
 #             default: medium
-#             options:
-#               medium: {label: Medium, params: {reasoning: {effort: medium}}}
-#               high: {label: High, params: {reasoning: {effort: high}}}
+#             options:  # a list, in picker order
+#               - {id: medium, label: Medium, params: {reasoning: {effort: medium}}}
+#               - {id: high, label: High, params: {reasoning: {effort: high}}}
 openaiConnections: []
 
 # Rendered only when a connection uses oauth2. Keep the schedule well under

@@ -522,6 +522,14 @@ def push_models(token):
         if system_file:
             m["params"]["system"] = load_text(system_file)
 
+        # Helm sorts map keys, so options come as a list to keep picker order.
+        for control in m.get("params", {}).get("model_controls", {}).values():
+            if isinstance(control.get("options"), list):
+                control["options"] = {
+                    o["id"]: {k: v for k, v in o.items() if k != "id"}
+                    for o in control["options"]
+                }
+
         model_id_q = urllib.parse.quote(m["id"], safe="")
         exists_code, _ = http(
             "GET", f"/api/v1/models/model?id={model_id_q}", token=token
