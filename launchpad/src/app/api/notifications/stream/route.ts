@@ -9,6 +9,12 @@ import { noticeStream } from '@/lib/notifications/stream';
 
 export const dynamic = 'force-dynamic';
 
+// Next answers HEAD with GET unless the route has its own, which would open a stream
+// nobody reads.
+export function HEAD() {
+  return new Response(null, { status: 405, headers: { Allow: 'GET' } });
+}
+
 // Counts and a change marker only; the rail reads the notices themselves from
 // GET /api/notifications.
 export async function GET(req: NextRequest) {
