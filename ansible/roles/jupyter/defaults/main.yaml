@@ -50,7 +50,8 @@ jupyter_logo_path: '{{ scout_repo_dir }}/launchpad/public/favicon.ico'
 jupyter_samples_dir: '{{ role_path }}/files/samples'
 
 # Claude Code managed settings, mounted read-only at /etc/claude-code in
-# singleuser pods alongside the samples' CLAUDE.md. Users cannot override them.
+# singleuser pods. Users cannot override them. The ANTHROPIC_* keys of
+# jupyter_singleuser_environment, other than credentials, are added as env.
 jupyter_claude_managed_settings:
   permissions:
     deny:
@@ -60,6 +61,11 @@ jupyter_claude_managed_settings:
 # Claude Code model allowlist, merged into the managed settings as availableModels.
 # Entries match by prefix. Empty leaves model choice unrestricted.
 jupyter_claude_available_models: []
+
+# Codex admin requirements, mounted at /etc/codex/requirements.toml, which users cannot
+# override. Use it to pin model_provider and model_providers to the site's gateway.
+# Empty ships no file.
+jupyter_codex_requirements: ''
 
 # Starter files for each user's home directory, keyed by path relative to home. Each is
 # copied in at pod start only when the user has no file at that path; users own the copy,
@@ -133,11 +139,11 @@ jupyter_interfaces:
     choices:
       jupyterlab:
         display_name: 'JupyterLab'
-        default: true
         kubespawner_override:
           default_url: '/lab'
       vscode:
         display_name: 'VS Code'
+        default: true
         kubespawner_override:
           default_url: '/vscode/'
       terminal:

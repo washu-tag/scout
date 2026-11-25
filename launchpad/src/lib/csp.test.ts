@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { contentSecurityPolicy } from './csp';
+import { contentSecurityPolicy, frameAllow } from './csp';
 
 function directives(policy: string): Map<string, string> {
   return new Map(
@@ -40,5 +40,18 @@ describe('contentSecurityPolicy', () => {
       contentSecurityPolicy({ nonce: 'n', host: 'evil; script-src *', dev: false }),
     );
     assert.strictEqual(policy.get('frame-src'), "'none'");
+  });
+});
+
+describe('frameAllow', () => {
+  it('delegates the clipboard and fullscreen to Scout subdomains only', () => {
+    assert.strictEqual(
+      frameAllow('scout.example.edu:443'),
+      'clipboard-read https://*.scout.example.edu; clipboard-write https://*.scout.example.edu; fullscreen https://*.scout.example.edu',
+    );
+  });
+
+  it('falls back to the frame src origin when the host is not a plain hostname', () => {
+    assert.strictEqual(frameAllow('evil *'), 'clipboard-read; clipboard-write; fullscreen');
   });
 });

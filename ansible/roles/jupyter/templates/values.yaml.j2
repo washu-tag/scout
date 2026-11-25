@@ -259,16 +259,6 @@ singleuser:
               chown -h $NB_USER:$NB_GID /home/$NB_USER/Scout
             fi
 
-            # Codex reads global instructions from ~/.codex/AGENTS.md; point it at the
-            # Scout agent guide unless the user already has their own.
-            codex_agents=/home/$NB_USER/.codex/AGENTS.md
-            if [ -f /opt/scout/samples/CLAUDE.md ] && [ ! -e $codex_agents ] && [ ! -L $codex_agents ]; then
-              mkdir -p /home/$NB_USER/.codex
-              chown $NB_USER:$NB_GID /home/$NB_USER/.codex
-              ln -s /opt/scout/samples/CLAUDE.md $codex_agents
-              chown -h $NB_USER:$NB_GID $codex_agents
-            fi
-
             starter=/opt/scout/user-starter
             if [ -f $starter/manifest ]; then
               while read -r key rel; do
@@ -295,39 +285,41 @@ singleuser:
                 chown -h $NB_USER:$NB_GID /home/$NB_USER/.jupyter/custom/$asset
               fi
             done
-  extraEnv:
+{#
+  Scout's own notebook env. No TRINO_USER: the scout SDK sends the user's Keycloak
+  access token as the Bearer. The staging CA bundle is built by the staging-ca-setup
+  init container.
+#}
+{% set _scout_env = {
+  'HF_HOME': '/home/jovyan/models',
+  'TRINO_HOST': 'trino.' ~ trino_namespace,
+  'TRINO_PORT': trino_https_port | string,
+  'TRINO_SCHEME': 'https',
+  'TRINO_CATALOG': 'delta',
+  'TRINO_SCHEMA': 'default',
+  'TRINO_CA_CERT': '/etc/trino-ca/ca.crt',
+  'OLLAMA_URL': 'http://ollama.' ~ chatbot_namespace ~ ':11434',
+  'OLLAMA_MODEL': ollama_default_model,
+} %}
 {% if _package_proxy_needs_staging_cert | default(false) | bool %}
-    # Combined CA bundle (system CAs + staging CA) — built by staging-ca-setup init container.
-    # These env vars ensure all Python HTTP clients (requests, urllib3, pip, conda)
-    # trust the staging self-signed cert without needing root access.
-    REQUESTS_CA_BUNDLE: '/etc/pki/staging/ca-bundle.crt'
-    SSL_CERT_FILE: '/etc/pki/staging/ca-bundle.crt'
-    CURL_CA_BUNDLE: '/etc/pki/staging/ca-bundle.crt'
+{% set _scout_env = _scout_env | combine({
+  'REQUESTS_CA_BUNDLE': '/etc/pki/staging/ca-bundle.crt',
+  'SSL_CERT_FILE': '/etc/pki/staging/ca-bundle.crt',
+  'CURL_CA_BUNDLE': '/etc/pki/staging/ca-bundle.crt',
+}) %}
 {% endif %}
-    # HuggingFace model cache directory - models downloaded from HF Hub are stored here
-    # This directory is created in postStart hook and persists with user's home directory
-    HF_HOME: '/home/jovyan/models'
-    # Trino connection params consumed by the scout SDK (installed in the
-    # scout-notebook image). No TRINO_USER: per-user identity comes from
-    # the user's Keycloak access_token (fetched via the Hub API and sent
-    # as the Bearer; Trino reads the `sub` claim).
-    TRINO_HOST: 'trino.{{ trino_namespace }}'
-    TRINO_PORT: '{{ trino_https_port }}'
-    TRINO_SCHEME: 'https'
-    TRINO_CATALOG: 'delta'
-    TRINO_SCHEMA: 'default'
-    TRINO_CA_CERT: '/etc/trino-ca/ca.crt'
-    # Ollama service for LLM calls from notebooks
-    OLLAMA_URL: 'http://ollama.{{ chatbot_namespace }}:11434'
-    OLLAMA_MODEL: '{{ ollama_default_model }}'
 {% if jupyter_singleuser_https_proxy %}
-    HTTPS_PROXY: '{{ jupyter_singleuser_https_proxy }}'
-    NO_PROXY: '{{ jupyter_singleuser_no_proxy }}'
+{% set _scout_env = _scout_env | combine({
+  'HTTPS_PROXY': jupyter_singleuser_https_proxy,
+  'NO_PROXY': jupyter_singleuser_no_proxy,
+}) %}
 {% endif %}
 {% if jupyter_extension_manager_mode != 'enabled' %}
-    CODE_EXTENSIONSDIR: '/opt/code-server/extensions'
+{% set _scout_env = _scout_env | combine({'CODE_EXTENSIONSDIR': '/opt/code-server/extensions'}) %}
 {% endif %}
-{% for _name, _value in jupyter_singleuser_environment.items() %}
+  # Site values in jupyter_singleuser_environment override Scout's.
+  extraEnv:
+{% for _name, _value in (_scout_env | combine(jupyter_singleuser_environment)).items() %}
     {{ _name }}: {{ _value | string | to_json }}
 {% endfor %}
   extraFiles:
@@ -406,6 +398,13 @@ singleuser:
         configMap:
           name: claude-code-managed
           defaultMode: 0644
+{% if jupyter_codex_requirements %}
+      codex-requirements:
+        name: codex-requirements
+        configMap:
+          name: scout-codex-requirements
+          defaultMode: 0644
+{% endif %}
       user-starter:
         name: user-starter
         configMap:
@@ -421,11 +420,6 @@ singleuser:
         configMap:
           name: scout-gateway-key
           defaultMode: 0755
-      tmux-conf:
-        name: tmux-conf
-        configMap:
-          name: scout-tmux-conf
-          defaultMode: 0644
 {% if jupyter_extension_manager_mode != 'enabled' %}
       vscode-extensions:
         name: vscode-extensions
@@ -477,6 +471,13 @@ singleuser:
         name: claude-code-managed
         mountPath: /etc/claude-code
         readOnly: true
+{% if jupyter_codex_requirements %}
+      codex-requirements:
+        name: codex-requirements
+        mountPath: /etc/codex/requirements.toml
+        subPath: requirements.toml
+        readOnly: true
+{% endif %}
       user-starter:
         name: user-starter
         mountPath: /opt/scout/user-starter
@@ -504,11 +505,6 @@ singleuser:
         name: gateway-key
         mountPath: /etc/profile.d/scout-codex-key.sh
         subPath: codex-key.sh
-        readOnly: true
-      tmux-conf:
-        name: tmux-conf
-        mountPath: /etc/tmux.conf
-        subPath: tmux.conf
         readOnly: true
 {% if jupyter_extension_manager_mode != 'enabled' %}
       vscode-extensions:

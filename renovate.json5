@@ -207,6 +207,13 @@
       "matchDepNames": ["goharbor/harbor-core"],
       "allowedVersions": "/^v2\\.15\\./"
     },
+    // The Jupyter extension depends on the Python one. Open VSX's API gives no release
+    // dates, so a minimum age would hold these updates forever.
+    {
+      "matchDatasources": ["custom.open-vsx"],
+      "groupName": "VS Code Python + Jupyter extensions",
+      "minimumReleaseAge": null
+    },
     // A new Postgres major is a database major upgrade, which needs planning;
     // keep Renovate on the running major. To move majors, change
     // postgres_image_tag and this regex together.
@@ -225,6 +232,17 @@
     "npm",
     "pep621"
   ],
+
+  // scout-notebook installs VS Code extensions from Open VSX, which has no built-in
+  // datasource. GitHub releases list versions Open VSX doesn't carry.
+  "customDatasources": {
+    "open-vsx": {
+      "defaultRegistryUrlTemplate": "https://open-vsx.org/api/{{packageName}}",
+      "transformTemplates": [
+        "{\"releases\": $map($keys(allVersions)[$ != 'latest' and $ != 'pre-release'], function($v) { {\"version\": $v} })}"
+      ]
+    }
+  },
 
   // Replaces config:recommended's default, which would skip tests/.
   "ignorePaths": ["**/node_modules/**", "examples/**", "docs/**", "verify-node/**"],

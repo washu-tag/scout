@@ -75,26 +75,13 @@ In air-gapped deployments, package requests are routed through a proxy transpare
 
 Your notebook server also runs VS Code in the browser (code-server), with the same
 Python environment, Scout SDK, and home directory as JupyterLab, so `scout.query()` and
-your notebooks work the same in both. To open your server in VS Code, pick **VS Code**
-under **Interface** on the server options page. You can also open it from the
-JupyterLab launcher and keep both open in separate tabs.
+your notebooks work the same in both. Your server opens in VS Code unless you pick
+**JupyterLab** under **Interface** on the server options page. You can also open
+VS Code from the JupyterLab launcher and keep both open in separate tabs.
 
 The **Terminal** option opens a full-window terminal instead. It runs in a tmux
 session that keeps running if you close the tab, so you can reopen it and pick up
 where you left off.
-
-**Pasting into the VS Code terminal.** Use Cmd+V (Ctrl+V or Ctrl+Shift+V on Windows and
-Linux). Right-click **Paste** reads the clipboard through a browser permission that
-some browsers refuse, showing "Unable to read from the browser's clipboard." Keyboard
-paste works because Scout's default `keybindings.json` hands it to the browser. If you
-already had a `keybindings.json` when Scout added that default, add these entries to it
-(**Preferences: Open Keyboard Shortcuts (JSON)**):
-
-```json
-{ "key": "ctrl+v", "command": "-workbench.action.terminal.paste" },
-{ "key": "cmd+v", "command": "-workbench.action.terminal.paste" },
-{ "key": "ctrl+shift+v", "command": "-workbench.action.terminal.paste" }
-```
 
 The Claude Code extension, the Claude Code CLI (`claude`), and the
 [Codex CLI](https://github.com/openai/codex) (`codex`) are preinstalled. Point them at
@@ -112,10 +99,9 @@ later, run **Scout: Set AI Gateway Key** from the Command Palette, or run
 your previous key. Each file is readable only by you. Then reload the VS Code window and
 open a new terminal.
 
-**Claude Code.** Your settings live in `~/.claude/settings.json`. If your site provides
-a starter file, Scout creates it the first time your server starts, and your server
-already points Claude Code at the gateway, so you only need to add your key. Otherwise,
-create the file with the gateway URL and your key:
+**Claude Code.** Your settings live in `~/.claude/settings.json`. If your site sets up
+a gateway, your server already points Claude Code at it, and you only need to add your
+key. Otherwise, create the file with the gateway URL and your key:
 
 ```json
 {
@@ -126,10 +112,10 @@ create the file with the gateway URL and your key:
 }
 ```
 
-**Codex.** Codex reads the gateway from `~/.codex/config.toml` and your key from the
-environment variable named by `env_key` in that file. New terminals set that variable
-from the key saved in `~/.codex/auth.json`. If your site provides a starter file, it
-exists the first time your server starts; otherwise, add the gateway as a provider in
+**Codex.** Codex reads your key from the environment variable named by the gateway
+provider's `env_key`, and new terminals set that variable from the key saved in
+`~/.codex/auth.json`. If your site sets up a gateway, Codex already uses it, and you
+only need to add your key. Otherwise, add the gateway as a provider in
 `~/.codex/config.toml`:
 
 ```toml
@@ -152,35 +138,6 @@ To use another model the gateway serves, run `codex -m gpt-5.4`, or pick one wit
 Anything a coding agent reads, including query results, is sent to the model provider you
 configure. Only use a provider your organization has approved for the data you work with.
 ```
-
-### Longitudinal Questions with a Coding Agent
-
-A coding agent can answer a question about patients over time by writing and running a
-notebook. Point it at the samples and state the question and what one row of the result
-should be:
-
-```text
-Read ~/Scout/Quickstart.ipynb. Find patients whose first chest CT mentions a pulmonary
-nodule and any chest CT within 18 months after it. Return one row per patient with the
-index date, follow-up date, and days between.
-```
-
-You don't need to list facilities. The agent looks up the facilities you have access to
-and asks which ones your IRB covers for this question. Your access can be broader than
-any one study's approval, so confirm only the facilities that apply. To skip the
-question, name the facilities in your request (for example, "for BJH and SLCH").
-
-Claude Code and Codex load Scout's agent guide (`~/Scout/CLAUDE.md`) in every session.
-It covers query rules, longitudinal patterns, and how to handle patient data. Codex uses
-it unless you already have your own `~/.codex/AGENTS.md`. The agent writes the notebook
-to `~/analyses/<name>/`, runs it end to end, and reports the row and patient counts and
-the definitions it chose. Check those definitions, then open the notebook to review the
-rows.
-
-The agent is instructed to inspect results only through counts and summaries, and to
-keep rows out of notebook output, and Claude Code's file-reading tool is blocked from
-opening CSV and TSV files in your home directory. It still runs queries as you and can
-see anything you can, so treat its session the same way as the data it touches.
 
 ### Working with Report Sections
 

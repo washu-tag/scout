@@ -621,8 +621,8 @@ jupyter_profiles:
 
 Every notebook server also runs VS Code in the browser
 ([code-server](https://github.com/coder/code-server)) with the Claude Code and Codex
-coding agents. Each profile gets an **Interface** option, JupyterLab (the default),
-VS Code, or Terminal, that picks the page the server opens on. The choices are
+coding agents. Each profile gets an **Interface** option, VS Code (the default),
+JupyterLab, or Terminal, that picks the page the server opens on. The choices are
 `jupyter_interfaces`. To change the default for one profile, override only the
 `default` flags in that profile:
 
@@ -634,19 +634,33 @@ jupyter_profiles:
     profile_options:
       interface:
         choices:
-          jupyterlab:
-            default: false
           vscode:
+            default: false
+          jupyterlab:
             default: true
 ```
 
 Users bring their own LLM keys (see the user docs). To point everyone at a shared
-gateway, set defaults in inventory. Users can override them:
+gateway, set it in inventory. A key in `jupyter_singleuser_environment` also replaces
+Scout's own value for that variable, such as `HF_HOME`. Its `ANTHROPIC_*` keys, other
+than credentials, are also written to Claude Code's managed settings, and
+`jupyter_codex_requirements` is mounted as Codex's `/etc/codex/requirements.toml`, so
+users cannot override the gateway:
 
 ```yaml
 jupyter_singleuser_environment:
   ANTHROPIC_BASE_URL: 'https://llm-gateway.example.org/anthropic'
+jupyter_codex_requirements: |
+  model_provider = "gateway"
+
+  [model_providers.gateway]
+  name = "LLM gateway"
+  base_url = "https://llm-gateway.example.org/v1"
+  env_key = "LLM_GATEWAY_KEY"
+  wire_api = "responses"
 ```
+
+Keep per-user values, such as key placeholders, in `jupyter_user_starter_files`.
 
 On air-gapped clusters, add the gateway domain to `squid_extra_allowed_domains` and
 make sure `jupyter_egress_allow_cidr` covers the staging node. Notebook pods reach it

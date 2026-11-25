@@ -30,7 +30,7 @@ vulnerabilities:
   - id: CVE-2026-97687
     purls:
       - pkg:pypi/urllib3@2.7.0
-    expired_at: 2026-12-01
+    expired_at: 2027-01-31
     statement: >-
       pip 26.2.2 still vendors urllib3 2.7.0. Scout uses an HTTPS package index,
       not the advisory's separately configured HTTPS forwarding proxy.
@@ -38,7 +38,7 @@ vulnerabilities:
   - id: CVE-2026-97689
     purls:
       - pkg:pypi/urllib3@2.7.0
-    expired_at: 2026-12-01
+    expired_at: 2027-01-31
     statement: >-
       pip 26.2.2 still vendors urllib3 2.7.0. A malicious package server can exhaust
       a pip process through an unbounded chunk-size line. Accept this install-time
@@ -46,7 +46,7 @@ vulnerabilities:
   - id: CVE-2026-114613
     purls:
       - pkg:pypi/msgpack@1.1.2
-    expired_at: 2026-12-01
+    expired_at: 2027-01-31
     statement: >-
       msgpack 1.1.2 vendored in pip 26.2.2, used only to read pip's own HTTP
       cache. pip 26.3 vendors msgpack 1.2.4 but is not on conda-forge yet; raise
@@ -54,32 +54,24 @@ vulnerabilities:
   - id: CVE-2026-87018
     paths:
       - usr/lib/code-server/lib/vscode/node_modules/undici/package.json
-    expired_at: 2026-12-01
+    expired_at: 2027-01-31
     statement: &undici-statement >-
-      undici 7.29.1 bundled in VS Code core inside code-server 4.145.0, the
-      newest release; replacing it would mean patching code-server's install.
-      Remove when a code-server release ships undici >=7.30.1.
+      undici 7.29.1 bundled in VS Code core inside code-server; 4.146.0, the
+      newest release, still ships it. Replacing it would mean patching
+      code-server's install. Remove when a code-server release ships undici
+      >=7.30.1.
   - id: CVE-2026-109383
     paths:
       - usr/lib/code-server/lib/vscode/node_modules/undici/package.json
-    expired_at: 2026-12-01
+    expired_at: 2027-01-31
     statement: *undici-statement
   - id: CVE-2026-109829
     paths:
       - usr/lib/code-server/lib/vscode/node_modules/undici/package.json
-    expired_at: 2026-12-01
+    expired_at: 2027-01-31
     statement: *undici-statement
   - id: CVE-2026-109869
     paths:
       - usr/lib/code-server/lib/vscode/node_modules/undici/package.json
-    expired_at: 2026-12-01
+    expired_at: 2027-01-31
     statement: *undici-statement
-  - id: CVE-2026-111943
-    paths:
-      - usr/local/bin/lazygit
-    expired_at: 2026-12-01
-    statement: >-
-      Go 1.26.9 stdlib in the lazygit 0.66.2 release binary, the newest
-      release. lazygit drives the git CLI for remotes; its own Go TLS is the
-      GitHub update check, against the image's current CA store. Remove when a
-      lazygit release is built with Go >=1.26.10.

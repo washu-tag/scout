@@ -584,8 +584,10 @@ jupyter_hub_resources:
     memory: 2G
 
 # Optional site-wide env for notebook pods, e.g. an LLM gateway for coding agents.
-# Users can override it. See ansible/README.md "VS Code and Coding Agents" for
-# air-gapped requirements.
+# A key here replaces Scout's own value for that variable, such as HF_HOME. Its
+# ANTHROPIC_* keys, other than credentials, are also written to Claude Code's managed
+# settings, so users cannot override them. See ansible/README.md "VS Code and Coding
+# Agents" for air-gapped requirements.
 jupyter_singleuser_environment:
   ANTHROPIC_BASE_URL: 'https://llm-gateway.example.org/anthropic'
   ANTHROPIC_DEFAULT_OPUS_MODEL: 'claude-opus-5-5-direct'
@@ -600,25 +602,32 @@ jupyter_claude_available_models:
   - claude-sonnet-5-direct
   - claude-haiku-4-5-direct
 
+# Optional Codex requirements, mounted at /etc/codex/requirements.toml, which users
+# cannot override. Pin the gateway provider here rather than in a starter config.toml,
+# so a changed URL reaches every user. Users' keys are exported into env_key's variable.
+jupyter_codex_requirements: |
+  model_provider = "gateway"
+
+  [model_providers.gateway]
+  name = "LLM gateway"
+  base_url = "https://llm-gateway.example.org/v1"
+  env_key = "LLM_GATEWAY_KEY"
+  wire_api = "responses"
+
 # Optional starter files for each user's home directory, keyed by path relative to home.
 # Each is copied in at pod start only when the user has no file at that path, so users
 # own it after that: changes here reach new users only. Dicts and lists are written as
-# JSON, strings as-is. Users replace the key placeholders with their own keys. Put
-# shared values such as the gateway URL in jupyter_singleuser_environment instead: a
-# user's settings.json overrides the pod environment, so values copied here never update.
+# JSON, strings as-is. Use them for per-user values such as key placeholders, which users
+# replace with their own keys. Put shared values such as gateway URLs in
+# jupyter_singleuser_environment and jupyter_codex_requirements instead.
 jupyter_user_starter_files:
   .claude/settings.json:
     env:
       ANTHROPIC_AUTH_TOKEN: 'REPLACE_WITH_YOUR_GATEWAY_KEY'
+  .codex/auth.json:
+    OPENAI_API_KEY: 'REPLACE_WITH_YOUR_GATEWAY_KEY'
   .codex/config.toml: |
     model = "gpt-5.4-mini"
-    model_provider = "gateway"
-
-    [model_providers.gateway]
-    name = "LLM gateway"
-    base_url = "https://llm-gateway.example.org/v1"
-    env_key = "LLM_GATEWAY_KEY"
-    wire_api = "responses"
 
 # Starter VS Code keybindings. The default unbinds the terminal's paste command so the
 # browser's own paste reaches the terminal, which works in every browser. Like other

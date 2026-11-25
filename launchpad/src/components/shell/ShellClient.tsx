@@ -31,6 +31,7 @@ interface ShellClientProps {
   sections: ShellSection[];
   environment: string;
   docsUrl: string;
+  frameAllow: string;
   children: React.ReactNode;
 }
 
@@ -133,6 +134,7 @@ export default function ShellClient({
   sections,
   environment,
   docsUrl,
+  frameAllow,
   children,
 }: ShellClientProps) {
   const pathname = usePathname();
@@ -630,7 +632,7 @@ export default function ShellClient({
             src={src}
             title={chip.title}
             sandbox={chip.sandbox ? FRAME_SANDBOX : undefined}
-            allow="clipboard-read *; clipboard-write *; fullscreen *"
+            allow={frameAllow}
             aria-hidden={chip.id !== active?.id}
             onLoad={() => {
               const next = leaving.current.get(chip.id);

@@ -5,7 +5,9 @@ ARG TARGETARCH
 ARG CODE_SERVER_VERSION=4.145.0
 # renovate: datasource=npm depName=@anthropic-ai/claude-code
 ARG CLAUDE_CODE_VERSION=2.1.312
+# renovate: datasource=custom.open-vsx depName=ms-python/python
 ARG PYTHON_EXTENSION_VERSION=2026.4.0
+# renovate: datasource=custom.open-vsx depName=ms-toolsai/jupyter
 ARG JUPYTER_EXTENSION_VERSION=2025.9.1
 # renovate: datasource=github-releases depName=raine/workmux extractVersion=^v(?<version>.+)$
 ARG WORKMUX_VERSION=0.1.277
@@ -14,7 +16,7 @@ ARG HERDR_VERSION=0.9.5
 # renovate: datasource=github-releases depName=openai/codex extractVersion=^rust-v(?<version>.+)$
 ARG CODEX_VERSION=0.166.0
 # renovate: datasource=github-releases depName=jesseduffield/lazygit extractVersion=^v(?<version>.+)$
-ARG LAZYGIT_VERSION=0.66.2
+ARG LAZYGIT_VERSION=0.66.3
 
 USER root
 # TeX Live ships its own CA file (tlmgr's LWP downloads) that still holds emSign ECC Root CA - G3;
