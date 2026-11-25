@@ -39,7 +39,10 @@ spec:
             - --log-level=info
             - --log-format=json
             - --config-file=/policies/config.yaml
+            - --authorization=basic
+            - /policies/authz.rego
             - /policies/policy.rego
+            - /policies/scout.rego
             - /policies/data.json
           ports:
             - name: http

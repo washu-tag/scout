@@ -21,4 +21,4 @@ spec:
         name: cluster-vars
   dependsOn:
     - name: scout-core-foundation
-    - name: secrets-ready # valkey-auth (an inert marker in aws mode)
+    - name: secrets-ready # valkey-auth, valkey-cache-auth (an inert marker in aws mode)

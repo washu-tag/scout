@@ -24,3 +24,46 @@ valkey_resources_default:
 
 # Persistence (AOF)
 valkey_persistence_enabled: true
+
+# Server config and ACL users. A second run of this role deploys the cache
+# instance (playbooks/valkey.yaml) with the valkey_cache_* values below.
+valkey_config: |
+  appendonly yes
+  appendfsync everysec
+valkey_acl_users:
+  default:
+    permissions: allkeys allchannels allcommands
+    passwordKey: password
+# Extra auth-Secret keys, one per non-default ACL user's passwordKey.
+valkey_acl_passwords: {}
+
+# Cache instance: evictable data only (Report Viewer query results, Superset's
+# query caches), never sessions or queues. No persistence, so nothing reaches disk.
+# valkey_cache_password, valkey_cache_report_viewer_password and
+# valkey_cache_superset_password: defined in inventory.yaml (use vault encryption)
+valkey_cache_maxmemory: 1536mb
+valkey_cache_resources_default:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 1
+    memory: 2Gi
+valkey_cache_config: |
+  appendonly no
+  save ""
+  maxmemory {{ valkey_cache_maxmemory }}
+  maxmemory-policy allkeys-lru
+valkey_cache_acl_users:
+  default:
+    permissions: allkeys allchannels allcommands
+    passwordKey: password
+  report-viewer:
+    permissions: '~rv:* resetchannels -@all +get +set +del +exists +ping +hello +client|setinfo'
+    passwordKey: report-viewer-password
+  superset:
+    permissions: '~superset_* resetchannels -@all +@read +@write +@keyspace +@connection +@transaction -@dangerous'
+    passwordKey: superset-password
+valkey_cache_acl_passwords:
+  report-viewer-password: "{{ valkey_cache_report_viewer_password | default('') }}"
+  superset-password: "{{ valkey_cache_superset_password | default('') }}"

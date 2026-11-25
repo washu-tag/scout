@@ -36,10 +36,26 @@ app: {{ include "scout-opa.fullname" . }}
 {{- end -}}
 {{- end }}
 
-{{/* Rollout hash of policy + data + config + bundle-reader credsHash. Hashes the
-     EFFECTIVE rego (chart file when no override) so an in-place edit to
-     files/main.rego still rolls pods at the fixed dev chart version. */}}
+{{/* Effective policy files: the value when set, else the chart's own file. */}}
+{{- define "scout-opa.rego" -}}
+{{- .Values.policy.rego | default (.Files.Get "files/main.rego") -}}
+{{- end }}
+{{- define "scout-opa.authz" -}}
+{{- .Values.policy.authz | default (.Files.Get "files/authz.rego") -}}
+{{- end }}
+{{- define "scout-opa.scout" -}}
+{{- .Values.policy.scout | default (.Files.Get "files/scout.rego") -}}
+{{- end }}
+
+{{/* Changes whenever the rules deciding query results change (the Trino
+     policy or its static data); published as data.policy_revision. */}}
+{{- define "scout-opa.policyRevision" -}}
+{{- printf "%s%s" (include "scout-opa.rego" .) .Values.data.json | sha256sum | trunc 16 -}}
+{{- end }}
+
+{{/* Rollout hash of every policy file + data + config + bundle-reader credsHash,
+     so an in-place edit to a chart file still rolls pods at the fixed dev chart
+     version. */}}
 {{- define "scout-opa.policyHash" -}}
-{{- $rego := .Values.policy.rego | default (.Files.Get "files/main.rego") -}}
-{{- printf "%s%s%s%s" $rego .Values.data.json .Values.config.yaml .Values.bundleReader.credsHash | sha256sum | trunc 8 -}}
+{{- printf "%s%s%s%s%s%s" (include "scout-opa.rego" .) (include "scout-opa.authz" .) (include "scout-opa.scout" .) .Values.data.json .Values.config.yaml .Values.bundleReader.credsHash | sha256sum | trunc 8 -}}
 {{- end }}

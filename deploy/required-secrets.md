@@ -30,6 +30,7 @@ the secret analog of `required-vars.txt`. Namespaces below are the base's logica
 | `keycloak-client-secrets` | `oauth2_proxy`, `superset`, `superset_svc`, `jupyterhub`, `grafana`, `temporal`, `launchpad_client`, `minio`, `open_webui`, `voila_svc`, `report_viewer_svc`, `fragment_reconciler_svc`; `github_client_id`/`github_client_secret` (when `github.enabled`); `microsoft_client_id`/`microsoft_client_secret`/`microsoft_tenant_id` (when `microsoft.enabled`); `xnat` (when `enableXnat`) | config-cli realm import (`envFrom`; keys are the `$(env:...)` var-substitution names). `fragment_reconciler_svc` is also read pod-side by the fragment reconciler, which is the one key with a second consumer |
 | `keycloak-client-secrets-site` | any keys a site IdP document names (`deploy/README.md`) | config-cli realm import, **optional**. Read before `keycloak-client-secrets`, which wins on a name clash, so don't reuse its key names |
 | `valkey-auth` | `password`, `password-file` | Valkey chart + exporter |
+| `valkey-cache-auth` | `password`, `password-file`, `report-viewer-password`, `superset-password` | cache Valkey chart + exporter (`password`/`password-file` for the default ACL user, one key per other ACL user) |
 | `launchpad-keycloak-secret` | `client-secret` | launchpad OIDC login (pod-side; = the realm's `launchpad_client` value, not that key) |
 | `launchpad-nextauth-secret` | `secret` | launchpad next-auth session signing (generate-once) |
 | `opa-bundle-writer` | `access-key`, `secret-key` | Keycloak OPA bundle publisher (on-prem: MinIO creds; aws: present with **empty** values, else they shadow IRSA) |
@@ -63,7 +64,7 @@ air-gapped storage mode). The cloud/air-gapped storage flip is tracked separatel
 | `trino-s3` | `S3_ACCESS_KEY`, `S3_SECRET_KEY` | trino-ro (lake-reader; cloud = IRSA instead) |
 | `trino-authz-env` | `KEYSTORE_PASSWORD`, `INTERNAL_SHARED_SECRET` | trino-ro + cert-manager (generate-once) |
 | `superset-env` | DB + Redis + OIDC client secrets + `SUPERSET_SECRET_KEY` | superset server + dashboards |
-| `superset-valkey-auth` | `REDIS_PASSWORD` | scout-dashboards import Job |
+| `superset-valkey-auth` | `REDIS_PASSWORD`, `VALKEY_CACHE_PASSWORD` | scout-dashboards import Job (`VALKEY_CACHE_PASSWORD` = the cache Valkey's `superset-password`; `superset-env` carries it too) |
 | `opa-bundle-reader` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` | scout-opa bundle reader (on-prem only; aws = IRSA) |
 | `alb-oidc-keycloak` | `clientID`, `clientSecret` | aws only: ALB-native OIDC on superset (see scout-core) |
 

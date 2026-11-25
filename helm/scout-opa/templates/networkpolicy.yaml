@@ -1,9 +1,10 @@
 {{- if .Values.networkPolicy.enabled }}
-# Restrict ingress to OPA's HTTP API (decision, data, and bundle-status
-# endpoints on .Values.service.port) to the Trino coordinator — the only
-# legitimate OPA client. OPA holds the per-user attribute bundle (ADR 0021)
-# and serves an unauthenticated API, so an unrestricted ClusterIP would let
-# any in-cluster pod read user attributes or forge authorization decisions.
+# Restrict ingress to OPA's HTTP API (on .Values.service.port) to the Trino
+# coordinator plus any networkPolicy.extraFrom peers (Report Viewer, for its
+# cache fingerprint). OPA's API is unauthenticated; its own allow-list
+# (files/authz.rego) already refuses raw data reads and every policy or data
+# write, and this keeps everyone else from even querying decisions about other
+# users.
 #
 # OPA runs in the same namespace as trino-analytics (opa_namespace ==
 # trino_namespace, ADR 0020), so a same-namespace podSelector targets the
@@ -31,6 +32,9 @@ spec:
             matchLabels:
               app.kubernetes.io/name: trino
               app.kubernetes.io/component: coordinator
+        {{- with .Values.networkPolicy.extraFrom }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
       ports:
         - port: {{ .Values.service.port }}
           protocol: TCP

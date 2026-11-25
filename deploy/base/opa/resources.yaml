@@ -33,9 +33,16 @@ spec:
       name: 'opa-edge-${service_mode}'
   values:
     replicaCount: 2
-    # Same-namespace NetworkPolicy locks OPA's unauthenticated API to the Trino coordinator.
+    # Same-namespace NetworkPolicy locks OPA's unauthenticated API to the Trino
+    # coordinator and Report Viewer (its cache fingerprint). Report Viewer must
+    # share OPA's namespace until it's ported here; then select its namespace too,
+    # as the Ansible opa role does.
     networkPolicy:
       enabled: true
+      extraFrom:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: report-viewer
     # Tag pinned in versions.yaml (opa_image_tag), Renovate-tracked there. Literal
     # mirror (upstream image, not stamped); keep in lockstep with versions.yaml.
     image:

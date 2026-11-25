@@ -5,7 +5,8 @@
 #   - trino-rw      (scout-extractor): write-path Trino, restricted to the
 #                   hl7-transformer + Voila pods on port 8080.
 #   - opa-trino     (scout-analytics): the AuthZ decision engine, restricted
-#                   to the trino-analytics coordinator on port 8181.
+#                   to the trino-analytics coordinator and Report Viewer on
+#                   port 8181.
 #   - voila ingress (scout-analytics): only Traefik may reach voila:8866
 #                   directly; X-Trino-User impersonation trust depends on it.
 #
@@ -148,9 +149,12 @@ if include_group "trino-rw"; then
   queue_test voila-rw-impostor      scout-analytics 200 'app.kubernetes.io/name=voila'
 fi
 
-# opa-trino: only the trino-analytics coordinator may reach the decision API
+# opa-trino: only the trino-analytics coordinator and Report Viewer may reach
+# the API
 if include_group "opa-trino"; then
   queue_test opa-coordinator-ok    scout-analytics 200 'app.kubernetes.io/name=trino,app.kubernetes.io/component=coordinator' "$OPA_HOST" "$OPA_PORT" "$OPA_PATH"
+  queue_test opa-report-viewer-ok  scout-analytics 200 'app.kubernetes.io/name=report-viewer' "$OPA_HOST" "$OPA_PORT" "$OPA_PATH"
+  queue_test opa-report-viewer-elsewhere scout-extractor 000 'app.kubernetes.io/name=report-viewer' "$OPA_HOST" "$OPA_PORT" "$OPA_PATH"
   queue_test opa-analytics-rando   scout-analytics 000 '' "$OPA_HOST" "$OPA_PORT" "$OPA_PATH"
   queue_test opa-extractor-rando   scout-extractor 000 '' "$OPA_HOST" "$OPA_PORT" "$OPA_PATH"
 fi

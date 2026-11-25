@@ -29,6 +29,23 @@ TRINO_QUERY_DURATION = Histogram(
     buckets=(0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0, 120.0, 300.0, 600.0),
 )
 
+CACHE_LOOKUPS = Counter(
+    "scout_report_viewer_cache_lookups_total",
+    "Query-result cache lookups (hit, miss, error, unavailable when the OPA "
+    "fingerprint could not be read from every replica or they disagree, or "
+    "cold when the query's tables or their versions aren't known yet and only "
+    "a write can follow).",
+    ["op", "result"],
+)
+
+CACHE_WRITES = Counter(
+    "scout_report_viewer_cache_writes_total",
+    "Query-result cache writes (stored, error, unsettled when the user bundle "
+    "was too new for every OPA replica to have it when the query started, or "
+    "unversioned when a table's version wasn't known before the query started).",
+    ["op", "result"],
+)
+
 POSTGRES_OP_DURATION = Histogram(
     "scout_report_viewer_postgres_op_duration_seconds",
     "Time spent in Postgres per search CRUD op.",

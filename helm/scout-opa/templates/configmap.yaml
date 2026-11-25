@@ -6,8 +6,18 @@ metadata:
     {{- include "scout-opa.objectLabels" . | nindent 4 }}
 data:
   policy.rego: |
-{{ .Values.policy.rego | default (.Files.Get "files/main.rego") | indent 4 }}
+{{ include "scout-opa.rego" . | indent 4 }}
+  authz.rego: |
+{{ include "scout-opa.authz" . | indent 4 }}
+  scout.rego: |
+{{ include "scout-opa.scout" . | indent 4 }}
+  {{- /* fromJson returns {"Error": ...} rather than failing; data.json without its
+  filters would turn off every row filter and mask. */}}
+  {{- $data := .Values.data.json | fromJson }}
+  {{- if hasKey $data "Error" }}
+  {{- fail (printf "data.json must be a JSON object: %v" $data.Error) }}
+  {{- end }}
   data.json: |
-{{ .Values.data.json | indent 4 }}
+{{ $data | merge (dict "policy_revision" (include "scout-opa.policyRevision" .)) | toPrettyJson | indent 4 }}
   config.yaml: |
 {{ .Values.config.yaml | indent 4 }}

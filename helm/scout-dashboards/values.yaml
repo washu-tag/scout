@@ -23,7 +23,7 @@ trino:
 supersetRelease:
   envSecret: superset-env # envFrom (DB connection, secret key)
   configSecret: superset-config # mounted at /app/pythonpath
-  valkeyAuthSecret: superset-valkey-auth # REDIS_PASSWORD
+  valkeyAuthSecret: superset-valkey-auth # REDIS_PASSWORD, VALKEY_CACHE_PASSWORD
   # When set, the import Job mounts this Secret's `ca.crt` at /etc/trino-ca/
   # so DB_CONNECTION_MUTATOR can verify Trino's self-signed TLS cert during
   # dataset validation. Leave empty for non-AuthZ clusters.

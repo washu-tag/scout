@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.gzip import GZipMiddleware
 
-from . import kube, logging_setup, metrics
+from . import cache, kube, logging_setup, metrics
 from .config import settings
 from .db import check_ready, create_pool, ensure_schema
 from .routes import config_router, plots_router, reports_router, searches_router
@@ -48,8 +48,10 @@ async def lifespan(app: FastAPI):
         # May boot before the DB is provisioned; don't crash-loop.
         # /healthz stays up; /readyz holds traffic until the pool self-heals.
         log.exception("schema bootstrap failed - DB not ready?")
+    cache.start_warm_up()
     yield
     await kube.aclose()
+    await cache.aclose()
     await app.state.pool.close()
 
 
@@ -75,6 +77,8 @@ def create_app() -> FastAPI:
             await check_ready(request.app.state.pool)
         except Exception:
             raise HTTPException(status_code=503, detail="database not ready")
+        if not cache.warmed_up():
+            raise HTTPException(status_code=503, detail="cache warming up")
         return {"status": "ok"}
 
     @app.get("/", tags=["meta"])

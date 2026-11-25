@@ -1,6 +1,7 @@
 ---
-# Playbook to deploy Valkey for session storage and caching
-# This deploys a standalone Valkey instance shared by all Scout services
+# Two standalone Valkey instances from one role: the shared instance (sessions,
+# Superset's Celery queue, Open WebUI) with AOF persistence, and an evictable
+# cache instance for query results that never touches disk.
 
 - name: Deploy Valkey
   hosts: server
@@ -8,3 +9,13 @@
   environment: '{{ cluster_k8s_environment }}'
   roles:
     - role: valkey
+    - role: valkey
+      vars:
+        valkey_helm_release_name: '{{ valkey_cache_helm_release_name }}'
+        valkey_password: "{{ valkey_cache_password | default('') }}"
+        valkey_persistence_enabled: false
+        valkey_resources_default: '{{ valkey_cache_resources_default }}'
+        valkey_resources: '{{ valkey_cache_resources | default({}) }}'
+        valkey_config: '{{ valkey_cache_config }}'
+        valkey_acl_users: '{{ valkey_cache_acl_users }}'
+        valkey_acl_passwords: '{{ valkey_cache_acl_passwords }}'

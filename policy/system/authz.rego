@@ -1,0 +1,1 @@
+../../helm/scout-opa/files/authz.rego

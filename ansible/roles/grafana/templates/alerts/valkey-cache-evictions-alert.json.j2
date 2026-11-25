@@ -1,0 +1,89 @@
+{
+  "apiVersion": 1,
+  "groups": [
+    {
+      "orgId": 1,
+      "name": "1m-evaluations",
+      "folder": "Scout",
+      "interval": "1m",
+      "rules": [
+        {
+          "uid": "valkey_cache_evictions_alert_01",
+          "title": "Valkey Cache Evicting Constantly",
+          "condition": "B",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "prometheus_datasource_01",
+              "model": {
+                "editorMode": "code",
+                "expr": "sum(rate(redis_evicted_keys_total{job=\"valkey-cache\"}[5m]))",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "__auto",
+                "maxDataPoints": 43200,
+                "range": false,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [1],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "query": {
+                      "params": []
+                    },
+                    "reducer": {
+                      "params": [],
+                      "type": "avg"
+                    },
+                    "type": "query"
+                  }
+                ],
+                "datasource": {
+                  "type": "__expr__",
+                  "uid": "__expr__"
+                },
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "B",
+                "type": "threshold"
+              }
+            }
+          ],
+          "noDataState": "OK",
+          "execErrState": "KeepLast",
+          "for": "15m",
+          "annotations": {
+            "summary": "The cache Valkey is evicting entries constantly",
+            "description": "The cache Valkey has evicted {{ printf \"%.1f\" $values.A.Value }} keys/s for 15 minutes, so cached query results are pushed out before they are reused. Raise valkey_cache_maxmemory and valkey_cache_resources, or lower report_viewer_cache_ttl_seconds.",
+            "URL": "[% server_hostname %]"
+          },
+          "labels": {},
+          "isPaused": [% alert_is_disabled | default(false) | bool | tojson %],
+          "notification_settings": {
+            "receiver": "[% grafana_alert_contact_point %]"
+          }
+        }
+      ]
+    }
+  ]
+}

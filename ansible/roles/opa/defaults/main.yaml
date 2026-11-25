@@ -111,13 +111,9 @@ trino_masked_columns:
 # across our environments, but "-hl" is set by the operator.
 opa_bundle_minio_url: 'http://{{ minio_tenant_name }}-hl.{{ minio_tenant_namespace }}:9000'
 
-# Bundle pull cadence. Lower bound on staleness for a Keycloak admin
-# action propagating to a Trino decision. Comfortably inside ADR 0020's
-# "user disabled at their partner institution must lose access within
-# seconds" requirement; tune downward at proportional MinIO request-rate
-# cost if a deployment needs tighter convergence.
-opa_bundle_min_delay_seconds: 5
-opa_bundle_max_delay_seconds: 10
+# Bundle pull cadence (opa_bundle_min/max_delay_seconds) is in
+# scout_common/defaults/main.yaml: Report Viewer's cache sizes its bundle-age
+# rule from it.
 
 # Decision logs go to stdout (Loki picks them up via existing Scout log shipping).
 opa_decision_log_min_delay_seconds: 5

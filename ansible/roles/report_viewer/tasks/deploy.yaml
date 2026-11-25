@@ -10,6 +10,16 @@
       Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
     quiet: true
 
+- name: Check the cache Valkey password is set
+  ansible.builtin.assert:
+    that:
+      - valkey_cache_report_viewer_password | default('') | length > 0
+    fail_msg: >
+      valkey_cache_report_viewer_password is required (the cache Valkey's
+      report-viewer ACL user). Set it in inventory.yaml (use Ansible Vault).
+      Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
+    quiet: true
+
 - name: Create namespace
   ansible.builtin.include_role:
     name: scout_common
@@ -33,6 +43,20 @@
   vars:
     sql_script: 'ALTER SCHEMA public OWNER TO {{ report_viewer_db_user }};'
     sql_dbname: '{{ report_viewer_database }}'
+
+- name: Create Secret with the cache Valkey password
+  no_log: true
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: report-viewer-valkey-auth
+        namespace: '{{ report_viewer_namespace }}'
+      type: Opaque
+      stringData:
+        password: '{{ valkey_cache_report_viewer_password }}'
 
 - name: Parse Helm values
   ansible.builtin.set_fact:

@@ -1,5 +1,12 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { friendlyError, invokeSearchAction, type ActionDescriptor } from '../../api/client';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  friendlyError,
+  getSearchProgress,
+  invokeSearchAction,
+  newProgressId,
+  type ActionDescriptor,
+} from '../../api/client';
+import { QueryProgressInline, useLoadingProgress } from '../../QueryProgress';
 import { useOpenResult } from '../../openResult';
 import { ResultLinkModal } from './ResultLinkModal';
 import { paginationBtn } from './styles';
@@ -50,6 +57,15 @@ export function ActionsToolbar({
   const { opening, error, resultLink, copied, open, copyLink, dismiss } = useOpenResult();
   const [invokingId, setInvokingId] = useState<string | null>(null);
   const [invokeError, setInvokeError] = useState<string | null>(null);
+  const [droppedCount, setDroppedCount] = useState(0);
+  // Progress of the search's query, run when the page's cohort is no longer cached.
+  const progressId = useRef('');
+  const fetchProgress = useCallback(
+    () =>
+      progressId.current ? getSearchProgress(searchId, progressId.current) : Promise.resolve({}),
+    [searchId],
+  );
+  const invokeProgress = useLoadingProgress(invokingId !== null, fetchProgress);
   const [moreOpen, setMoreOpen] = useState(false);
 
   const builtins = actions.filter((a) => BUILTIN_ACTION_IDS.has(a.id));
@@ -109,10 +125,18 @@ export function ActionsToolbar({
   }, [moreOpen]);
 
   const handleBackendCall = async (action: ActionDescriptor) => {
+    progressId.current = newProgressId();
     setInvokingId(action.id);
     setInvokeError(null);
+    setDroppedCount(0);
     try {
-      const result = await invokeSearchAction(searchId, action.id, visibleReportIds);
+      const result = await invokeSearchAction(
+        searchId,
+        action.id,
+        progressId.current,
+        visibleReportIds,
+      );
+      setDroppedCount(result.dropped_report_count);
       await open(result.url);
     } catch (err) {
       setInvokeError(friendlyError(err, `running "${action.title}"`));
@@ -269,9 +293,21 @@ export function ActionsToolbar({
           More ▾
         </button>
       </div>
+      {invokingId !== null && invokeProgress.show && (
+        <p style={{ margin: 0, flexBasis: '100%' }}>
+          <QueryProgressInline {...invokeProgress} doneLabel="Cohort ready" />
+        </p>
+      )}
       {(error || invokeError) && (
         <p style={{ color: 'var(--rv-danger)', margin: 0, flexBasis: '100%' }}>
           {error || invokeError}
+        </p>
+      )}
+      {droppedCount > 0 && (
+        <p style={{ color: 'var(--rv-danger)', margin: 0, flexBasis: '100%' }}>
+          {droppedCount === 1 ? '1 report' : `${droppedCount} reports`} shown here{' '}
+          {droppedCount === 1 ? 'was' : 'were'} not sent, because the search&apos;s current results
+          don&apos;t include {droppedCount === 1 ? 'it' : 'them'}. Reload the page to see them.
         </p>
       )}
       {resultLink && (

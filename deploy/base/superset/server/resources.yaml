@@ -8,9 +8,11 @@
 # `superset-env` via envFrom (CI/site Phase 3, ESO Phase 4). superset_config.py
 # os.getenv keys: DB_HOST/PORT/USER/PASS/NAME, REDIS_*, SUPERSET_SECRET_KEY,
 # KEYCLOAK_SUPERSET_CLIENT_SECRET (user OAuth), KEYCLOAK_SUPERSET_SVC_CLIENT_SECRET
-# (Trino svc token), KEYCLOAK_TOKEN_URL, KEYCLOAK_SUPERSET_SVC_CLIENT_ID, TRINO_CA_CERT.
+# (Trino svc token), KEYCLOAK_TOKEN_URL, KEYCLOAK_SUPERSET_SVC_CLIENT_ID, TRINO_CA_CERT,
+# VALKEY_CACHE_PASSWORD (query caches on valkey-cache).
 # Other fixed-name refs (seeded by CI/site, never in git): superuser-secret (CNPG
-# basic-auth, used by DB Job); superset-valkey-auth (REDIS_PASSWORD, dashboards Job);
+# basic-auth, used by DB Job); superset-valkey-auth (REDIS_PASSWORD,
+# VALKEY_CACHE_PASSWORD; dashboards Job);
 # trino-tls (cert-manager CA for user-facing Trino TLS, verified by DB_CONNECTION_MUTATOR);
 # scout-logo ConfigMap (binary logo/favicon branding).
 apiVersion: source.toolkit.fluxcd.io/v1
@@ -344,6 +346,21 @@ spec:
         FEATURE_FLAGS = {
             "CACHE_QUERY_BY_USER": True,
         }
+      valkey_cache: |
+        # Query caches go to the evictable cache Valkey; the Celery queue stays on the
+        # shared instance, whose keys must never be evicted.
+        import os
+        from urllib.parse import quote
+
+        CACHE_CONFIG = {
+            "CACHE_TYPE": "RedisCache",
+            "CACHE_DEFAULT_TIMEOUT": 300,
+            "CACHE_KEY_PREFIX": "superset_",
+            "CACHE_REDIS_URL": "redis://superset:{}@valkey-cache.${valkey_namespace}:6379/0".format(
+                quote(os.environ.get("VALKEY_CACHE_PASSWORD", ""), safe="")
+            ),
+        }
+        DATA_CACHE_CONFIG = CACHE_CONFIG
       statsd_logging: |
         from superset.stats_logger import StatsdStatsLogger
         STATS_LOGGER = StatsdStatsLogger(

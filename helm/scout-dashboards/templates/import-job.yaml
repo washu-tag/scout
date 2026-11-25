@@ -38,6 +38,11 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.supersetRelease.valkeyAuthSecret }}
                   key: REDIS_PASSWORD
+            - name: VALKEY_CACHE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.supersetRelease.valkeyAuthSecret }}
+                  key: VALKEY_CACHE_PASSWORD
             - name: GAMMA_SCHEMA_ACCESS_SCHEMA
               value: {{ .Values.gammaSchemaAccess | quote }}
           command:

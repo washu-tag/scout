@@ -34,10 +34,14 @@ TEST_DB_URL = os.environ.get("REPORT_VIEWER_TEST_DATABASE_URL", "")
 
 
 class _FakeTrinoError(Exception):
-    """Stub mirroring trino.exceptions.TrinoUserError's `error_name`."""
+    """Stub mirroring trino.exceptions.TrinoQueryError's `error_name` and
+    `error_type`."""
 
-    def __init__(self, error_name: str | None = None) -> None:
+    def __init__(
+        self, error_name: str | None = None, error_type: str | None = None
+    ) -> None:
         self.error_name = error_name
+        self.error_type = error_type
         super().__init__(error_name or "fake trino error")
 
 
@@ -125,8 +129,10 @@ def fake_trino(monkeypatch) -> Callable[[list[str], list[dict[str, Any]]], None]
     def enqueue(columns: list[str], rows: list[dict[str, Any]]) -> None:
         queue.append((columns, rows))
 
-    def enqueue_error(error_name: str | None = None) -> None:
-        queue.append(_FakeTrinoError(error_name))
+    def enqueue_error(
+        error_name: str | None = None, error_type: str | None = None
+    ) -> None:
+        queue.append(_FakeTrinoError(error_name, error_type))
 
     enqueue.error = enqueue_error  # type: ignore[attr-defined]
     enqueue.calls = calls  # type: ignore[attr-defined]

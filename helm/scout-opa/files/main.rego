@@ -203,10 +203,13 @@ allow if {
 # clients (Superset, Voila, report-viewer) can. The Trino JWT user-mapping
 # strips the Keycloak `service-account-` prefix, so identity.user matches the
 # bare client_id here. Deliberately does NOT check user_enabled — service
-# principals aren't in data.users.
+# principals aren't in data.users. The target may not be a service principal or
+# view owner, whose identities carry exemptions an end user must not inherit.
 allow if {
 	input.action.operation == "ImpersonateUser"
 	input.context.identity.user in trino_service_principals
+	not input.action.resource.user.user in trino_service_principals
+	not input.action.resource.user.user in view_owner_principals_set
 }
 
 # === Row filters ==============================================================
@@ -368,6 +371,17 @@ attribute_scopes_table(config) if {
 	# harmless today but a latent bug if the access-path interceptors
 	# ever change.
 	not is_hidden_table
+	not report_viewer_history_read
+}
+
+# Report Viewer keys its query cache on each table's latest Delta commit, read
+# as its own identity, which has no attributes and so would be clamped to zero
+# rows. A $history table holds commit metadata, not report rows. Exactly
+# $history: $files and $partitions carry column statistics. Report Viewer must
+# never return history rows to a user.
+report_viewer_history_read if {
+	input.context.identity.user == "report_viewer_svc"
+	endswith(input.action.resource.table.tableName, "$history")
 }
 
 # Emit `column IN ('v1','v2',...)` for each configured attribute the user

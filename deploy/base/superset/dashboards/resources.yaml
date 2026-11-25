@@ -36,7 +36,8 @@ spec:
     # AuthZ-enabled user-facing Trino HTTPS listener. DB_CONNECTION_MUTATOR (from
     # mounted superset-config) adds JWT + CA verify; scheme https selects it.
     trino:
-      user: '${trino_user}'
+      # The JWT's own principal; see the superset role's scout-dashboards values.
+      user: superset_svc
       namespace: '${scout_analytics_namespace}'
       port: '${trino_https_port}'
       scheme: https

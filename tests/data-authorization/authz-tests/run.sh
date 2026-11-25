@@ -18,7 +18,6 @@
 #   KC_ADMIN_PASSWORD            from inventory
 #   SUPERSET_SVC_CLIENT_ID       superset_svc
 #   SUPERSET_SVC_CLIENT_SECRET   from inventory
-#   OPA_URL                      http://opa-trino.scout-analytics:8181
 #   TRINO_URL                    https://trino.scout-analytics:8443
 #   TRINO_CA_BUNDLE              optional path to a CA bundle for TLS
 #                                verification; omitted -> curl -k
@@ -69,7 +68,6 @@ SUPERSET_SVC_CLIENT_ID=${SUPERSET_SVC_CLIENT_ID:-superset_svc}
 SUPERSET_SVC_CLIENT_SECRET=${SUPERSET_SVC_CLIENT_SECRET:?missing}
 REPORT_VIEWER_SVC_CLIENT_ID=${REPORT_VIEWER_SVC_CLIENT_ID:-report_viewer_svc}
 REPORT_VIEWER_SVC_CLIENT_SECRET=${REPORT_VIEWER_SVC_CLIENT_SECRET:?missing}
-OPA_URL=${OPA_URL:-http://opa-trino.scout-analytics:8181}
 TRINO_URL=${TRINO_URL:-https://trino.scout-analytics:8443}
 TEST_USER=${TEST_USER:-authz-ci-user}
 
@@ -228,34 +226,54 @@ remove_user_from_group() {
 }
 
 # ---------------------------------------------------------------------------
-# Bundle propagation gate
+# Propagation
 # ---------------------------------------------------------------------------
 
-# Poll OPA's data.users.<user> until the predicate returns success or
-# the timeout elapses. The predicate is a jq filter applied to the
-# user's record; success is jq returning non-null/non-false.
-#
-# Gotcha: when the user isn't in the bundle yet, OPA returns {} and
-# `.result` is null. A predicate that uses `// []` fallbacks (e.g.
-# `(.result.x // []) | length == 0`) would then be satisfied by the
-# ABSENT user, short-circuiting the wait before propagation actually
-# happened. Such predicates must lead with `.result != null and (...)`
-# so an empty/absent record never counts as ready.
-wait_for_bundle() {
-    local predicate=$1 timeout=${2:-30}
-    local end=$(( $(date +%s) + timeout ))
-    while [[ $(date +%s) -lt $end ]]; do
-        local body matches
-        body=$(curl -fsS "$OPA_URL/v1/data/users/$TEST_USER" || echo '{}')
-        matches=$(echo "$body" | jq "$predicate" 2>/dev/null)
-        if [[ -n "$matches" && "$matches" != "null" && "$matches" != "false" ]]; then
-            return 0
-        fi
-        sleep 1
+# A Keycloak change reaches Trino's decisions within one OPA bundle poll
+# (5-10s, longer on a fresh Keycloak), so each check retries until it passes
+# or PROPAGATION_TIMEOUT elapses. OPA's API refuses raw data.users reads, so
+# the decisions themselves are the signal. A check must not already pass
+# under the previous scenario's state, or a stale decision would satisfy it.
+eventually() {
+    local end=$(( $(date +%s) + PROPAGATION_TIMEOUT ))
+    until "$@"; do
+        [[ $(date +%s) -ge $end ]] && return 1
+        sleep 2
     done
-    log "  TIMEOUT after ${timeout}s waiting for bundle predicate: $predicate"
-    log "  last OPA response: $(curl -fsS "$OPA_URL/v1/data/users/$TEST_USER" || echo unreachable)"
-    return 1
+}
+
+# Checks leave what they saw in $GOT for the failure message.
+count_is() {
+    local expected=$1 query_fn=${2:-trino_query} out
+    if out=$("$query_fn" "SELECT COUNT(*) AS c FROM test_reports" "$TEST_USER" 2>&1); then
+        GOT=$(echo "$out" | jq -r '.[0][0]')
+    else
+        GOT=$out
+    fi
+    [[ "$GOT" == "$expected" ]]
+}
+
+first_patient_name_is() {
+    local expected=$1
+    GOT=$(trino_query "SELECT patient_name, zip_or_postal_code, full_patient_name FROM test_reports ORDER BY patient_name LIMIT 1" "$TEST_USER" 2>&1) || return 1
+    [[ "$(echo "$GOT" | jq -r '.[0][0]')" == "$expected" ]]
+}
+
+# Readable, or missing (CI may not have the table): either way past /allow. Any
+# other failure, a denial or a transient error, doesn't count.
+hidden_table_not_denied() {
+    if GOT=$(trino_query "SELECT * FROM reports_report_patient_mapping LIMIT 1" "$TEST_USER" 2>&1); then
+        return 0
+    fi
+    echo "$GOT" | grep -qE "TABLE_NOT_FOUND|does not exist"
+}
+
+query_allowed() {
+    trino_query "SELECT 1" "$TEST_USER" >/dev/null 2>&1
+}
+
+query_denied() {
+    trino_query_expect_deny "SELECT 1" "$TEST_USER"
 }
 
 # ---------------------------------------------------------------------------
@@ -323,43 +341,40 @@ trino_query_via_report_viewer_svc() {
     _trino_run "$sql" "$user" -H "Authorization: Bearer $token"
 }
 
-# Variant that expects the query to fail (deny). Returns 0 if Trino
-# refused (HTTP error or error in response body), 1 if the query
-# succeeded unexpectedly.
+# Variant that expects an access denial. Returns 0 only if Trino refused the
+# query with one; success or any other failure (no token, a transient error)
+# returns 1 and leaves what it saw in GOT.
 trino_query_expect_deny() {
     local sql=$1 user=$2
-    local token http_code response next
+    local token raw http_code response next
     token=$(get_svc_token)
 
-    response=$(curl -sS "${CURL_CA_OPTS[@]}" -X POST "$TRINO_URL/v1/statement" \
+    raw=$(curl -sS "${CURL_CA_OPTS[@]}" -X POST "$TRINO_URL/v1/statement" \
         -H "Authorization: Bearer $token" \
         -H "X-Trino-User: $user" \
         -H "X-Trino-Catalog: delta" \
         -H "X-Trino-Schema: default" \
         --data-binary "$sql" -w "\n%{http_code}")
-    http_code=$(echo "$response" | tail -n1)
-    response=$(echo "$response" | head -n -1)
-
-    if [[ "$http_code" =~ ^4 || "$http_code" =~ ^5 ]]; then
-        return 0
-    fi
-    # 200 OK on the POST is the normal case -- Trino doesn't decide
-    # access until the query has been planned, which happens on the
-    # second or later nextUri hop. Drain the chain looking for the
-    # `.error.message` Trino synthesizes when OPA denies. (Single-hop
-    # follow misses denials that surface after queued -> planning
-    # transitions.)
+    # Trino accepts the POST and decides access once the query is planned, a
+    # later nextUri hop, so follow the chain to its error or its end.
     while true; do
-        if echo "$response" | jq -e '.error' >/dev/null 2>&1; then
+        http_code=$(echo "$raw" | tail -n1)
+        response=$(echo "$raw" | head -n -1)
+        if echo "$response" | grep -q "Access Denied"; then
             return 0
+        fi
+        if [[ "$http_code" =~ ^[45] ]] || echo "$response" | jq -e '.error' >/dev/null 2>&1; then
+            GOT="HTTP $http_code: $(echo "$response" | head -c 300)"
+            return 1
         fi
         next=$(echo "$response" | jq -r '.nextUri // empty')
         if [[ -z "$next" ]]; then
+            GOT="query succeeded"
             return 1
         fi
-        response=$(curl -sS "${CURL_CA_OPTS[@]}" "$next" \
+        raw=$(curl -sS "${CURL_CA_OPTS[@]}" "$next" \
             -H "Authorization: Bearer $token" \
-            -H "X-Trino-User: $user")
+            -H "X-Trino-User: $user" -w "\n%{http_code}")
     done
 }
 
@@ -374,6 +389,7 @@ log "test user: $TEST_USER (id=$USER_ID)"
 # Keycloak start (the SPI's postInit walks the realm, debounces 1s,
 # uploads, then OPA pulls at next polling tick — 5-10s default).
 PROPAGATION_TIMEOUT=30
+GOT=
 
 # Look up scout-user group id and put the test user in it. The OPA
 # `user_enabled` gate requires membership in an approved group; without
@@ -387,16 +403,15 @@ fi
 add_user_to_group "$USER_ID" "$SCOUT_USER_GROUP_ID"
 log "added $TEST_USER to scout-user (group id=$SCOUT_USER_GROUP_ID)"
 
-# Gate the scenarios on scout-user membership reaching OPA. Without
-# this each scenario's own wait_for_bundle only confirms its
-# attributes landed -- if the SPI happens to publish a bundle in the
-# narrow window between the GROUP_MEMBERSHIP event and the
-# subsequent UPDATE_USER event, OPA sees the new attrs against a
-# user record whose `groups` is still empty (or being repopulated),
-# the rego's user_in_approved_group check fails, and every query
-# below gets `Access Denied: Cannot execute query` even though the
-# attribute predicate has passed.
-wait_for_bundle '(.result.groups // []) | index("scout-user") != null' "$PROPAGATION_TIMEOUT"
+# Gate the scenarios on the user being enabled and in scout-user as far as
+# OPA is concerned (a previous aborted run may have left it disabled).
+# Otherwise a scenario could see its attributes land against a record whose
+# groups are still empty and fail with `Access Denied: Cannot execute query`.
+set_user_state "$USER_ID" true '{}'
+if ! eventually query_allowed; then
+    log "FATAL: $TEST_USER still denied ${PROPAGATION_TIMEOUT}s after joining scout-user"
+    exit 2
+fi
 
 # Close the race between Spark's CREATE TABLE in the seed Job and
 # Trino's Delta connector loading the new snapshot. The very first
@@ -431,16 +446,12 @@ warmup_trino_snapshot
 # --- Scenario 1: single facility filter -------------------------------------
 log "scenario 1: allowed_facilities=[ABCHOSP1] -> 3 rows"
 set_user_state "$USER_ID" true '{"allowed_facilities":["ABCHOSP1"],"allowed_modalities":["*"]}'
-wait_for_bundle '.result.allowed_facilities[0] == "ABCHOSP1" and .result.enabled == true' "$PROPAGATION_TIMEOUT"
-count=$(trino_query "SELECT COUNT(*) AS c FROM test_reports" "$TEST_USER" | jq -r '.[0][0]')
-if [[ "$count" == "3" ]]; then ok "row count=3"; else fail "expected 3, got $count"; fi
+if eventually count_is 3; then ok "row count=3"; else fail "expected 3, got $GOT"; fi
 
 # --- Scenario 2: wildcard facility ------------------------------------------
 log "scenario 2: allowed_facilities=[*] -> 7 rows"
 set_user_state "$USER_ID" true '{"allowed_facilities":["*"],"allowed_modalities":["*"]}'
-wait_for_bundle '.result.allowed_facilities[0] == "*"' "$PROPAGATION_TIMEOUT"
-count=$(trino_query "SELECT COUNT(*) AS c FROM test_reports" "$TEST_USER" | jq -r '.[0][0]')
-if [[ "$count" == "7" ]]; then ok "row count=7"; else fail "expected 7, got $count"; fi
+if eventually count_is 7; then ok "row count=7"; else fail "expected 7, got $GOT"; fi
 
 # --- Scenario 2b: facility name with spaces ---------------------------------
 # A real prod facility ("HOME CARE SERVICES") has spaces. This proves the
@@ -450,23 +461,17 @@ if [[ "$count" == "7" ]]; then ok "row count=7"; else fail "expected 7, got $cou
 # value is dropped to a 1=0 clamp and this returns 0 -- so it guards the change.
 log "scenario 2b: allowed_facilities=['HOME CARE SERVICES'] -> 1 row"
 set_user_state "$USER_ID" true '{"allowed_facilities":["HOME CARE SERVICES"],"allowed_modalities":["*"]}'
-wait_for_bundle '.result.allowed_facilities[0] == "HOME CARE SERVICES"' "$PROPAGATION_TIMEOUT"
-count=$(trino_query "SELECT COUNT(*) AS c FROM test_reports" "$TEST_USER" | jq -r '.[0][0]')
-if [[ "$count" == "1" ]]; then ok "spaced facility name filtered (row count=1)"; else fail "expected 1, got $count"; fi
+if eventually count_is 1; then ok "spaced facility name filtered (row count=1)"; else fail "expected 1, got $GOT"; fi
 
 # --- Scenario 3: intersection of two dimensions -----------------------------
 log "scenario 3: facility=ABCHOSP1 AND modality=CT -> 2 rows"
 set_user_state "$USER_ID" true '{"allowed_facilities":["ABCHOSP1"],"allowed_modalities":["CT"]}'
-wait_for_bundle '.result.allowed_modalities[0] == "CT"' "$PROPAGATION_TIMEOUT"
-count=$(trino_query "SELECT COUNT(*) AS c FROM test_reports" "$TEST_USER" | jq -r '.[0][0]')
-if [[ "$count" == "2" ]]; then ok "row count=2"; else fail "expected 2, got $count"; fi
+if eventually count_is 2; then ok "row count=2"; else fail "expected 2, got $GOT"; fi
 
 # --- Scenario 4: unset facilities -> deny-all (1=0 clamp) -------------------
 log "scenario 4: no attributes -> deny-all rows"
 set_user_state "$USER_ID" true '{}'
-wait_for_bundle '.result != null and (.result.allowed_facilities // [] | length) == 0' "$PROPAGATION_TIMEOUT"
-count=$(trino_query "SELECT COUNT(*) AS c FROM test_reports" "$TEST_USER" | jq -r '.[0][0]')
-if [[ "$count" == "0" ]]; then ok "row count=0 (1=0 clamp)"; else fail "expected 0, got $count"; fi
+if eventually count_is 0; then ok "row count=0 (1=0 clamp)"; else fail "expected 0, got $GOT"; fi
 
 # --- Scenario 5: PHI masking ON ---------------------------------------------
 # Type-aware mask (ADR 0020): varchar PHI -> literal '[REDACTED]'; non-varchar
@@ -474,11 +479,11 @@ if [[ "$count" == "0" ]]; then ok "row count=0 (1=0 clamp)"; else fail "expected
 # trino_masked_columns, so all three must mask under redact_select_identifiers=true.
 log "scenario 5: redact_select_identifiers=true -> PHI columns masked"
 set_user_state "$USER_ID" true '{"allowed_facilities":["*"],"allowed_modalities":["*"],"redact_select_identifiers":["true"]}'
-wait_for_bundle '.result.redact_select_identifiers[0] == "true"' "$PROPAGATION_TIMEOUT"
-row=$(trino_query "SELECT patient_name, zip_or_postal_code, full_patient_name FROM test_reports ORDER BY patient_name LIMIT 1" "$TEST_USER")
-m_name=$(echo "$row" | jq -r '.[0][0]')
-m_zip=$(echo "$row" | jq -r '.[0][1]')
-m_struct=$(echo "$row" | jq -r '.[0][2]')
+eventually first_patient_name_is "[REDACTED]" || true
+row=$GOT
+m_name=$(echo "$row" | jq -r '.[0][0]' 2>/dev/null || echo "$row")
+m_zip=$(echo "$row" | jq -r '.[0][1]' 2>/dev/null || echo "$row")
+m_struct=$(echo "$row" | jq -r '.[0][2]' 2>/dev/null || echo "$row")
 if [[ "$m_name" == "[REDACTED]" ]]; then ok "patient_name=[REDACTED] (varchar mask)"; else fail "expected [REDACTED], got: $m_name"; fi
 if [[ "$m_zip" == "[REDACTED]" ]]; then ok "zip_or_postal_code=[REDACTED] (varchar mask)"; else fail "expected [REDACTED] zip, got: $m_zip"; fi
 if [[ "$m_struct" == "null" ]]; then ok "full_patient_name=NULL (non-varchar mask)"; else fail "expected NULL struct, got: $m_struct"; fi
@@ -490,10 +495,10 @@ if [[ "$m_struct" == "null" ]]; then ok "full_patient_name=NULL (non-varchar mas
 # ORDER BY pins a deterministic row (Alice Anderson) under the wildcard filter.
 log "scenario 5b: redact_select_identifiers=false -> real PHI values returned"
 set_user_state "$USER_ID" true '{"allowed_facilities":["*"],"allowed_modalities":["*"],"redact_select_identifiers":["false"]}'
-wait_for_bundle '.result.redact_select_identifiers[0] == "false"' "$PROPAGATION_TIMEOUT"
-row=$(trino_query "SELECT patient_name, zip_or_postal_code FROM test_reports ORDER BY patient_name LIMIT 1" "$TEST_USER")
-real_name=$(echo "$row" | jq -r '.[0][0]')
-real_zip=$(echo "$row" | jq -r '.[0][1]')
+eventually first_patient_name_is "Alice Anderson" || true
+row=$GOT
+real_name=$(echo "$row" | jq -r '.[0][0]' 2>/dev/null || echo "$row")
+real_zip=$(echo "$row" | jq -r '.[0][1]' 2>/dev/null || echo "$row")
 if [[ "$real_name" == "Alice Anderson" ]]; then ok "patient_name=Alice Anderson (unmasked)"; else fail "expected Alice Anderson, got: $real_name"; fi
 if [[ "$real_zip" == "63110" ]]; then ok "zip_or_postal_code=63110 (unmasked)"; else fail "expected 63110, got: $real_zip"; fi
 
@@ -514,43 +519,39 @@ fi
 # --- Scenario 7: bypass_hidden_tables unlocks ----------------------------
 log "scenario 7: bypass_hidden_tables=true -> not /allow-denied"
 set_user_state "$USER_ID" true '{"allowed_facilities":["*"],"allowed_modalities":["*"],"bypass_hidden_tables":["true"]}'
-wait_for_bundle '.result.bypass_hidden_tables[0] == "true"' "$PROPAGATION_TIMEOUT"
 # The table may not exist in CI (no extractor) — Trino will return
 # TABLE_NOT_FOUND, NOT PERMISSION_DENIED. Distinguishing the two
 # proves the OPA gate was passed.
-err=$(trino_query "SELECT * FROM reports_report_patient_mapping LIMIT 1" "$TEST_USER" 2>&1 || true)
-if echo "$err" | grep -qE "TABLE_NOT_FOUND|does not exist|line 1:15"; then
-    ok "bypass allowed past /allow (table-not-found, not perm-denied)"
-elif echo "$err" | grep -qE "PERMISSION_DENIED|Access Denied"; then
-    fail "still permission denied with bypass=true"
+if eventually hidden_table_not_denied; then
+    ok "bypass allowed past /allow"
 else
-    ok "query succeeded (bypass allowed past /allow)"
+    fail "hidden table still refused with bypass=true, got: $GOT"
 fi
 
 # --- Scenario 8: disabled user denied at /allow -----------------------------
 log "scenario 8: enabled=false -> all queries denied"
 set_user_state "$USER_ID" false '{"allowed_facilities":["*"]}'
-wait_for_bundle '.result.enabled == false' "$PROPAGATION_TIMEOUT"
-if trino_query_expect_deny "SELECT 1" "$TEST_USER"; then
+if eventually query_denied; then
     ok "disabled user denied"
 else
-    fail "disabled user query unexpectedly succeeded"
+    fail "disabled user not denied, got: $GOT"
 fi
 
 # --- Scenario 9: user removed from scout-user denied at /allow --------------
 log "scenario 9: not in scout-user -> all queries denied"
 # Re-enable + restore wildcard attrs so the gate's enabled-and-attributes
-# half is satisfied; the test isolates the group-membership half.
+# half is satisfied; the test isolates the group-membership half. Wait for
+# the re-enable to land first: scenario 8 left the user denied, so a denial
+# seen before then would prove nothing about the group.
 set_user_state "$USER_ID" true '{"allowed_facilities":["*"],"allowed_modalities":["*"]}'
+if ! eventually query_allowed; then
+    fail "re-enabled user still denied before removing scout-user"
+fi
 remove_user_from_group "$USER_ID" "$SCOUT_USER_GROUP_ID"
-# Bundle reflects the group change as an empty "groups" list (or one
-# without scout-user). The wait_for_bundle predicate succeeds when
-# scout-user is no longer present.
-wait_for_bundle '.result != null and ((.result.groups // []) | index("scout-user") == null)' "$PROPAGATION_TIMEOUT"
-if trino_query_expect_deny "SELECT 1" "$TEST_USER"; then
+if eventually query_denied; then
     ok "user without scout-user denied"
 else
-    fail "unapproved user query unexpectedly succeeded"
+    fail "unapproved user not denied, got: $GOT"
 fi
 # Restore membership so subsequent test runs against the same Keycloak
 # instance start from a clean state.
@@ -559,12 +560,10 @@ add_user_to_group "$USER_ID" "$SCOUT_USER_GROUP_ID"
 # --- Scenario 10: report_viewer_svc JWT + impersonation --------------------
 log "scenario 10: report_viewer_svc JWT + X-Trino-User -> 3 ABCHOSP1 rows"
 set_user_state "$USER_ID" true '{"allowed_facilities":["ABCHOSP1"],"allowed_modalities":["*"]}'
-wait_for_bundle '.result.allowed_facilities[0] == "ABCHOSP1"' "$PROPAGATION_TIMEOUT"
-count=$(trino_query_via_report_viewer_svc "SELECT COUNT(*) AS c FROM test_reports" "$TEST_USER" | jq -r '.[0][0]')
-if [[ "$count" == "3" ]]; then
+if eventually count_is 3 trino_query_via_report_viewer_svc; then
     ok "report_viewer_svc+impersonation: row filter sees 3 ABCHOSP1 rows"
 else
-    fail "report_viewer_svc+impersonation expected 3 rows, got $count"
+    fail "report_viewer_svc+impersonation expected 3 rows, got $GOT"
 fi
 
 # ---------------------------------------------------------------------------

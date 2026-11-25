@@ -147,6 +147,12 @@ export function listSearchActions(searchId: string): Promise<ActionDescriptor[]>
   return api<ActionDescriptor[]>(`/api/searches/${encodeURIComponent(searchId)}/actions`);
 }
 
+export interface ActionInvokeResult {
+  url: string;
+  // Submitted ids missing from the cohort the server resolved, so not sent.
+  dropped_report_count: number;
+}
+
 // visibleReportIds narrows the invoke to the caller's currently
 // client-side-filtered rows (the same set downloadCsv already exports),
 // so a filtered view and a backend-call action agree on what "these
@@ -155,10 +161,11 @@ export function listSearchActions(searchId: string): Promise<ActionDescriptor[]>
 export function invokeSearchAction(
   searchId: string,
   actionId: string,
+  progressId: string,
   visibleReportIds?: string[],
-): Promise<{ url: string }> {
-  return api<{ url: string }>(
-    `/api/searches/${encodeURIComponent(searchId)}/actions/${encodeURIComponent(actionId)}/invoke`,
+): Promise<ActionInvokeResult> {
+  return api<ActionInvokeResult>(
+    `/api/searches/${encodeURIComponent(searchId)}/actions/${encodeURIComponent(actionId)}/invoke?progress_id=${encodeURIComponent(progressId)}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

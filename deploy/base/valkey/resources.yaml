@@ -1,5 +1,6 @@
 # Shared standalone Valkey cache/queue (ADR 0031), upstream valkey/valkey chart,
-# consumed by oauth2-proxy (session store), Superset, open-webui (redis://). Lands in
+# consumed by oauth2-proxy (session store), Superset's Celery queue, open-webui
+# (redis://); the evictable valkey-cache instance is the second release below. Lands in
 # ${valkey_namespace} (resolves to scout-core, owned solely by scout-core-foundation
 # via dependsOn); uses the valkey_namespace var every consumer references.
 # Auth: ACL-enabled off the fixed-name `valkey-auth` Secret (`password` for the
@@ -80,5 +81,75 @@ spec:
         args:
           - '--redis.password-file=/valkey-auth/password-file'
       # Scraped via static Prometheus config, not a ServiceMonitor (Ansible role).
+      serviceMonitor:
+        enabled: false
+---
+# Evictable cache instance (mirrors the Ansible role's second run): Report Viewer
+# query results and Superset's query caches, never sessions or queues. No
+# persistence, so cached rows never reach disk; maxmemory + allkeys-lru evicts
+# instead of growing to the container limit. Auth: the fixed-name
+# `valkey-cache-auth` Secret, one key per ACL user.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: valkey-cache
+  namespace: '${valkey_namespace}'
+spec:
+  interval: 30m
+  upgrade:
+    serverSideApply: disabled
+  # Version pinned in versions.yaml (valkey_chart_version), Renovate-tracked there.
+  # Literal mirror (not stamped); keep in lockstep with versions.yaml.
+  chart:
+    spec:
+      chart: valkey
+      # renovate: datasource=helm registryUrl=https://valkey-io.github.io/valkey-helm/ depName=valkey
+      version: '0.12.0'
+      sourceRef:
+        kind: HelmRepository
+        name: valkey
+        namespace: '${valkey_namespace}'
+  values:
+    auth:
+      enabled: true
+      usersExistingSecret: valkey-cache-auth
+      aclUsers:
+        default:
+          permissions: 'allkeys allchannels allcommands'
+          passwordKey: password
+        report-viewer:
+          permissions: '~rv:* resetchannels -@all +get +set +del +exists +ping +hello +client|setinfo'
+          passwordKey: report-viewer-password
+        superset:
+          permissions: '~superset_* resetchannels -@all +@read +@write +@keyspace +@connection +@transaction -@dangerous'
+          passwordKey: superset-password
+    service:
+      type: ClusterIP
+      port: 6379
+    dataStorage:
+      enabled: false
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 1
+        memory: 2Gi
+    valkeyConfig: |
+      appendonly no
+      save ""
+      maxmemory 1536mb
+      maxmemory-policy allkeys-lru
+    metrics:
+      enabled: true
+      exporter:
+        extraExporterSecrets:
+          - name: valkey-cache-auth
+        extraVolumeMounts:
+          - name: valkey-cache-auth-exporter
+            mountPath: /valkey-auth
+            readOnly: true
+        args:
+          - '--redis.password-file=/valkey-auth/password-file'
       serviceMonitor:
         enabled: false

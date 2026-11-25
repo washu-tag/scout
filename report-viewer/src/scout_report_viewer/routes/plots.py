@@ -30,7 +30,7 @@ from fastapi import (
     status,
 )
 
-from .. import metrics, progress, trino_client
+from .. import cache, metrics, progress, trino_client
 from ..auth import User, get_current_user
 from ..config import settings
 from ..csv_upload import (
@@ -42,7 +42,13 @@ from ..csv_upload import (
     substitute_cohort,
 )
 from ..ids import new_plot_id
-from ..models import PlotDetail, PlotMeta, PlotRequest, PlotResponse
+from ..models import (
+    REPORT_BODY_COLUMNS,
+    PlotDetail,
+    PlotMeta,
+    PlotRequest,
+    PlotResponse,
+)
 from ..store import PlotStore, get_plot_store
 
 log = logging.getLogger(__name__)
@@ -52,15 +58,7 @@ router = APIRouter(prefix="/api/plots", tags=["plots"])
 # Must match the Vega-Lite version the frontend and vl-convert-python compile against.
 VEGA_LITE_SCHEMA = "https://vega.github.io/schema/vega-lite/v6.json"
 
-# Never plottable, and the browser has no use for them here.
-_HEAVY_COLS: frozenset[str] = frozenset(
-    {
-        "report_text",
-        "report_section_findings",
-        "report_section_impression",
-        "report_section_addendum",
-    }
-)
+_HEAVY_COLS = REPORT_BODY_COLUMNS
 
 
 # Viewer-owned keys; `usermeta` too since vega-embed lets a spec override
@@ -536,13 +534,24 @@ async def get_plot(
     cap = settings.max_cohort_rows
     # Fetch cap+1 so we can flag truncation without a separate COUNT.
     all_sql = f"SELECT s.* FROM ({plot['sql']}) s LIMIT {cap + 1}"
+    found = await cache.lookup("plot", user.sub, all_sql, uploaded_ids)
+    if found.value is not None:
+        cached = found.value
+        return PlotDetail(
+            id=plot["id"],
+            spec=plot["spec"],
+            truncated=cached["truncated"],
+            rows=cache.unpack_rows(cached["columns"], cached["rows"]),
+            sql=plot["sql"],
+            sql_explanation=plot["sql_explanation"],
+        )
     token = progress.valid_token(progress_id)
     progress_key = _progress_key(plot_id, user.sub, token) if token else None
     handle = trino_client.QueryHandle()
     try:
         with metrics.time_trino("plot_rows"):
             # safe: plot["sql"] is persisted validated SQL; ids bind via ?
-            _cols, rows = await trino_client.cancel_on_disconnect(
+            cols, rows = await trino_client.cancel_on_disconnect(
                 request.receive,
                 # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
                 trino_client.execute(
@@ -567,6 +576,15 @@ async def get_plot(
         {k: v for k, v in r.items() if k not in _HEAVY_COLS} for r in rows[:cap]
     ]
     metrics.RESULT_ROWS.labels(op="plot_rows").observe(len(lean_rows))
+    lean_columns = [c for c in cols if c not in _HEAVY_COLS]
+    cache.remember(
+        found,
+        {
+            "columns": lean_columns,
+            "rows": cache.pack_rows(lean_columns, lean_rows),
+            "truncated": truncated,
+        },
+    )
     return PlotDetail(
         id=plot["id"],
         spec=plot["spec"],

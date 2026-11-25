@@ -81,6 +81,16 @@
         selector:
           app: superset
 
+- name: Check the cache Valkey password is set
+  ansible.builtin.assert:
+    that:
+      - valkey_cache_superset_password | default('') | length > 0
+    fail_msg: >
+      valkey_cache_superset_password is required (the cache Valkey's superset
+      user). Set it in inventory.yaml (use Ansible Vault).
+      Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
+    quiet: true
+
 - name: Create Secret with Valkey password for Superset
   no_log: true
   kubernetes.core.k8s:
@@ -94,6 +104,7 @@
       type: Opaque
       stringData:
         REDIS_PASSWORD: '{{ valkey_password }}'
+        VALKEY_CACHE_PASSWORD: '{{ valkey_cache_superset_password }}'
 
 - name: Publish launchpad frame-location script
   ansible.builtin.include_role:
@@ -189,7 +200,10 @@
         repository: '{{ superset_image_repository }}'
         tag: '{{ superset_image_tag }}'
       trino:
-        user: '{{ trino_user }}'
+        # The JWT's own principal, so a connection with no user behind it (the
+        # import Job) impersonates no one. OPA refuses impersonating a view
+        # owner such as `trino`, which bypasses every row filter.
+        user: superset_svc
         namespace: '{{ trino_namespace }}'
         port: '{{ trino_https_port }}'
         scheme: https

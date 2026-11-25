@@ -151,6 +151,7 @@ postgres_cluster_namespace: '{{ scout_core_namespace }}'
 keycloak_namespace: '{{ scout_core_namespace }}'
 valkey_namespace: '{{ scout_core_namespace }}'
 valkey_helm_release_name: valkey
+valkey_cache_helm_release_name: valkey-cache
 launchpad_namespace: '{{ scout_core_namespace }}'
 
 # Data layer
@@ -191,6 +192,14 @@ trino_rw_endpoint_port: 8080
 # NetworkPolicy/alerts) can reference it without depending on the opa
 # role being loaded.
 opa_namespace: '{{ trino_namespace }}'
+# OPA's bundle pull cadence. Lower bound on staleness for a Keycloak admin
+# action propagating to a Trino decision. Comfortably inside ADR 0020's
+# "user disabled at their partner institution must lose access within
+# seconds" requirement; tune downward at proportional MinIO request-rate
+# cost if a deployment needs tighter convergence. Report Viewer's cache stores
+# nothing until a newly published bundle is older than the max.
+opa_bundle_min_delay_seconds: 5
+opa_bundle_max_delay_seconds: 10
 superset_namespace: '{{ scout_analytics_namespace }}'
 jupyter_namespace: '{{ scout_analytics_namespace }}'
 chatbot_namespace: '{{ scout_analytics_namespace }}'

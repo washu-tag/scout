@@ -109,10 +109,18 @@
     helm_chart_namespace: '{{ opa_namespace }}'
     helm_chart_values:
       replicaCount: '{{ opa_replicas }}'
-      # Lock OPA's API down to the Trino coordinator (the chart renders a
-      # NetworkPolicy; see helm/scout-opa/templates/networkpolicy.yaml).
+      # Lock OPA's API down to the Trino coordinator and Report Viewer (the
+      # chart renders a NetworkPolicy; see
+      # helm/scout-opa/templates/networkpolicy.yaml).
       networkPolicy:
         enabled: true
+        extraFrom:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: '{{ report_viewer_namespace | default(chatbot_namespace) }}'
+            podSelector:
+              matchLabels:
+                app.kubernetes.io/name: report-viewer
       image:
         repository: '{{ opa_image }}'
         tag: '{{ opa_image_tag }}'
@@ -126,6 +134,10 @@
           memory: '{{ opa_memory_limit }}'
       policy:
         rego: "{{ lookup('file', opa_policy_path) }}"
+        # Passed as values (not left to the chart's own files) so an edit changes
+        # the release values and Ansible's helm module upgrades it.
+        authz: "{{ lookup('file', scout_repo_dir + '/helm/scout-opa/files/authz.rego') }}"
+        scout: "{{ lookup('file', scout_repo_dir + '/helm/scout-opa/files/scout.rego') }}"
       data:
         json: '{{ opa_data_json }}'
       config:
