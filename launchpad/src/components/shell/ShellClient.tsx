@@ -41,6 +41,8 @@ const SESSION_CHECK_MS = 60_000;
 const RECOVERY_KEY = 'scout-shell-session-recovery';
 const RECOVERY_BACKOFF_MS = 60_000;
 const EDGE_SIGN_IN_KEY = 'scout-shell-edge-sign-in';
+const ARRIVAL_SIGN_IN_KEY = 'scout-shell-arrival-sign-in';
+const ARRIVAL_SIGN_IN_BACKOFF_MS = 5 * 60_000;
 const LEAVING_TTL_MS = 30_000;
 const MAX_OPEN_APPS = 3;
 // A sandboxed app keeps scripts, its own origin, forms, dialogs and downloads, but
@@ -61,6 +63,19 @@ function railItemClass(highlighted: boolean) {
 
 // Shown when Scout's session ends while the launchpad is open. Sign-in starts on the click, so
 // an attempt never sits waiting on a sign-in page until it has expired.
+// One sign-in without asking per tab every few minutes, in case the launchpad's session keeps
+// failing right after one.
+function claimArrivalSignIn(): boolean {
+  try {
+    const last = Number(sessionStorage.getItem(ARRIVAL_SIGN_IN_KEY) ?? 0);
+    if (Date.now() - last < ARRIVAL_SIGN_IN_BACKOFF_MS) return false;
+    sessionStorage.setItem(ARRIVAL_SIGN_IN_KEY, String(Date.now()));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function SessionEnded({ onSignIn }: { onSignIn: () => void }) {
   return (
     <div
@@ -213,8 +228,10 @@ export default function ShellClient({
     process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_SKIP_AUTH === 'true';
 
   // A reload goes through the edge's sign-in when its session is gone. The page that comes back
-  // finishes the launchpad's own sign-in too, instead of asking a second time.
+  // finishes the launchpad's own sign-in too, instead of asking a second time. So does the first
+  // check while the tab is seen: whoever opened it is there, and has just come through the edge.
   const afterEdgeSignIn = useRef(false);
+  const firstLook = useRef(true);
   const reloadThroughEdge = useCallback(() => {
     try {
       sessionStorage.setItem(EDGE_SIGN_IN_KEY, '1');
@@ -243,8 +260,10 @@ export default function ShellClient({
   // pages cannot render, so the top window checks and recovers (sessionRecovery).
   const checkSession = useCallback(async () => {
     if (skipAuth || signingOut.current || endedRef.current) return;
-    const afterSignIn = afterEdgeSignIn.current;
+    const seen = document.visibilityState === 'visible';
+    const justArrived = afterEdgeSignIn.current || (firstLook.current && seen);
     afterEdgeSignIn.current = false;
+    if (seen) firstLook.current = false;
     let response: Response;
     try {
       response = await fetch('/api/session', { cache: 'no-store', redirect: 'manual' });
@@ -252,9 +271,9 @@ export default function ShellClient({
       return;
     }
     if (endedRef.current) return;
-    const recovery = sessionRecovery(response, afterSignIn);
+    const recovery = sessionRecovery(response, justArrived);
     if (recovery === 'none') return;
-    if (recovery === 'ask') {
+    if (recovery === 'ask' || (recovery === 'sign-in' && !claimArrivalSignIn())) {
       askToSignIn();
       return;
     }
@@ -285,15 +304,20 @@ export default function ShellClient({
 
   // Sign-in has to happen at the top level: identity-provider login pages
   // refuse to render inside a frame. Opening the launchpad signs in at once; a
-  // session that ends while the page is open waits for a click (SessionEnded). The first page
-  // after the edge's sign-in checks at once, before an app's frame can find the session stale.
+  // session that ends while the page is open waits for a click (SessionEnded). A page that is
+  // seen as it loads checks at once, before an app's frame can find the session stale; one
+  // loaded out of sight checks when it is first shown.
   const gate = skipAuth
     ? 'shell'
     : sessionGate(status, Boolean(session), Boolean(lastSession.current));
   useEffect(() => {
     if (signingOut.current) return;
     if (gate === 'sign-in') signIn('keycloak', { callbackUrl: window.location.href });
-    else if (gate === 'verify' || (gate === 'shell' && afterEdgeSignIn.current)) checkSession();
+    else if (
+      gate === 'verify' ||
+      (gate === 'shell' && (afterEdgeSignIn.current || document.visibilityState === 'visible'))
+    )
+      checkSession();
   }, [gate, checkSession]);
 
   useEffect(() => {

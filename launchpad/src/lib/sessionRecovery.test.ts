@@ -23,11 +23,11 @@ describe('sessionRecovery', () => {
     assert.equal(sessionRecovery(answer(500)), 'none');
   });
 
-  it("signs the launchpad in without asking on the first page after the edge's sign-in", () => {
+  it('signs the launchpad in without asking on the first check after someone arrives', () => {
     assert.equal(sessionRecovery(answer(440), true), 'sign-in');
   });
 
-  it('still reloads or asks for the edge after its sign-in, and leaves a live session alone', () => {
+  it('still reloads or asks for the edge when someone arrives, and leaves a live session alone', () => {
     assert.equal(sessionRecovery(answer(401), true), 'reload');
     assert.equal(sessionRecovery(answer(0, 'opaqueredirect'), true), 'ask');
     assert.equal(sessionRecovery(answer(204), true), 'none');
