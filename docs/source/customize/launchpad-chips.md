@@ -237,8 +237,8 @@ groups:
 | `description` | no       | `""`                           | Section subtitle, max 200 characters.                                                               |
 | `icon`        | no       | `folder`                       | Small icon beside the heading.                                                                      |
 | `weight`      | no       | `100`                          | Section order on the page.                                                                          |
-| `layout`      | no       | `cards`                        | `cards` (large), `rows` (compact list with arrows), or `tiles` (compact grid).                      |
-| `maxColumns`  | no       | `cards` 3, `tiles` 2, `rows` 1 | Rendered columns = `min(visible chips, maxColumns)`.                                                |
+| `layout`      | no       | `cards`                        | `cards` (large), `carousel` (large cards in one row that scrolls sideways, with arrow buttons), `rows` (compact list with arrows), or `tiles` (compact grid). A launchpad from before `carousel` shows `cards` with a diagnostic. |
+| `maxColumns`  | no       | `cards` and `carousel` 3, `tiles` 2, `rows` 1 | Rendered columns = `min(visible chips, maxColumns)`; for `carousel`, the cards shown across before the row scrolls. |
 | `width`       | no       | `full`                         | Consecutive `half` groups pair side by side; an unpaired `half` renders full.                       |
 | `audience`    | no       | `user`                         | A group also hides automatically whenever it has no visible chips.                                  |
 | `railMenu`    | no       | —                              | Another group's id: the rail lists this group in that group's menu, under its own heading, rather than as its own entry. Ignored when that group isn't shown. |
