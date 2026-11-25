@@ -425,21 +425,30 @@ export default function ShellClient({
     return () => window.removeEventListener('resize', place);
   }, [menu]);
 
+  // Escape with a section menu open closes only that menu (its own handler does).
+  const sectionMenuOpen = useRef(false);
+  useEffect(() => {
+    sectionMenuOpen.current = menuOpen;
+  }, [menuOpen]);
+
   useEffect(() => {
     if (!drawerOpen) return;
     const button = drawerButtonRef.current;
     [...(navRef.current?.querySelectorAll<HTMLElement>('a, button') ?? [])]
       .find((element) => element.getClientRects().length > 0)
       ?.focus();
+    const close = () => {
+      setMenu(null);
+      setDrawerOpen(false);
+    };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setMenu(null);
-        setDrawerOpen(false);
-      }
+      if (event.key === 'Escape' && !sectionMenuOpen.current) close();
     };
     document.addEventListener('keydown', onKeyDown);
+    window.addEventListener('popstate', close);
     return () => {
       document.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('popstate', close);
       button?.focus();
     };
   }, [drawerOpen]);
@@ -542,7 +551,7 @@ export default function ShellClient({
   };
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-slate-50 dark:bg-slate-950 max-sm:flex-col">
+    <div className="flex h-dvh w-full overflow-hidden bg-slate-50 dark:bg-slate-950 max-sm:flex-col">
       <div ref={railRef} className="flex-shrink-0">
         <div className="flex h-12 items-center gap-1 border-b border-slate-200 bg-white px-1 dark:border-slate-800 dark:bg-slate-900 sm:hidden">
           <button
