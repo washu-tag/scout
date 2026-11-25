@@ -7,6 +7,9 @@ metadata:
     {{- include "forgejo.labels" . | nindent 4 }}
 data:
   header.tmpl: |
+    <style>
+      .migrate-entry:not([href*="service_type=1&"]):not([href*="service_type=2&"]) { display: none; }
+    </style>
     {{- with .Values.signOutUrl }}
     <script>
       document.addEventListener('click', (e) => {

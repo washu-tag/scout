@@ -164,12 +164,14 @@ upstream:
         DEFAULT_PRIVATE: private
         ENABLE_PUSH_CREATE_USER: true
         ENABLE_PUSH_CREATE_ORG: true
-        DISABLE_MIGRATIONS: true
+        DISABLE_MIGRATIONS: false
       mirror:
         ENABLED: false
         DISABLE_NEW_PULL: true
         DISABLE_NEW_PUSH: true
+      # One-time imports from GitHub only.
       migrations:
+        ALLOWED_DOMAINS: github.com,*.github.com,*.githubusercontent.com
         ALLOW_LOCALNETWORKS: false
       security:
         DISABLE_WEBHOOKS: true
