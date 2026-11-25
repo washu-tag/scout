@@ -9,6 +9,8 @@ import {
   deepPath,
   embeddedChip,
   frameUrl,
+  hostApp,
+  hostAppFor,
   isChipOrigin,
   isCurrentChip,
   isHeadingLink,
@@ -18,6 +20,7 @@ import {
   recentApps,
   routableChips,
   serviceHost,
+  shellApp,
   shellLocation,
   shellSections,
 } from './shell';
@@ -526,6 +529,65 @@ describe('embeddedChip', () => {
     assert.strictEqual(embeddedChip(sections, 'chat')?.title, 'Chat');
     assert.strictEqual(embeddedChip(sections, 'users'), undefined);
     assert.strictEqual(embeddedChip(sections, 'guide'), undefined);
+  });
+});
+
+describe('hostApp', () => {
+  const unframed = ['keycloak.scout.example.edu', 'auth.scout.example.edu'];
+
+  it('opens a host no chip owns as a sandboxed app on that host', () => {
+    const app = hostApp('~report-viewer', ORIGIN, unframed);
+    assert.strictEqual(app?.href, 'https://report-viewer.scout.example.edu/');
+    assert.strictEqual(app?.title, 'report-viewer');
+    assert.strictEqual(app?.kind, 'service');
+    assert.strictEqual(app?.sandbox, true);
+  });
+
+  it('takes only ~ and one DNS label', () => {
+    assert.strictEqual(hostApp('report-viewer', ORIGIN, unframed), undefined);
+    assert.strictEqual(hostApp('~', ORIGIN, unframed), undefined);
+    assert.strictEqual(hostApp('~alice.jupyter', ORIGIN, unframed), undefined);
+    assert.strictEqual(hostApp('~Report_Viewer', ORIGIN, unframed), undefined);
+  });
+
+  it('never frames Keycloak or the edge sign-in', () => {
+    assert.strictEqual(hostApp('~keycloak', ORIGIN, unframed), undefined);
+    assert.strictEqual(hostApp('~auth', ORIGIN, unframed), undefined);
+  });
+});
+
+describe('hostAppFor', () => {
+  it('maps a URL on a single-label Scout subdomain to its host app', () => {
+    const url = new URL('https://report-viewer.scout.example.edu/report/123?x=1');
+    const app = hostAppFor(url, ORIGIN, []);
+    assert.strictEqual(app?.id, '~report-viewer');
+    assert.strictEqual(app && shellLocation(app, url.href), '/app/~report-viewer/report/123?x=1');
+  });
+
+  it('ignores deeper hosts, other domains and other schemes', () => {
+    assert.strictEqual(
+      hostAppFor(new URL('https://alice.jupyter.scout.example.edu/'), ORIGIN, []),
+      undefined,
+    );
+    assert.strictEqual(
+      hostAppFor(new URL('https://report-viewer.example.org/'), ORIGIN, []),
+      undefined,
+    );
+    assert.strictEqual(
+      hostAppFor(new URL('http://report-viewer.scout.example.edu/'), ORIGIN, []),
+      undefined,
+    );
+  });
+});
+
+describe('shellApp', () => {
+  const sections = shellSections(assemble(CATALOG, { origin: ORIGIN, isAdmin: true }));
+
+  it("prefers a chip's service and falls back to a host app", () => {
+    assert.strictEqual(shellApp(sections, 'notebooks', ORIGIN, [])?.source, 'test/apps.yaml');
+    assert.strictEqual(shellApp(sections, 'notebooks', ORIGIN, [])?.sandbox, false);
+    assert.strictEqual(shellApp(sections, '~orthanc', ORIGIN, [])?.source, 'launchpad');
+    assert.strictEqual(shellApp(sections, 'nonexistent', ORIGIN, []), undefined);
   });
 });
 

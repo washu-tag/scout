@@ -154,8 +154,10 @@ someone shared, open inside the launchpad at the same page, and so does a new ta
 window that another Scout service opens. The edge sends top-level `GET` page loads
 from anywhere but your own host to
 `https://<launchpad host>/open/<service host>/<path>`, and the launchpad frames the
-chip on that host whose path matches best; a URL no chip owns goes to the launchpad's
-home page. Frame loads, form posts, fetch and XHR, and navigation within your own host
+chip on that host whose path matches best. A URL on a single-label Scout subdomain that no
+chip owns opens in a frame of its own, sandboxed like a chip with `sandbox: true`, with no
+rail entry; any other URL, and Keycloak's and the sign-in proxy's hosts, go to the
+launchpad's home page. Frame loads, form posts, fetch and XHR, and navigation within your own host
 reach your service directly. A new tab your service opens to its own host isn't
 redirected; to send it into the launchpad too, have a page that finds itself outside a
 frame (`window.parent === window`) go to `https://<launchpad host>/open/<its host><its
