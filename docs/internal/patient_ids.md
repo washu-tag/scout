@@ -37,6 +37,10 @@ complex processing often. The way this works is we take all reports that we can 
 We split these reports into a `deferred_reports_df` to process simply at the end after we have resolved the rest of the reports. The steps below
 operate on the remaining reports in the incoming batch.
 
+Stage 1 first takes out every report with neither a consolidated `mpi` nor `epic_mrn` (e.g. a 2.4 report without a BJH, BJWC or SLCH `ee` ID).
+Nothing can link such a report to another, so each one gets its own new consistent row, as a fully disjoint report does in stage 2, and is never
+deferred or passed to the later stages.
+
 Stage 2: now in stage 2, we are left with a subset of the incoming batch such that:
 
 * Every report incoming has a unique ID combination
