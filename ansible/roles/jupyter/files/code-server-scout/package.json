@@ -1,9 +1,9 @@
 {
   "name": "scout",
   "displayName": "Scout",
-  "description": "Set up your AI gateway key.",
+  "description": "Set up your AI gateway key and keep your site's chat models current.",
   "publisher": "scout",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "engines": {
     "vscode": "^1.80.0"
   },

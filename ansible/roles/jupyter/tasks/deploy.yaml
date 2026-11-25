@@ -183,6 +183,42 @@
       data: '{{ _jupyter_samples_data }}'
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
+- name: Check that shared chat models and starter files hold only the key placeholder
+  ansible.builtin.assert:
+    that: _jupyter_shared_key_fields == ''
+    fail_msg: >-
+      These fields are copied to every notebook pod, so they must be
+      REPLACE_WITH_YOUR_GATEWAY_KEY, which each user's own key replaces:
+      {{ _jupyter_shared_key_fields }}
+    quiet: true
+  vars:
+    _jupyter_shared_key_fields: >-
+      {%- set placeholder = 'REPLACE_WITH_YOUR_GATEWAY_KEY' -%}
+      {%- set ns = namespace(bad=[]) -%}
+      {%- set starter_chat = jupyter_user_starter_files.get('.local/share/code-server/User/chatLanguageModels.json', []) -%}
+      {%- for source, providers in [('jupyter_vscode_chat_models', jupyter_vscode_chat_models), ('starter chatLanguageModels.json', starter_chat)] -%}
+      {%- for provider in (providers if providers is sequence and providers is not string else []) if provider is mapping -%}
+      {%- if 'apiKey' in provider and provider.apiKey != placeholder -%}
+      {%- set ns.bad = ns.bad + [source ~ ' ' ~ provider.name | default('?') ~ ' apiKey'] -%}
+      {%- endif -%}
+      {%- for model in provider.models | default([]) if model is mapping -%}
+      {%- for header, value in (model.requestHeaders | default({})).items() if header | lower == 'x-api-key' and value != placeholder -%}
+      {%- set ns.bad = ns.bad + [source ~ ' ' ~ provider.name | default('?') ~ ' ' ~ model.id | default('?') ~ ' x-api-key'] -%}
+      {%- endfor -%}
+      {%- endfor -%}
+      {%- endfor -%}
+      {%- endfor -%}
+      {%- set claude = jupyter_user_starter_files.get('.claude/settings.json', {}) -%}
+      {%- set claude_env = claude.env | default({}) if claude is mapping else {} -%}
+      {%- for name in ['ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_API_KEY'] if name in claude_env and claude_env[name] != placeholder -%}
+      {%- set ns.bad = ns.bad + ['starter .claude/settings.json ' ~ name] -%}
+      {%- endfor -%}
+      {%- set codex = jupyter_user_starter_files.get('.codex/auth.json', {}) -%}
+      {%- if codex is mapping and 'OPENAI_API_KEY' in codex and codex.OPENAI_API_KEY != placeholder -%}
+      {%- set ns.bad = ns.bad + ['starter .codex/auth.json OPENAI_API_KEY'] -%}
+      {%- endif -%}
+      {{ ns.bad | join(', ') }}
+
 - name: Create ConfigMap with Claude Code managed settings
   delegate_to: localhost
   kubernetes.core.k8s:
@@ -250,6 +286,7 @@
       data:
         package.json: "{{ lookup('file', 'code-server-scout/package.json') }}"
         extension.js: "{{ lookup('file', 'code-server-scout/extension.js') }}"
+        chat-models.js: "{{ lookup('file', 'code-server-scout/chat-models.js') }}"
     - name: scout-gateway-key
       data:
         scout-set-key: "{{ lookup('file', 'scout-set-key.py') }}"
@@ -260,6 +297,9 @@
     - name: scout-codex-requirements
       data:
         requirements.toml: '{{ jupyter_codex_requirements }}'
+    - name: scout-vscode-chat-models
+      data:
+        chat-models.json: '{{ jupyter_vscode_chat_models | to_nice_json }}'
   loop_control:
     label: '{{ item.name }}'
 

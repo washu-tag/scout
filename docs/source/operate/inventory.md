@@ -614,12 +614,31 @@ jupyter_codex_requirements: |
   env_key = "LLM_GATEWAY_KEY"
   wire_api = "responses"
 
+# Optional VS Code chat models, in chatLanguageModels.json's format. Whenever VS Code
+# starts, the Scout extension merges them into each user's file, replacing providers of
+# the same name and keeping the user's own, and puts the user's key in place of
+# REPLACE_WITH_YOUR_GATEWAY_KEY. Changes here reach every user.
+jupyter_vscode_chat_models:
+  - name: 'LLM gateway'
+    vendor: customendpoint
+    apiKey: 'REPLACE_WITH_YOUR_GATEWAY_KEY'
+    apiType: responses
+    models:
+      - id: gpt-5.4-mini
+        name: 'GPT-5.4 mini (gateway)'
+        url: https://llm-gateway.example.org/v1/responses
+        apiType: responses
+        toolCalling: true
+        requestHeaders:
+          x-api-key: 'REPLACE_WITH_YOUR_GATEWAY_KEY'
+
 # Optional starter files for each user's home directory, keyed by path relative to home.
 # Each is copied in at pod start only when the user has no file at that path, so users
 # own it after that: changes here reach new users only. Dicts and lists are written as
 # JSON, strings as-is. Use them for per-user values such as key placeholders, which users
 # replace with their own keys. Put shared values such as gateway URLs in
-# jupyter_singleuser_environment and jupyter_codex_requirements instead.
+# jupyter_singleuser_environment, jupyter_codex_requirements and
+# jupyter_vscode_chat_models instead.
 jupyter_user_starter_files:
   .claude/settings.json:
     env:

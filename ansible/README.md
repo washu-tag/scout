@@ -660,7 +660,10 @@ jupyter_codex_requirements: |
   wire_api = "responses"
 ```
 
-Keep per-user values, such as key placeholders, in `jupyter_user_starter_files`.
+For VS Code chat, set `jupyter_vscode_chat_models`. The Scout extension merges it into
+each user's `chatLanguageModels.json` whenever VS Code starts, so model and URL changes
+reach existing users. Keep per-user values, such as key placeholders, in
+`jupyter_user_starter_files`.
 
 On air-gapped clusters, add the gateway domain to `squid_extra_allowed_domains` and
 make sure `jupyter_egress_allow_cidr` covers the staging node. Notebook pods reach it

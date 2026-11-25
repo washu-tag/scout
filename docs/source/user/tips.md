@@ -94,10 +94,14 @@ choose **Later**, click **Add AI Gateway Key** in the status bar when you're rea
 the key is set, new terminals also print a reminder to run `scout-set-key`. To change it
 later, run **Scout: Set AI Gateway Key** from the Command Palette, or run
 `scout-set-key` in a terminal. Either saves the key to `~/.claude/settings.json` and
-`~/.codex/auth.json`, and to the `x-api-key` header of any VS Code chat model in
+`~/.codex/auth.json`, and to any VS Code chat model in
 `~/.local/share/code-server/User/chatLanguageModels.json` that holds the placeholder or
 your previous key. Each file is readable only by you. Then reload the VS Code window and
 open a new terminal.
+
+If your site provides VS Code chat models, VS Code keeps them up to date each time it
+starts and asks you to reload the window when they change. Chat models you add yourself
+are kept, as long as their names differ from your site's.
 
 **Claude Code.** Your settings live in `~/.claude/settings.json`. If your site sets up
 a gateway, your server already points Claude Code at it, and you only need to add your

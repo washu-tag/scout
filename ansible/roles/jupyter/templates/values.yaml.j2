@@ -420,6 +420,13 @@ singleuser:
         configMap:
           name: scout-gateway-key
           defaultMode: 0755
+{% if jupyter_vscode_chat_models %}
+      vscode-chat-models:
+        name: vscode-chat-models
+        configMap:
+          name: scout-vscode-chat-models
+          defaultMode: 0644
+{% endif %}
 {% if jupyter_extension_manager_mode != 'enabled' %}
       vscode-extensions:
         name: vscode-extensions
@@ -492,6 +499,18 @@ singleuser:
         mountPath: /usr/lib/code-server/lib/vscode/extensions/scout/extension.js
         subPath: extension.js
         readOnly: true
+      code-server-extension-chat-models:
+        name: code-server-extension
+        mountPath: /usr/lib/code-server/lib/vscode/extensions/scout/chat-models.js
+        subPath: chat-models.js
+        readOnly: true
+{% if jupyter_vscode_chat_models %}
+      vscode-chat-models:
+        name: vscode-chat-models
+        mountPath: /opt/scout/chat-models.json
+        subPath: chat-models.json
+        readOnly: true
+{% endif %}
       gateway-key:
         name: gateway-key
         mountPath: /opt/scout/gateway-key

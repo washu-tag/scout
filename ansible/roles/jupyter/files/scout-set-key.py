@@ -60,11 +60,14 @@ def write_json(path, data):
 
 
 def set_chat_model_keys(providers, key, replaceable):
-    """Set x-api-key on chat models whose header holds the placeholder or an old key."""
+    """Set apiKey and x-api-key wherever they hold the placeholder or an old key."""
     changed = False
     for provider in providers:
         if not isinstance(provider, dict):
             continue
+        if provider.get("apiKey") in replaceable:
+            provider["apiKey"] = key
+            changed = True
         for model in provider.get("models") or []:
             headers = model.get("requestHeaders") if isinstance(model, dict) else None
             if not isinstance(headers, dict):

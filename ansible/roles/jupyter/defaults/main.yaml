@@ -67,6 +67,12 @@ jupyter_claude_available_models: []
 # Empty ships no file.
 jupyter_codex_requirements: ''
 
+# VS Code chat model providers, in chatLanguageModels.json's format, with
+# REPLACE_WITH_YOUR_GATEWAY_KEY where the key goes. The Scout extension merges them into
+# each user's file whenever VS Code starts, replacing providers of the same name, and
+# fills in the user's key. Empty leaves the file to the user.
+jupyter_vscode_chat_models: []
+
 # Starter files for each user's home directory, keyed by path relative to home. Each is
 # copied in at pod start only when the user has no file at that path; users own the copy,
 # so later changes reach new users only. Dicts and lists are written as JSON, strings as-is.
