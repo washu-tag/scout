@@ -38,6 +38,7 @@ describe('validateDocument', () => {
       tone: 'indigo',
       newTab: true,
       sandbox: false,
+      crossOriginClipboard: false,
       group: 'more',
       weight: 100,
       audience: 'user',
@@ -229,6 +230,20 @@ describe('validateDocument', () => {
       const result = validateDocument(doc({ chips: [chip({ sandbox })] }), SOURCE);
       assert.strictEqual(result.chips.length, 0, JSON.stringify(sandbox));
       assert.match(result.diagnostics[0].message, /chip skipped/);
+    }
+  });
+
+  it('keeps a crossOriginClipboard request and turns an invalid one off, keeping the chip', () => {
+    assert.strictEqual(
+      validateDocument(doc({ chips: [chip({ crossOriginClipboard: true })] }), SOURCE).chips[0]
+        .crossOriginClipboard,
+      true,
+    );
+    for (const crossOriginClipboard of ['yes', 1]) {
+      const result = validateDocument(doc({ chips: [chip({ crossOriginClipboard })] }), SOURCE);
+      assert.strictEqual(result.chips.length, 1, JSON.stringify(crossOriginClipboard));
+      assert.strictEqual(result.chips[0].crossOriginClipboard, false);
+      assert.strictEqual(result.diagnostics.length, 1);
     }
   });
 

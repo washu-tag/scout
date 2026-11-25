@@ -155,6 +155,7 @@ export function assemble(catalog: Catalog, options: AssembleOptions): RenderMode
             icon: group.icon,
             tone: 'slate',
             sandbox: false,
+            crossOriginClipboard: false,
             ...(group.footerLink.link
               ? {
                   kind: chipKind(group.footerLink.link),
@@ -177,6 +178,7 @@ export function assemble(catalog: Catalog, options: AssembleOptions): RenderMode
           href: resolveHref(chip.link, origin),
           newTab: chip.newTab,
           sandbox: chip.sandbox,
+          crossOriginClipboard: chip.crossOriginClipboard,
         })),
       };
     });

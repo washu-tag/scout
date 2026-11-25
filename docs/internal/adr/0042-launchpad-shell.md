@@ -164,6 +164,17 @@ control node, so air-gapped sites need no download.
 - Chat's own CSP carries the same flags as a `sandbox` directive, so chat opened
   outside the launchpad can't open popups either. On-prem, Open WebUI's CSP
   middleware sets it; another edge sets it in Open WebUI's own CSP.
+
+**Frame permissions.**
+
+- A frame's `allow` delegates the clipboard and fullscreen to its own `src` origin
+  only.
+- A chip can set `crossOriginClipboard: true` to delegate them to any origin instead.
+  JupyterHub sets it, because each user's server redirects the frame to that user's
+  own subdomain, and VS Code's terminal reads the clipboard to paste.
+- Listing Scout's subdomains (`https://*.<host>`) instead of `*` doesn't work: Chrome
+  ignores wildcard origins in `allow`. The CSP's `frame-src` still limits the frame
+  to Scout's subdomains.
 - An invalid `sandbox` value rejects the chip rather than dropping the sandbox, the
   same as `audience`.
 

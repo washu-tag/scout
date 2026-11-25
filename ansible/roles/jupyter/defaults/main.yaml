@@ -52,11 +52,7 @@ jupyter_samples_dir: '{{ role_path }}/files/samples'
 # Claude Code managed settings, mounted read-only at /etc/claude-code in
 # singleuser pods. Users cannot override them. The ANTHROPIC_* keys of
 # jupyter_singleuser_environment, other than credentials, are added as env.
-jupyter_claude_managed_settings:
-  permissions:
-    deny:
-      - Read(~/**/*.csv)
-      - Read(~/**/*.tsv)
+jupyter_claude_managed_settings: {}
 
 # Claude Code model allowlist, merged into the managed settings as availableModels.
 # Entries match by prefix. Empty leaves model choice unrestricted.

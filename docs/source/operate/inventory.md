@@ -593,6 +593,8 @@ jupyter_singleuser_environment:
   ANTHROPIC_DEFAULT_OPUS_MODEL: 'claude-opus-5-5-direct'
   ANTHROPIC_DEFAULT_SONNET_MODEL: 'claude-sonnet-5-direct'
   ANTHROPIC_DEFAULT_HAIKU_MODEL: 'claude-haiku-4-5-direct'
+  # Other Claude Code settings that are env vars belong here too, not in a starter file.
+  CLAUDE_CODE_AUTO_CONNECT_IDE: 'true'
 
 # Optional Claude Code model allowlist, written to the managed settings as
 # availableModels, which users cannot override. Entries match by prefix. This limits
