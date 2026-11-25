@@ -857,6 +857,7 @@ k3s_cluster:
     #       # keep_alive: '-1'
     # open_webui_default_model_id: 'gemma4-31b-long:latest'
     # open_webui_task_model_id: 'gemma4-31b-long:latest'
+    # open_webui_task_model_external_id: 'gemma4-31b-long:latest'
     # Override the Link Sanitizer's allowlist (comma-separated). Defaults to
     # server_hostname; URLs to other domains in LLM responses get stripped.
     # open_webui_link_sanitizer_internal_domains: 'example.com,trusted.partner.com'
