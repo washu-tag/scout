@@ -123,7 +123,6 @@ stringData:
   launchpad_client: ${sq}${keycloak_launchpad_client_secret}${sq}
   minio: ${sq}${keycloak_minio_client_secret}${sq}
   open_webui: ${sq}${keycloak_open_webui_client_secret}${sq}
-  voila_svc: ${sq}${keycloak_voila_svc_client_secret}${sq}
   report_viewer_svc: ${sq}${keycloak_report_viewer_svc_client_secret}${sq}
   fragment_reconciler_svc: ${sq}${keycloak_fragment_reconciler_svc_client_secret}${sq}
   xnat: ${sq}${keycloak_xnat_client_secret:=}${sq}

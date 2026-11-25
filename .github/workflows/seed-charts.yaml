@@ -97,7 +97,6 @@ jobs:
           scout-dashboards helm/scout-dashboards
           scout-opa helm/scout-opa
           temporal-bootstrap helm/temporal-bootstrap
-          voila helm/voila
           CHARTS
       - name: Render the haul manifest (fresh charts + carry the images)
         run: |

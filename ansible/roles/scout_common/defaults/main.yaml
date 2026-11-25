@@ -21,8 +21,7 @@ helm_chart_values_files: []
 # Superset: superset_image_repository and superset_image_tag (see roles/superset/defaults/main.yaml)
 # Extractors: hl7log_extractor_image_repository/tag and hl7_transformer_image_repository/tag (see roles/extractor/defaults/main.yaml)
 
-# Shared notebook image (scipy-notebook + trino-python-client + voila).
-# Used as JupyterHub's singleuser image and as Voila's image.
+# JupyterHub's singleuser image (scipy-notebook + trino-python-client + voila).
 scout_notebook_image_name: ghcr.io/washu-tag/scout-notebook
 scout_notebook_image_tag: latest
 
@@ -316,7 +315,6 @@ keycloak_subdomain: keycloak
 
 # Feature flags (override from inventory to enable/disable features)
 enable_chat: false
-enable_playbooks: false
 enable_hl7_listener: false
 enable_telepresence: false
 
@@ -510,7 +508,7 @@ trino_attribute_filters:
     # (validated by value_pattern). "*" grants all facilities.
 
 # Superset dashboard bundles to install. Built-in bundles: core, quality,
-# followup, patients. Override in inventory to add more (e.g. [core, quality]).
+# patients. Override in inventory to add more (e.g. [core, quality]).
 scout_dashboard_bundles:
   - core
   - patients
@@ -601,7 +599,7 @@ keycloak_access_token_lifespan: 300
 keycloak_token_lifespan: 28800
 
 # Internal Keycloak URL for in-cluster service-to-service token minting
-# (e.g. Superset/Voila minting a *_svc client_credentials JWT for Trino).
+# (e.g. Superset minting a *_svc client_credentials JWT for Trino).
 # Bypasses Traefik + TLS entirely — avoids self-signed-cert trust issues
 # in CI smoke-test (which can't reach the external hostname over a
 # verified cert) and reduces a network hop on every token mint in

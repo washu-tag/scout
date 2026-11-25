@@ -975,8 +975,9 @@ test_superset_svc_can_impersonate if {
 	trino.allow with input as impersonate_input("superset_svc", "alice@example.org")
 }
 
-test_voila_svc_can_impersonate if {
-	trino.allow with input as impersonate_input("voila_svc", "alice@example.org")
+# The retired Voilà principal's Keycloak client can outlive it on a site's realm.
+test_voila_svc_cannot_impersonate if {
+	not trino.allow with input as impersonate_input("voila_svc", "alice@example.org")
 }
 
 test_report_viewer_svc_can_impersonate if {
@@ -1083,7 +1084,7 @@ test_disabled_user_denied_on_show_catalogs if {
 
 # === System-identity carve-outs ==============================================
 # View-owner principals (trino) and impersonation service principals
-# (superset_svc, voila_svc, report_viewer_svc) are not in data.users. The
+# (superset_svc, report_viewer_svc) are not in data.users. The
 # is_system_identity carve-out exempts them from user_enabled so their
 # operations don't deny by default.
 

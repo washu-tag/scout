@@ -1,9 +1,9 @@
 # Trino RW (admin) -- a small read-write Trino used only by the hl7-transformer
-# for view DDL (and by Voila for bounded reviewer-annotation writes). Lives in
-# ${scout_extractor_namespace} next to the transformer. Differences from the
-# user-facing Trino: writes are allowed (no delta.security=READ_ONLY), it uses
-# the writable Hive metastore, it has no JWT/OPA/TLS (ingress is fenced by the
-# chart's NetworkPolicy instead), and a single small worker (DDL workload only).
+# for view DDL. Lives in ${scout_extractor_namespace} next to the transformer.
+# Differences from the user-facing Trino: writes are allowed (no
+# delta.security=READ_ONLY), it uses the writable Hive metastore, it has no
+# JWT/OPA/TLS (ingress is fenced by the chart's NetworkPolicy instead), and a
+# single small worker (DDL workload only).
 #
 # The ${scout_extractor_namespace} Namespace is owned solely by
 # scout-extractor-foundation (a dependsOn), so this base does not declare it.
@@ -95,8 +95,6 @@ spec:
     # Fence ingress to trino-rw. The chart auto-allows Trino-pod-to-Trino-pod when
     # networkPolicy is enabled, so we only declare the external allowances:
     #   - hl7-transformer pods in the extractor namespace (8080, view DDL)
-    #   - Voila pods in the analytics namespace (8080, bounded annotation writes
-    #     back to default.reports_followup -- trino-analytics is read-only)
     #   - Prometheus server in the monitoring namespace (5556, JMX scrape)
     # The Prometheus rule assumes the prometheus-community chart's labels
     # (server pod: app.kubernetes.io/component=server); kube-prometheus-stack
@@ -111,16 +109,6 @@ spec:
               podSelector:
                 matchLabels:
                   app.kubernetes.io/name: hl7-transformer
-          ports:
-            - port: 8080
-              protocol: TCP
-        - from:
-            - namespaceSelector:
-                matchLabels:
-                  kubernetes.io/metadata.name: '${scout_analytics_namespace}'
-              podSelector:
-                matchLabels:
-                  app.kubernetes.io/name: voila
           ports:
             - port: 8080
               protocol: TCP

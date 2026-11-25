@@ -29,8 +29,6 @@ config:
     upstreams = ["static://200"]
     # Emit X-Auth-Request-Preferred-Username on /oauth2/auth responses so
     # Traefik's forwardAuth middleware can forward it to upstream services.
-    # Voila reads it to set X-Trino-User per ADR 0022; voila_runtime captures
-    # it from the request and threads it into spawned kernels.
     set_xauthrequest = true
     # Also emit a real Authorization: Bearer <id_token> header on /oauth2/auth
     # responses. Safe to enable here unconditionally - Traefik's forwardAuth

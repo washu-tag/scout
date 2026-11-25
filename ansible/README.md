@@ -334,7 +334,7 @@ This works through Ansible's `combine` filter with `recursive=true`. Role defaul
 **Services supporting partial resource overrides:**
 - temporal, postgres, minio, hive, prometheus, grafana, loki
 - superset, superset_statsd, jupyter_hub, hl7log_extractor
-- redis_operator, redis_cluster_node, voila, orthanc, dcm4chee
+- redis_operator, redis_cluster_node, orthanc, dcm4chee
 - ollama, open_webui
 
 **Services NOT supporting partial overrides** (use flattened variables instead):

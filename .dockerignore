@@ -36,7 +36,6 @@ tests
 extractor
 launchpad
 analytics
-helm/voila
 helm/superset
 helm/open-webui-bootstrap
 helm/scout-dashboards

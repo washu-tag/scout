@@ -1,3 +1,27 @@
 ---
-- name: Deploy Voilà playbooks
-  ansible.builtin.import_tasks: deploy.yaml
+# Removes the retired Voilà playbooks from a cluster deployed before Scout dropped them:
+# the Helm release, the playbook ConfigMaps the role kept beside it, and its launchpad
+# catalog entry. A no-op once they're gone; safe to delete in the next major release.
+- name: Uninstall the Voilà Helm release
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: voila
+    helm_chart_namespace: '{{ voila_namespace }}'
+    helm_chart_state: absent
+    helm_chart_create_namespace: false
+
+- name: Delete the Voilà playbook and launchpad ConfigMaps
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: ConfigMap
+    name: '{{ item }}'
+    namespace: '{{ voila_namespace }}'
+  loop:
+    - voila-playbook-cohort
+    - voila-playbook-followup-detection
+    - voila-playbook-quality-metrics
+    - voila-playbook-rads
+    - voila-launchpad
