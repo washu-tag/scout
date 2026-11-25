@@ -198,9 +198,9 @@ export function NoticesPanel({ summary, onSummary, onOpen, onClose }: PanelProps
   };
 
   return (
-    <div role="dialog" aria-label="Notices" className={PANEL}>
+    <div role="dialog" aria-label="Activity" className={PANEL}>
       <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 dark:border-slate-700">
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Notices</h2>
+        <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Activity</h2>
         <button
           type="button"
           disabled={!summary?.unread}
@@ -215,9 +215,9 @@ export function NoticesPanel({ summary, onSummary, onOpen, onClose }: PanelProps
       </div>
       <div className="overflow-y-auto p-1.5">
         {notices === null && (
-          <p className={NOTE}>{failed ? 'Could not load notices.' : 'Loading…'}</p>
+          <p className={NOTE}>{failed ? 'Could not load activity.' : 'Loading…'}</p>
         )}
-        {notices?.length === 0 && <p className={NOTE}>No notices.</p>}
+        {notices?.length === 0 && <p className={NOTE}>No activity yet.</p>}
         {notices && notices.length > 0 && (
           <ul>
             {notices.map((notice) => {
