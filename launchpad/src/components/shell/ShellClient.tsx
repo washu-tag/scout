@@ -569,15 +569,15 @@ export default function ShellClient({
                 aria-haspopup="dialog"
                 aria-expanded={menu?.id === NOTICES_MENU}
                 aria-label={
-                  noticeSummary?.unseen ? `Notices, ${noticeSummary.unseen} new` : 'Notices'
+                  noticeSummary?.unseen ? `Activity, ${noticeSummary.unseen} new` : 'Activity'
                 }
-                title="Notices"
+                title="Activity"
                 onClick={(event) => toggleMenu(NOTICES_MENU, event)}
                 className={railItemClass(menu?.id === NOTICES_MENU)}
               >
                 <RailLabel
                   icon={<NoticeBell unseen={noticeSummary?.unseen ?? 0} />}
-                  label="Notices"
+                  label="Activity"
                   active={menu?.id === NOTICES_MENU}
                 />
               </button>

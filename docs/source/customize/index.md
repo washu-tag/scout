@@ -3,7 +3,7 @@
 Build and deploy custom Scout components.
 
 - **[Launchpad Chips](launchpad-chips.md)** — Add your own UI components ("chips") to the Scout Launchpad.
-- **[Launchpad Notices](launchpad-notifications.md)** — Tell people in Scout when something in your app needs them, from the bell in the launchpad rail.
+- **[Launchpad Notices](launchpad-notifications.md)** — Tell people in Scout when something in your app needs them, from Activity, the bell in the launchpad rail.
 - **[Report-Viewer Search Actions](report-viewer-actions.md)** — Add or gate a search-detail toolbar button, or hand off to a separate service.
 - **[Authenticate Users to Your Service](service-authentication.md)** — Put your service behind Scout's login, so Scout's auth protects your service and users log in to your service with their Scout accounts.
 - **[Monitoring](monitoring.md)** — Ensure your service's logs and metrics are collected, and create Grafana dashboards to visualize them.
