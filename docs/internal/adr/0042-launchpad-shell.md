@@ -67,8 +67,14 @@ A top-level navigation to a service URL goes through the launchpad:
   owns goes to the launchpad's home page: Scout services open only inside the
   launchpad.
 - **On-prem**, a Traefik `open-in-launchpad` route, deployed with the launchpad,
-  implements the contract for single-label subdomains (not JupyterHub's per-user
-  hosts).
+  implements the contract for single-label subdomains and JupyterHub's per-user
+  hosts.
+- **JupyterHub also redirects same-origin top-level loads**, on its own host and the
+  per-user hosts. VS Code and the terminal open from JupyterLab in new tabs and can't
+  run the shared script, so the edge sends them to `/open` instead. Frame loads are
+  `Sec-Fetch-Dest: iframe`, so a page already in the launchpad is never redirected.
+  A top-level JupyterHub sign-in callback carries its one-time code through `/open`
+  into the frame, so the code passes through the launchpad's address.
 - **Other edges** implement the same contract. Framed services' Ingresses carry the
   label `launchpad.scout.xnat.org/deep-link: "true"`, so a site's edge overlay can
   find them. Because the redirect passes the request host through, the rule is the
@@ -158,6 +164,17 @@ control node, so air-gapped sites need no download.
 - Chat's own CSP carries the same flags as a `sandbox` directive, so chat opened
   outside the launchpad can't open popups either. On-prem, Open WebUI's CSP
   middleware sets it; another edge sets it in Open WebUI's own CSP.
+
+**Frame permissions.**
+
+- A frame's `allow` delegates the clipboard and fullscreen to its own `src` origin
+  only.
+- A chip can set `crossOriginClipboard: true` to delegate them to any origin instead.
+  JupyterHub sets it, because each user's server redirects the frame to that user's
+  own subdomain, and VS Code's terminal reads the clipboard to paste.
+- Listing Scout's subdomains (`https://*.<host>`) instead of `*` doesn't work: Chrome
+  ignores wildcard origins in `allow`. The CSP's `frame-src` still limits the frame
+  to Scout's subdomains.
 - An invalid `sandbox` value rejects the chip rather than dropping the sandbox, the
   same as `audience`.
 

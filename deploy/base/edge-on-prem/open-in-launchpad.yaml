@@ -1,7 +1,7 @@
 # A top-level page load of a Scout service URL goes to the launchpad, which opens it
-# inside the shell at the same page (ADR 0042). Same-origin navigation, frame loads,
-# form posts and API clients (which send no Sec-Fetch headers) reach the service
-# directly. In kube-system beside the Traefik-owned security-headers Middleware the
+# inside the shell at the same page (ADR 0042). Frame loads, form posts and API clients
+# (which send no Sec-Fetch headers) reach the service directly, as does same-origin
+# navigation everywhere but JupyterHub. In kube-system beside the Traefik-owned security-headers Middleware the
 # route names. $${1}/$${2} are Traefik regex groups, left literal by Flux substitution.
 ---
 apiVersion: traefik.io/v1alpha1
@@ -11,7 +11,7 @@ metadata:
   namespace: kube-system
 spec:
   redirectRegex:
-    regex: '^https://([a-z0-9-]+\.${server_hostname//./\.})/(.*)'
+    regex: '^https://((?:[a-z0-9-]+\.)?[a-z0-9-]+\.${server_hostname//./\.})/(.*)'
     replacement: 'https://${server_hostname}/open/$${1}/$${2}'
     permanent: false
 ---
@@ -32,6 +32,19 @@ spec:
         && Method(`GET`)
         && Header(`Sec-Fetch-Dest`, `document`)
         && HeaderRegexp(`Sec-Fetch-Site`, `^(none|cross-site|same-site)$`)
+      priority: 10000
+      middlewares:
+        - name: security-headers
+        - name: open-in-launchpad
+      services:
+        - kind: TraefikService
+          name: noop@internal
+    - kind: Rule
+      match: >-
+        HostRegexp(`^([a-z0-9-]+\.)?jupyter\.${server_hostname//./\.}$`)
+        && Method(`GET`)
+        && Header(`Sec-Fetch-Dest`, `document`)
+        && HeaderRegexp(`Sec-Fetch-Site`, `^(none|cross-site|same-site|same-origin)$`)
       priority: 10000
       middlewares:
         - name: security-headers

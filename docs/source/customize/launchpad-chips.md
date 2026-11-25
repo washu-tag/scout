@@ -72,6 +72,7 @@ which needs `apiVersion: launchpad.scout.xnat.org/v1alpha2`.
 | `badge`          | no       | —         | `{text, tone}`: a short status beside the title, such as "Draft". `text` max 24 characters; `tone` as above, default `slate`.                   |
 | `newTab`         | no       | `true`    | Open a `url` destination in a new tab. Other destinations open inside the launchpad — see [links](#links).                                       |
 | `sandbox`        | no       | `false`   | Open the framed app in a sandbox that can't open popups or navigate the launchpad window. For apps that render untrusted content, such as chat. |
+| `crossOriginClipboard` | no | `false` | Let the framed app use the clipboard and fullscreen on any Scout subdomain its frame moves to, not only its own. For apps that redirect to per-user subdomains, such as JupyterHub. |
 | `group`          | no       | `more`    | Which section the chip renders in.                                                                                                               |
 | `weight`         | no       | `100`     | Lower renders first; ties break by title, then id.                                                                                               |
 | `audience`       | no       | `user`    | `user` (any authenticated user) or `admin`. This is display filtering only — your service must still enforce its own access.                     |
