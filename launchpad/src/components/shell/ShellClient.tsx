@@ -690,7 +690,7 @@ export default function ShellClient({
                     <ChipAnchor
                       chip={block.footer.chip}
                       role="menuitem"
-                      onClick={() => setMenu(null)}
+                      onClick={closeMenus}
                       aria-current={isCurrent(block.footer.chip) ? 'page' : undefined}
                       className="inline-flex flex-shrink-0 items-center gap-1 text-xs font-medium text-indigo-700 no-underline hover:text-indigo-900 dark:text-indigo-300 dark:hover:text-indigo-200"
                     >
@@ -743,7 +743,7 @@ export default function ShellClient({
             summary={noticeSummary}
             onSummary={setNoticeSummary}
             onOpen={(href) => openInShell(window.location.origin, href)}
-            onClose={() => setMenu(null)}
+            onClose={closeMenus}
           />
         )}
 
