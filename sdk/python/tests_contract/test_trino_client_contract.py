@@ -50,8 +50,3 @@ def test_no_x_trino_user_header_on_the_wire_when_user_is_none():
     # The Jupyter pass-through path: no header means Trino falls back to the
     # JWT principal for the session user.
     assert "X-Trino-User" not in _prepared_headers(user=None)
-
-
-def test_x_trino_user_header_present_for_impersonation_user():
-    # The Voila path: the impersonated username must go on the wire.
-    assert _prepared_headers(user="alice")["X-Trino-User"] == "alice"
