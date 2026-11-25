@@ -23,14 +23,15 @@ async function readUntil(reader: ReadableStreamDefaultReader<Uint8Array>, text: 
 function harness({
   live = async () => true,
   gone = false,
-}: { live?: () => Promise<boolean>; gone?: boolean } = {}) {
+  first,
+}: { live?: () => Promise<boolean>; gone?: boolean; first?: Summary } = {}) {
   const controller = new AbortController();
   if (gone) controller.abort();
   let current = summary(1);
   let onChange: () => void = () => {};
   let subscribed = 0;
   const stream = noticeStream({
-    first: current,
+    first: first ?? current,
     summary: async () => current,
     subscribe: (listener) => {
       subscribed += 1;
@@ -65,6 +66,19 @@ describe('noticeStream', () => {
     assert.doesNotMatch(next.seen, /"unseen":1/);
     assert.match(next.seen, /data: \{"unseen":2,"unread":2,"marker":"m2"\}/);
     h.abort();
+  });
+
+  it('catches a notice that arrived before it subscribed', async () => {
+    const h = harness({ first: summary(0) });
+    const giveUp = setTimeout(h.abort, 1000);
+    try {
+      const { seen, done } = await readUntil(h.reader, /"unseen":1/);
+      assert.equal(done, false);
+      assert.match(seen, /"unseen":0/);
+    } finally {
+      clearTimeout(giveUp);
+      h.abort();
+    }
   });
 
   it('keeps the connection alive with comment lines', async () => {

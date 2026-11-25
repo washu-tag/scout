@@ -23,7 +23,9 @@ Requirements:
    link outside Scout.
 4. No patient data in a notice. Sites hold PHI; a notice points to the page with the
    details, and that page checks access as it always does.
-5. New notices show within seconds, on every site, without a new datastore.
+5. New notices show within seconds, on every site, with nothing new for a site to run:
+   a database on the platform Postgres every site already has, not a new datastore such
+   as a message broker or cache.
 6. Email and other channels can be added later without changing how services send.
 
 ## Decision

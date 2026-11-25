@@ -93,6 +93,8 @@ export function noticeStream(source: StreamSource): ReadableStream<Uint8Array> {
         return;
       }
       counts(source.first);
+      // A change between that first read and subscribing has no event of its own.
+      void refresh();
     },
     cancel() {
       stop();
