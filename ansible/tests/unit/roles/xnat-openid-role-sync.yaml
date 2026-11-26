@@ -26,7 +26,6 @@
           - _openid_properties['openid.keycloak.idToken.roleSync.mappings'] == 'groups:xnat-admin=Administrator'
           - _openid_properties['openid.keycloak.bearer.roleSync.mappings'] == 'resource_access.xnat.roles:xnat-admin=Administrator'
           - "'openid.keycloak.roleSync.mappings' not in _openid_properties"
-          - _openid_properties['openid.keycloak.session.onInvalid'] == 'reauth'
 
     - name: Add a site's roles after Scout's, on both paths
       ansible.builtin.assert:

@@ -447,13 +447,9 @@ xnat_plugins_default:
           # Skip the login page when the user already has a Keycloak session (prompt=none).
           openid.keycloak.autoLogin: 'true'
           # Log out through oauth2-proxy, as the other Scout services do: it clears the edge
-          # session and ends the Keycloak one. With a plugin older than 2.0.0, which ignores
-          # session.onInvalid below, XNAT's idle timeout also lands here, which is why the
-          # xnat role pins that timeout to the SSO lifetime (prefs-override.ini).
+          # session and ends the Keycloak one. XNAT's idle timeout also lands here, which is
+          # why the xnat role pins that timeout to the SSO lifetime (prefs-override.ini).
           openid.keycloak.logoutUri: '{{ oauth2_proxy_signout_url }}'
-          # An expired XNAT session (idle timeout included) signs in again through Keycloak
-          # rather than signing out of Scout. Needs openid plugin 2.0.0 or later.
-          openid.keycloak.session.onInvalid: reauth
 
 # Combined list the xnat role's templates/tasks iterate. xnat_plugins is
 # operator-supplied (defaulted to [] inline here).

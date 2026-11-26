@@ -199,9 +199,9 @@ orthanc_version: latest
 # renovate: datasource=docker depName=ghcr.io/nrgxnat/xnat
 xnat_image_tag: 1.10.2.1
 # openid SSO plugin (NrgXnat Artifactory); consumed by roles/xnat/defaults coordinates.
-# 1.6.0 ignores the role sync and session.onInvalid settings Scout sets (scout_common
-# xnat_plugins_default); they take effect from 2.0.0. Before bumping to 2.0.0, read the
-# upgrade note in ansible/roles/xnat/README.md: XNAT admins outside scout-admin lose the role.
+# 1.6.0 ignores the role sync settings Scout sets (scout_common xnat_plugins_default);
+# they take effect from 2.0.0. Before bumping to 2.0.0, read the upgrade note in
+# ansible/roles/xnat/README.md: XNAT admins outside scout-admin lose the role.
 # renovate: datasource=maven registryUrl=https://nrgxnat.jfrog.io/nrgxnat/libs-release depName=au.edu.qcif.xnat.openid:openid-auth-plugin
 xnat_openid_plugin_version: 1.6.0
 # XNAT Helm chart, OCI artifact on GHCR (Renovate-monitored, ADR 0015).
