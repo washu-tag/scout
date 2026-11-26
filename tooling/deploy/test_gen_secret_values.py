@@ -161,8 +161,16 @@ def test_minio_settings_are_checked_as_cluster_vars(values, cluster_vars):
 @pytest.mark.parametrize(
     "bad", ['quo"te', "back\\slash", "a/b", "a#b", "a@b", "a%41", "pässwörd"]
 )
-@pytest.mark.parametrize("key", ["valkey_password", "superset_postgres_password"])
-def test_url_embedded_values_are_unreserved(values, cluster_vars, key, bad):
+@pytest.mark.parametrize(
+    "key, flags",
+    [
+        ("valkey_password", {}),
+        ("superset_postgres_password", {}),
+        ("launchpad_postgres_password", {"enable_notifications": "true"}),
+    ],
+)
+def test_url_embedded_values_are_unreserved(values, cluster_vars, key, flags, bad):
+    cluster_vars = dict(cluster_vars, **flags)
     assert problems_for(dict(values, **{key: bad}), cluster_vars) == [
         "{}: may use only A-Z a-z 0-9 . _ ~ - (it goes into a connection URL)".format(
             key

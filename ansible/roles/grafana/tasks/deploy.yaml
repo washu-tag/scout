@@ -226,6 +226,15 @@
         admin-user: admin
         admin-password: '{{ grafana_admin_password }}'
 
+- name: Mirror Traefik TLS cert into the Grafana namespace as a CA bundle
+  when: grafana_trust_traefik_ca | bool
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: traefik_ca_secret
+  vars:
+    traefik_ca_secret_name: grafana-trusted-ca
+    traefik_ca_secret_namespace: '{{ grafana_namespace }}'
+
 - name: Deploy Grafana
   ansible.builtin.include_role:
     name: scout_common

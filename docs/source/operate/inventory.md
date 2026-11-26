@@ -429,7 +429,7 @@ prometheus_resources:
     memory: 4Gi
 ```
 
-**Services supporting partial overrides:** temporal, postgres, minio, hive, prometheus, grafana, loki, superset, superset_statsd, jupyter_hub, hl7log_extractor, redis_operator, redis_cluster_node, voila, orthanc, dcm4chee, ollama, open_webui, cassandra_system_logger, data_generator, xnat_postgres
+**Services supporting partial overrides:** temporal, postgres, minio, hive, prometheus, grafana, loki, superset, superset_statsd, jupyter_hub, hl7log_extractor, redis_operator, redis_cluster_node, orthanc, dcm4chee, ollama, open_webui, cassandra_system_logger, data_generator, xnat_postgres
 
 **Services NOT supporting partial overrides** (use flattened variables instead): Trino coordinator/worker, Cassandra (main container), Elasticsearch, HL7 Transformer. These services use individual variables (e.g., `cassandra_max_heap`, `trino_worker_cpu_limit`) because JVM heap sizes drive memory calculations with different multipliers for requests vs limits. Note: Cassandra's system logger sidecar (Vector) does support partial overrides via `cassandra_system_logger_resources`.
 
@@ -582,6 +582,79 @@ jupyter_hub_resources:
   limits:
     cpu: 2
     memory: 2G
+
+# Optional site-wide env for notebook pods, e.g. an LLM gateway for coding agents.
+# A key here replaces Scout's own value for that variable, such as HF_HOME. Its
+# ANTHROPIC_* keys, other than credentials, are also written to Claude Code's managed
+# settings, so users cannot override them. See ansible/README.md "VS Code and Coding
+# Agents" for air-gapped requirements.
+jupyter_singleuser_environment:
+  ANTHROPIC_BASE_URL: 'https://llm-gateway.example.org/anthropic'
+  ANTHROPIC_DEFAULT_OPUS_MODEL: 'claude-opus-5-5-direct'
+  ANTHROPIC_DEFAULT_SONNET_MODEL: 'claude-sonnet-5-direct'
+  ANTHROPIC_DEFAULT_HAIKU_MODEL: 'claude-haiku-4-5-direct'
+  # Other Claude Code settings that are env vars belong here too, not in a starter file.
+  CLAUDE_CODE_AUTO_CONNECT_IDE: 'true'
+
+# Optional Claude Code model allowlist, written to the managed settings as
+# availableModels, which users cannot override. Entries match by prefix. This limits
+# Claude Code only; restrict models on the gateway to cover every client.
+jupyter_claude_available_models:
+  - claude-opus-5-5-direct
+  - claude-sonnet-5-direct
+  - claude-haiku-4-5-direct
+
+# Optional Codex requirements, mounted at /etc/codex/requirements.toml, which users
+# cannot override. Pin the gateway provider here rather than in a starter config.toml,
+# so a changed URL reaches every user. Users' keys are exported into env_key's variable.
+jupyter_codex_requirements: |
+  model_provider = "gateway"
+
+  [model_providers.gateway]
+  name = "LLM gateway"
+  base_url = "https://llm-gateway.example.org/v1"
+  env_key = "LLM_GATEWAY_KEY"
+  wire_api = "responses"
+
+# Optional VS Code chat models, in chatLanguageModels.json's format. Whenever VS Code
+# starts, the Scout extension merges them into each user's file, replacing providers of
+# the same name and keeping the user's own, and puts the user's key in place of
+# REPLACE_WITH_YOUR_GATEWAY_KEY. Changes here reach every user.
+jupyter_vscode_chat_models:
+  - name: 'LLM gateway'
+    vendor: customendpoint
+    apiKey: 'REPLACE_WITH_YOUR_GATEWAY_KEY'
+    apiType: responses
+    models:
+      - id: gpt-5.4-mini
+        name: 'GPT-5.4 mini (gateway)'
+        url: https://llm-gateway.example.org/v1/responses
+        apiType: responses
+        toolCalling: true
+        requestHeaders:
+          x-api-key: 'REPLACE_WITH_YOUR_GATEWAY_KEY'
+
+# Optional starter files for each user's home directory, keyed by path relative to home.
+# Each is copied in at pod start only when the user has no file at that path, so users
+# own it after that: changes here reach new users only. Dicts and lists are written as
+# JSON, strings as-is. Use them for per-user values such as key placeholders, which users
+# replace with their own keys. Put shared values such as gateway URLs in
+# jupyter_singleuser_environment, jupyter_codex_requirements and
+# jupyter_vscode_chat_models instead.
+jupyter_user_starter_files:
+  .claude/settings.json:
+    env:
+      ANTHROPIC_AUTH_TOKEN: 'REPLACE_WITH_YOUR_GATEWAY_KEY'
+  .codex/auth.json:
+    OPENAI_API_KEY: 'REPLACE_WITH_YOUR_GATEWAY_KEY'
+  .codex/config.toml: |
+    model = "gpt-5.4-mini"
+
+# Starter VS Code keybindings. The default unbinds the terminal's paste command so the
+# browser's own paste reaches the terminal, which works in every browser. Like other
+# starter files, it is copied only for users without a keybindings.json. To ship no
+# file:
+# jupyter_vscode_keybindings: []
 ```
 
 #### Other Services
@@ -781,11 +854,9 @@ two additional dashboards are opt-in per inventory.
 # ships. Add bundle names to install more.
 #   core      - Scout main dashboard (default)
 #   quality   - Quality & TAT dashboard
-#   followup  - Follow-up Detection dashboard
 scout_dashboard_bundles:
   - core
   - quality
-  - followup
 ```
 
 Removing a bundle stops **new** installs from receiving its assets, but
@@ -832,6 +903,56 @@ for the full field reference, including the `backend-call` action type and its
 two-secret auth scheme. This feature — and report-viewer's browser-facing UI in
 general — only works in on-prem mode today, because report-viewer has no aws-mode
 Ingress yet (ADR 0035).
+
+(launchpad-notices)=
+
+#### Launchpad Notices (optional)
+
+The launchpad can show notices from Scout services and Pluggable Apps under a bell in
+its rail ([Send Notices to the Scout Launchpad](../customize/launchpad-notifications.md)).
+They are off by default. Turning them on gives the launchpad a database on the platform
+Postgres:
+
+```yaml
+enable_notifications: true
+launchpad_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+```
+
+Then run `make install-launchpad`. It creates a `launchpad` role owning a `launchpad`
+database, puts the connection URL in the `launchpad-db-secret` Secret in the launchpad's
+namespace, and adds a sidecar that collects apps' sender registrations. The launchpad
+creates its tables when it starts. An app sends with a Keycloak service account that
+its fragment asks for, which needs the realm (`make install-auth`) and the fragment
+reconciler of the same release.
+
+- **Connect directly.** The URL names the Postgres primary (`db_host`). Don't point it
+  at a transaction-pooling proxy, such as PgBouncer in transaction mode or RDS Proxy:
+  each launchpad replica keeps a `LISTEN` connection open to hear about notices sent
+  through the others.
+- **Serve HTTP/2.** Each open Scout tab holds a stream to the launchpad. Over HTTP/1.1
+  a browser allows six connections to a host across all its tabs, so the seventh tab
+  stalls. Traefik offers HTTP/2 on its TLS entrypoint by default, and so do AWS ALBs; a
+  proxy in front of them that terminates TLS must offer it as well.
+  `curl -sI --http2 https://<server_hostname>/favicon.ico` should answer `HTTP/2 200`.
+- **Back it up.** The database lives in the platform Postgres, so whatever backs up that
+  cluster at your site covers it; Scout doesn't configure Postgres backups itself. It
+  records who was sent which notice and when they read it, so handle it like the
+  platform's other PHI-adjacent data. Notices are deleted after 90 days.
+- **Turn off one sender.** `launchpad_notification_disabled_senders` takes
+  comma-separated Keycloak client ids. The launchpad refuses their sends and hides the
+  notices they already sent. Taking a client off the list shows its notices again.
+- **Limit how often an app calls.** `launchpad_notification_rate_limit` is the sends
+  and withdrawals each app may make a minute, across all launchpad replicas (default
+  60). Past it the launchpad answers `429` with `Retry-After`.
+- **Turn notices off.** Set `enable_notifications: false` and re-run
+  `make install-launchpad`. The bell goes away. The database and `launchpad-db-secret`
+  stay, so turning notices on again keeps what was there; drop them by hand to remove
+  them.
+
+On a GitOps site these are cluster-vars of the same names (`enable_notifications`,
+`launchpad_notification_disabled_senders`, `launchpad_notification_rate_limit`), with
+`launchpad_postgres_password` in the site's secret values; an aws site creates the
+database in RDS itself (`deploy/required-secrets.md`).
 
 #### Ollama Models
 
@@ -952,18 +1073,18 @@ Nexus itself is configured in the `staging` vars section of the inventory (see {
 
 #### Notebook Egress Network Policy
 
-By default, JupyterHub's network policy blocks notebook pod egress to private IP ranges (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) while allowing public internet access. When `package_proxy_mode` is `nexus` and the staging node is on a private network, notebook pods cannot reach the Nexus proxy without an explicit egress allowance.
+By default, JupyterHub's network policy blocks notebook pod egress to private IP ranges (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) while allowing public internet access. When the staging node is on a private network, notebook pods cannot reach the Nexus proxy, or the Squid proxy that carries their outbound HTTPS in air-gapped deployments with a coding-agent gateway configured, without an explicit egress allowance. In that case the Jupyter deploy fails until this is set.
 
 ```yaml
 # CIDR notation required — use /32 for a single IP
 jupyter_egress_allow_cidr: '10.27.107.0/24'
 ```
 
-Set this to the staging node's IP (`/32`) or subnet CIDR to allow notebook pods to connect to the package proxy. Leave empty (default) when the staging node is reachable via a public or non-private IP.
+Set this to the staging node's IP (`/32`) or subnet CIDR to allow notebook pods to connect to the package and Squid proxies. Leave empty (default) when the staging node is reachable via a public or non-private IP.
 
 #### JupyterLab Extension Manager
 
-Control whether users can install and manage JupyterLab extensions:
+Control whether users can install and manage JupyterLab and VS Code extensions:
 
 ```yaml
 # Extension Manager configuration
@@ -975,6 +1096,8 @@ jupyter_extension_manager_mode: 'disabled'  # Options: 'disabled', 'readonly', '
 - **`disabled`** (Scout default, recommended): Completely hides the Extension Manager icon from JupyterLab. Users cannot see or access extension installation UI. This is the recommended setting for air-gapped and production environments where extension installation is not desired.
 - **`readonly`**: Shows the Extension Manager UI with a list of installed extensions. Users can enable or disable extensions that are already installed in the image, but cannot install new ones from PyPI.
 - **`enabled`**: Full extension management capabilities. Users can search for, install, and manage extensions from PyPI. Only recommended for development environments with internet access and where users need to customize their JupyterLab environment.
+
+The same setting covers VS Code. In `disabled` and `readonly`, VS Code loads only the extensions built into the image (Claude Code, Python, Jupyter); installing from the marketplace or from a `.vsix` file fails, and extensions a user installed earlier stop loading. In `enabled`, users can install VS Code extensions into their home directory, including by uploading a `.vsix` file.
 
 :::{note}
 In air-gapped environments, users cannot install extensions anyway due to lack of PyPI access. The `disabled` mode provides a cleaner user experience by hiding the non-functional Extension Manager UI.
@@ -1040,8 +1163,8 @@ xnat_site_id: SCOUT
 # Namespace where XNAT is deployed (default: xnat)
 xnat_namespace: xnat
 
-# XNAT Helm chart version to deploy from GHCR (default: 3.3.0)
-xnat_chart_version: 3.3.0
+# XNAT Helm chart version to deploy from GHCR (default: 5.0.1)
+xnat_chart_version: 5.0.1
 
 # ghcr.io/nrgxnat/xnat image tag (default: 1.10.1)
 xnat_image_tag: '1.10.1'

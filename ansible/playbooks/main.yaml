@@ -40,7 +40,7 @@
 - name: Install Report Viewer
   import_playbook: report-viewer.yaml
 
-- name: Install Voila
+- name: Remove the retired Voilà playbooks
   import_playbook: voila.yaml
 
 - name: Install Superset

@@ -188,16 +188,6 @@ update_file "tests/auth/package.json" \
 # set both at publish time in ci.yaml and release.yaml, so the placeholders never
 # ship. launchpad and report-viewer fall through to .Chart.AppVersion for their
 # image tag.
-#
-# voila is the exception. Its appVersion is Voila's own version, not a Scout image
-# version, so the AppVersion fallback would resolve scout-notebook:0.5.11. Its
-# image.tag stays stamped until that conflation is untangled.
-echo ""
-echo "Helm values.yaml (voila image.tag -- see note above)..."
-update_file "helm/voila/values.yaml" \
-    "^(  tag:) .+$" \
-    "\\1 $DOCKER_TAG" \
-    "voila image.tag"
 
 echo ""
 echo "VERSION files..."

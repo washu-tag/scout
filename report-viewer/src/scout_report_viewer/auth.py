@@ -124,7 +124,7 @@ def _validate_jwt(token: str) -> User | None:
         return None
     # Prefer preferred_username because Trino is configured with
     # http-server.authentication.jwt.principal-field=preferred_username
-    # (matches Jupyter/Voila). Using sub (UUID) here would cause Trino to
+    # (matches Jupyter). Using sub (UUID) here would cause Trino to
     # reject the request as "principal X cannot impersonate UUID Y" when
     # the JWT-derived principal != X-Trino-User header.
     sub = claims.get("preferred_username") or claims.get("sub")

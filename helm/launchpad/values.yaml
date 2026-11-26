@@ -33,6 +33,29 @@ catalog:
         memory: 128Mi
     sizeLimit: 10Mi
 
+# In-app notices (ADR 0043), off by default. On, the launchpad reads its Postgres
+# connection URL from the Secret below and a second sidecar, with catalog
+# discovery's image, resources and ClusterRole, collects sender registrations:
+# ConfigMaps labelled `launchpad.scout.xnat.org/notifications: "true"`. A string
+# "true" also counts, since Flux substitutes it.
+notifications:
+  enabled: false
+  database:
+    # Required when enabled. The URL must reach Postgres itself, not a
+    # transaction-pooling proxy: replicas tell each other about changes with LISTEN.
+    existingSecret: ''
+    existingSecretKey: url
+  discovery:
+    # ALL, or a comma-separated namespace list.
+    namespace: ALL
+    sizeLimit: 1Mi
+  # Comma-separated Keycloak client ids whose sends are refused and whose notices
+  # are hidden: the switch for a sender that misbehaves.
+  disabledSenders: ''
+  # Sends and withdrawals each sender may make a minute, across replicas. Empty
+  # keeps the launchpad's default, 60.
+  rateLimit: ''
+
 # Environment label shown next to the Scout brand (e.g. "synthetic", "production").
 # Empty string falls back to "local" in the UI.
 scoutEnv: ''

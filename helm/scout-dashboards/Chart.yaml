@@ -1,6 +1,6 @@
 apiVersion: v2
 name: scout-dashboards
-description: Imports Scout's Superset dashboards, charts, and datasets from analytics YAML files. Dashboard families (core, quality, follow-up) are toggleable via values. Re-runs whenever any analytics file or toggle changes (via checksum/config annotation).
+description: Imports Scout's Superset dashboards, charts, and datasets from analytics YAML files. Dashboard families (core, quality, patients) are toggleable via values. Re-runs whenever any analytics file or toggle changes (via checksum/config annotation).
 type: application
 version: 0.0.0-dev
 # Stamped at package time from helm/superset/VERSION by .github/scripts/chart-app-version.sh;
