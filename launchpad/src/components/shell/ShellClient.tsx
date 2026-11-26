@@ -43,6 +43,9 @@ const NOTICES_MENU = '@notices';
 const SESSION_CHECK_MS = 60_000;
 const RECOVERY_KEY = 'scout-shell-session-recovery';
 const RECOVERY_BACKOFF_MS = 60_000;
+const EDGE_SIGN_IN_KEY = 'scout-shell-edge-sign-in';
+const ARRIVAL_SIGN_IN_KEY = 'scout-shell-arrival-sign-in';
+const ARRIVAL_SIGN_IN_BACKOFF_MS = 5 * 60_000;
 const LEAVING_TTL_MS = 30_000;
 const MAX_OPEN_APPS = 3;
 // A sandboxed app keeps scripts, its own origin, forms, dialogs and downloads, but
@@ -68,6 +71,19 @@ function railItemClass(highlighted: boolean) {
 
 // Shown when Scout's session ends while the launchpad is open. Sign-in starts on the click, so
 // an attempt never sits waiting on a sign-in page until it has expired.
+// One sign-in without asking per tab every few minutes, in case the launchpad's session keeps
+// failing right after one.
+function claimArrivalSignIn(): boolean {
+  try {
+    const last = Number(sessionStorage.getItem(ARRIVAL_SIGN_IN_KEY) ?? 0);
+    if (Date.now() - last < ARRIVAL_SIGN_IN_BACKOFF_MS) return false;
+    sessionStorage.setItem(ARRIVAL_SIGN_IN_KEY, String(Date.now()));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function SessionEnded({ onSignIn }: { onSignIn: () => void }) {
   return (
     <div
@@ -223,35 +239,59 @@ export default function ShellClient({
   const skipAuth =
     process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_SKIP_AUTH === 'true';
 
-  // The edge's sign-in when its session is gone (a reload goes through it), else the launchpad's.
+  // A reload goes through the edge's sign-in when its session is gone. The page that comes back
+  // finishes the launchpad's own sign-in too, instead of asking a second time. So does the first
+  // check while the tab is seen: whoever opened it is there, and has just come through the edge.
+  const afterEdgeSignIn = useRef(false);
+  const firstLook = useRef(true);
+  const reloadThroughEdge = useCallback(() => {
+    try {
+      sessionStorage.setItem(EDGE_SIGN_IN_KEY, '1');
+    } catch {
+      // Storage blocked: the launchpad asks again after the edge's sign-in.
+    }
+    window.location.reload();
+  }, []);
+
+  // The edge's sign-in when its session is gone, else the launchpad's.
   const signInAgain = useCallback(async () => {
     try {
       const response = await fetch('/api/session', { cache: 'no-store', redirect: 'manual' });
       if (edgeSessionGone(response)) {
-        window.location.reload();
+        reloadThroughEdge();
         return;
       }
     } catch {
-      window.location.reload();
+      reloadThroughEdge();
       return;
     }
     signIn('keycloak', { callbackUrl: window.location.href });
-  }, []);
+  }, [reloadThroughEdge]);
 
   // Scout's sessions can end while an app is open in a frame, where the sign-in
   // pages cannot render, so the top window checks and recovers (sessionRecovery).
   const checkSession = useCallback(async () => {
     if (skipAuth || signingOut.current || endedRef.current) return;
+    const seen = document.visibilityState === 'visible';
+    const justArrived = afterEdgeSignIn.current || (firstLook.current && seen);
+    afterEdgeSignIn.current = false;
+    if (seen) firstLook.current = false;
     let response: Response;
     try {
       response = await fetch('/api/session', { cache: 'no-store', redirect: 'manual' });
     } catch {
       return;
     }
-    const recovery = sessionRecovery(response);
+    if (endedRef.current) return;
+    const recovery = sessionRecovery(response, justArrived);
     if (recovery === 'none') return;
-    if (recovery === 'ask') {
+    if (recovery === 'ask' || (recovery === 'sign-in' && !claimArrivalSignIn())) {
       askToSignIn();
+      return;
+    }
+    if (recovery === 'sign-in') {
+      endedRef.current = true;
+      signIn('keycloak', { callbackUrl: window.location.href });
       return;
     }
     try {
@@ -261,21 +301,51 @@ export default function ShellClient({
     } catch {
       // Without storage there is no loop guard; recover anyway.
     }
-    window.location.reload();
-  }, [skipAuth, askToSignIn]);
+    reloadThroughEdge();
+  }, [skipAuth, askToSignIn, reloadThroughEdge]);
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem(EDGE_SIGN_IN_KEY) === null) return;
+      sessionStorage.removeItem(EDGE_SIGN_IN_KEY);
+    } catch {
+      return;
+    }
+    afterEdgeSignIn.current = true;
+  }, []);
 
   // Sign-in has to happen at the top level: identity-provider login pages
   // refuse to render inside a frame. Opening the launchpad signs in at once; a
-  // session that ends while the page is open waits for a click (SessionEnded).
+  // session that ends while the page is open waits for a click (SessionEnded). A page that is
+  // seen as it loads checks at once, before an app's frame can find the session stale; one
+  // loaded out of sight checks when it is first shown.
   const gate = skipAuth
     ? 'shell'
     : sessionGate(status, Boolean(session), Boolean(lastSession.current));
   useEffect(() => {
     if (signingOut.current) return;
     if (gate === 'sign-in') signIn('keycloak', { callbackUrl: window.location.href });
-    else if (gate === 'verify') checkSession();
+    else if (
+      gate === 'verify' ||
+      (gate === 'shell' && (afterEdgeSignIn.current || document.visibilityState === 'visible'))
+    )
+      checkSession();
   }, [gate, checkSession]);
 
+  // next-auth refetches its session in every tab when another tab signs in. A tab still asking
+  // to sign in checks again then, and reloads with its apps once the launchpad's session works.
+  useEffect(() => {
+    if (!ended || !session) return;
+    let current = true;
+    fetch('/api/session', { cache: 'no-store', redirect: 'manual' })
+      .then((response) => {
+        if (current && response.ok) window.location.reload();
+      })
+      .catch(() => {});
+    return () => {
+      current = false;
+    };
+  }, [ended, session]);
   const [noticeSummary, setNoticeSummary] = useNoticeSummary(
     notices && !skipAuth && !ended && Boolean(lastSession.current),
     checkSession,
