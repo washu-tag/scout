@@ -32,6 +32,16 @@
       change the existing account.
     quiet: true
 
+# XNAT's admin UI enforces this rule, but prefs-init.ini bypasses it.
+- name: Validate the site ID
+  ansible.builtin.assert:
+    that:
+      - xnat_site_id | string is match('^[A-Za-z][A-Za-z0-9_]{0,23}$')
+    fail_msg: >-
+      xnat_site_id must start with a letter and contain only letters, digits and
+      underscores, at most 24 characters.
+    quiet: true
+
 # Plugin names/entries become Kubernetes object names (Secrets, volumes, init
 # containers), which must be lowercase RFC 1123 — fail fast with a clear
 # message instead of a mid-deploy API-server rejection.

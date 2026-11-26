@@ -42,7 +42,8 @@ xnat_volume_sizes:
   prearchive: 5Gi
 
 # --- First-boot site config (prefs-init.ini) ------------------------------
-# siteId prefixes XNAT-generated IDs, so it must be alphanumeric (no hyphens).
+# siteId prefixes XNAT-generated IDs: a letter, then letters, digits and
+# underscores, at most 24 characters.
 xnat_site_id: XNAT
 # Password set on the built-in `admin` account at first boot (via the [system]
 # defaultAdminPassword seed), replacing XNAT's default admin:admin. REQUIRED when
