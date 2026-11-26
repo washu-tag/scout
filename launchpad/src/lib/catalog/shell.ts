@@ -311,6 +311,7 @@ export function hostApp(id: string, launchpad: Origin, unframed: string[]): Rend
     href: `${launchpad.protocol}://${host}/`,
     newTab: false,
     sandbox: true,
+    crossOriginClipboard: false,
   };
 }
 
