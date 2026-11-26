@@ -6,6 +6,11 @@
      The $(env:...) tokens are not helm's -- keycloak-config-cli substitutes
      them from the apply Job's environment, which is how credentials and the
      site hostname stay out of this document. */}}
+{{- $xnatRoles := list }}
+{{- if eq (.Values.enableXnat | toString) "true" }}
+{{- if not (kindIs "slice" (.Values.xnatRoles | default list)) }}{{- fail "keycloak realm: xnatRoles must be a list of xnat client role names" }}{{- end }}
+{{- $xnatRoles = uniq (concat (list "xnat-access" "xnat-admin") (.Values.xnatRoles | default list)) }}
+{{- end }}
 {
     "enabled": true,
     "realm": "{{ .Values.realmName }}",
@@ -248,7 +253,23 @@
             "composite": false,
             "clientRole": true,
             "attributes": {}
+          },
+          {
+            "name": "xnat-admin",
+            "description": "Scout Admin Role for XNAT Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
           }
+          {{- range without $xnatRoles "xnat-access" "xnat-admin" }},
+          {
+            "name": {{ . | toJson }},
+            "description": "Site role for XNAT Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          }
+          {{- end }}
         ]{{- end }}
       }
     },
@@ -294,7 +315,13 @@
               an admin likely needs) to a finer-grained set of roles. */}}
           "realm-management": [
             "realm-admin"
-          ]
+          ]{{- if eq (.Values.enableXnat | toString) "true" }},
+          {{- /* xnat-access too: the openid plugin refuses a token without it before role
+              sync runs, so a member of scout-admin alone could not sign in. */}}
+          "xnat": [
+            "xnat-access",
+            "xnat-admin"
+          ]{{- end }}
         }
       },
       {
@@ -1348,17 +1375,18 @@
           "roles": ["manage-clients", "view-realm", "manage-realm"]
         }
       ]{{- if eq (.Values.enableXnat | toString) "true" }},
-      {{- /* The clientScope entry brings xnat-access along with aud=xnat. A
+      {{- /* The clientScope entry brings every xnat role along with aud=xnat. A
           fullScopeAllowed: false client (jupyterhub, every fragment client)
-          otherwise gets the audience but no resource_access.xnat.roles. */}}
+          otherwise gets the audience but no resource_access.xnat.roles, and
+          XNAT's role sync would take the mapped roles away on its calls. */}}
       "xnat": [
         {
           "client": "xnat",
-          "roles": ["xnat-access"]
+          "roles": {{ $xnatRoles | toJson }}
         },
         {
           "clientScope": "xnat-audience",
-          "roles": ["xnat-access"]
+          "roles": {{ $xnatRoles | toJson }}
         }
       ]{{- end }}
     },
@@ -1480,9 +1508,10 @@
       },
       {{- if eq (.Values.enableXnat | toString) "true" }}
       {{- /* Adds aud=xnat to access tokens, and through its clientScopeMappings
-          entry puts xnat-access in scope, so the token passes both of the openid
-          plugin's bearer gates. Any client whose users call XNAT's REST API
-          needs this scope either in its default or optional scopes. */}}
+          entry puts the xnat roles in scope: xnat-access, so the token passes both
+          of the openid plugin's bearer gates, and every mapped role, so role sync
+          keeps it on API calls. Any client whose users call XNAT's REST API needs
+          this scope either in its default or optional scopes. */}}
       {
         "name": "xnat-audience",
         "description": "Adds aud=xnat to access tokens for clients calling XNAT",

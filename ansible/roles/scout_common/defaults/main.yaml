@@ -435,6 +435,15 @@ xnat_plugins_default:
           # someone with no XNAT account is refused rather than silently provisioning
           # one; they sign in through the browser once first.
           openid.keycloak.bearer.forceUserCreate: 'false'
+          # Keep XNAT roles in step with Keycloak at each sign-in (xnat_openid_role_mappings_all).
+          openid.keycloak.roleSync.enabled: 'true'
+          # Browser sign-in reads them from groups in XNAT's ID token:
+          #   groups:xnat-admin=Administrator
+          openid.keycloak.idToken.roleSync.mappings: "{% for m in xnat_openid_role_mappings_all %}groups:{{ m.keycloak_role }}={{ m.xnat_role }}{{ ',' if not loop.last }}{% endfor %}"
+          # API calls read them from resource_access.xnat.roles, never groups, which every
+          # Scout client fills with its own roles:
+          #   resource_access.xnat.roles:xnat-admin=Administrator
+          openid.keycloak.bearer.roleSync.mappings: "{% for m in xnat_openid_role_mappings_all %}resource_access.xnat.roles:{{ m.keycloak_role }}={{ m.xnat_role }}{{ ',' if not loop.last }}{% endfor %}"
           # Skip the login page when the user already has a Keycloak session (prompt=none).
           openid.keycloak.autoLogin: 'true'
           # Log out through oauth2-proxy, as the other Scout services do: it clears the edge
@@ -445,6 +454,20 @@ xnat_plugins_default:
 # Combined list the xnat role's templates/tasks iterate. xnat_plugins is
 # operator-supplied (defaulted to [] inline here).
 xnat_plugins_all: '{{ xnat_plugins_default + (xnat_plugins | default([])) }}'
+
+# Role sync pairs (openid plugin 2.0.0 or later): a role on Keycloak's xnat client,
+# which the realm creates, and the XNAT role it gives. Sites add pairs in inventory,
+# on top of these defaults:
+#
+#   xnat_openid_role_mappings:
+#     - { keycloak_role: xnat-privileged, xnat_role: Privileged }
+#
+# That adds groups:xnat-privileged=Privileged (browser) and
+# resource_access.xnat.roles:xnat-privileged=Privileged (API).
+xnat_openid_role_mappings_default:
+  - keycloak_role: xnat-admin
+    xnat_role: Administrator
+xnat_openid_role_mappings_all: '{{ xnat_openid_role_mappings_default + (xnat_openid_role_mappings | default([], true)) }}'
 
 # Distinct repo URLs for coordinate-resolved plugins. Consumed by the xnat role
 # (plugins.<name>.mavenUrl) and the Nexus role (proxy members, air-gapped). Projects ONLY

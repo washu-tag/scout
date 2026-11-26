@@ -1,0 +1,84 @@
+---
+- name: Verify the openid plugin's role sync settings and their validation
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    server_hostname: scout.example.org
+    keycloak_xnat_client_secret: fixture
+    keycloak_realm_url: https://keycloak.example.org/realms/scout
+    keycloak_oidc_certs_url: https://keycloak.example.org/realms/scout/protocol/openid-connect/certs
+    oauth2_proxy_signout_url: https://auth.scout.example.org/oauth2/sign_out
+    xnat_openid_plugin_version: fixture
+    _openid_properties: >-
+      {{ (xnat_plugins_default | selectattr('name', 'equalto', 'openid') | first).config
+         | selectattr('mechanism', 'equalto', 'authplugins') | map(attribute='properties') | first }}
+  tasks:
+    - name: Load the shared defaults
+      ansible.builtin.include_vars:
+        file: ../../../roles/scout_common/defaults/main.yaml
+
+    - name: Read each path's roles from its own claim
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - _openid_properties['openid.keycloak.roleSync.enabled'] == 'true'
+          - _openid_properties['openid.keycloak.idToken.roleSync.mappings'] == 'groups:xnat-admin=Administrator'
+          - _openid_properties['openid.keycloak.bearer.roleSync.mappings'] == 'resource_access.xnat.roles:xnat-admin=Administrator'
+          - "'openid.keycloak.roleSync.mappings' not in _openid_properties"
+
+    - name: Add a site's roles after Scout's, on both paths
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - _openid_properties['openid.keycloak.idToken.roleSync.mappings']
+            == 'groups:xnat-admin=Administrator,groups:xnat-privileged=Privileged'
+          - _openid_properties['openid.keycloak.bearer.roleSync.mappings']
+            == 'resource_access.xnat.roles:xnat-admin=Administrator,resource_access.xnat.roles:xnat-privileged=Privileged'
+      vars:
+        xnat_openid_role_mappings:
+          - { keycloak_role: xnat-privileged, xnat_role: Privileged }
+
+    - name: Treat a site list left empty as no extra roles
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - xnat_openid_role_mappings_all == xnat_openid_role_mappings_default
+      vars:
+        xnat_openid_role_mappings:
+
+    - name: Accept a site list left empty
+      ansible.builtin.include_role:
+        name: scout_common
+        tasks_from: validate_xnat_role_mappings
+      vars:
+        xnat_openid_role_mappings:
+
+    - name: Accept Scout's mappings and a site's
+      ansible.builtin.include_role:
+        name: scout_common
+        tasks_from: validate_xnat_role_mappings
+      vars:
+        xnat_openid_role_mappings:
+          - { keycloak_role: xnat_privileged-2, xnat_role: non_expiring }
+
+    - name: Reject each malformed mapping
+      ansible.builtin.include_tasks: xnat-openid-role-sync-rejects.yaml
+      loop:
+        - ['resource_access.xnat.roles:xnat-privileged=Privileged']
+        - [{ keycloak_role: xnat-privileged }]
+        - [{ xnat_role: Privileged }]
+        - [{ keycloak_role: 'xnat,privileged', xnat_role: Privileged }]
+        - [{ keycloak_role: 'xnat:privileged', xnat_role: Privileged }]
+        - [{ keycloak_role: xnat-privileged, xnat_role: 'Privileged=Administrator' }]
+        - [{ keycloak_role: xnat-privileged, xnat_role: 'Site Manager' }]
+        - [{ keycloak_role: xnat-access, xnat_role: Administrator }]
+      loop_control:
+        loop_var: _bad_mappings
+        label: '{{ _bad_mappings }}'
+
+    - name: Reject an empty list
+      ansible.builtin.include_tasks: xnat-openid-role-sync-rejects.yaml
+      vars:
+        xnat_openid_role_mappings_default: []
+        _bad_mappings: []

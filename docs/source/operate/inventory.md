@@ -1065,7 +1065,9 @@ XNAT is an optional service, gated by `enable_xnat` (default `false`) and deploy
 
 A user who already has a Scout session lands in XNAT without seeing its login page, and logging out of XNAT signs them out of Scout. XNAT's user session timeout is pinned to `keycloak_token_lifespan`, the Scout-wide session length (8 hours by default), and reapplied every time XNAT starts, so change that variable rather than the setting in XNAT's admin UI.
 
-When `enable_xnat` is `false`, **nothing** XNAT is created — no namespace, no deploy, and the Keycloak realm omits the `xnat` client and the `xnat-access` role (mapped onto the `scout-user` group). Set it to enable the feature:
+Members of `scout-admin` are XNAT site administrators, through the openid plugin's role sync (openid plugin 2.0.0 or later). Role sync acts only at sign-in, so when offboarding an XNAT administrator, also disable their XNAT account. A site maps more XNAT roles with `xnat_openid_role_mappings`; the [xnat role README](https://github.com/washu-tag/scout/blob/main/ansible/roles/xnat/README.md) explains it and what to do before upgrading the plugin.
+
+When `enable_xnat` is `false`, **nothing** XNAT is created — no namespace, no deploy, and the Keycloak realm omits the `xnat` client, its roles, and the `xnat-audience` scope. Set it to enable the feature:
 
 ```yaml
 enable_xnat: true

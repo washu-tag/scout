@@ -11,6 +11,7 @@ on:
       - tooling/manifest/**
       - .github/scripts/prepare-flux-artifacts.py
       - .github/scripts/copy-flux-artifacts.py
+      - .github/scripts/check-xnat-realm-roles.py
       - .github/actions/start-registry/**
       # The realm config-cli imports + the config-hash it is stamped from live here.
       - helm/keycloak-config-cli/**
@@ -130,6 +131,9 @@ jobs:
             else echo "  ok   rejects KMS: ${c%% *}"; fi
           done
           exit $fail
+
+      - name: XNAT realm roles and Scout's role sync mappings agree
+        run: python3 .github/scripts/check-xnat-realm-roles.py
 
       - name: Contract lists cover every substitution
         run: |

@@ -6,9 +6,11 @@ or more plugins, behind oauth2-proxy, using the off-the-shelf
 (`enable_xnat: false`).
 
 When `enable_xnat` is false the playbook end_plays before this role runs, so
-nothing XNAT is created — and the Keycloak realm omits the `xnat` client and the
-`xnat-access` role (gated on the realm's `enableXnat` value in
-`helm/keycloak-config-cli/files/scout-realm.json`).
+nothing XNAT is created — and the Keycloak realm omits the `xnat` client, its
+client roles, the groups' grants of those roles, the scope mappings that put them
+in tokens, and the `xnat-audience` client scope. Each is a block gated on the
+realm's `enableXnat` value in `helm/keycloak-config-cli/files/scout-realm.json`,
+the authoritative list.
 
 > **Toggle-off caveat:** flipping `enable_xnat` from true back to false deletes
 > the `xnat` Keycloak client on the next `make install-auth` (keycloak-config-cli
@@ -23,6 +25,40 @@ nothing XNAT is created — and the Keycloak realm omits the `xnat` client and t
 > in `prefs-override.ini`), and XNAT alias tokens they have already created keep
 > working until they expire. ADR 0026 records the earlier posture, when the role
 > was not enforced.
+
+> **Roles note:** members of `scout-admin` get XNAT's `Administrator` role (Site
+> Manager) from the openid plugin's role sync. Role sync needs openid plugin 2.0.0
+> or later; the 1.6.0 Scout pins today ignores it.
+>
+> Role sync changes roles only when a user signs in:
+>
+> - Leaving `scout-admin` removes `Administrator` at the next sign-in. An open
+>   XNAT session keeps it until then, and XNAT alias tokens are not affected.
+> - A user refused at sign-in, such as one offboarded, keeps `Administrator`.
+>   Disable their XNAT account and revoke their alias tokens.
+> - A user made an administrator by hand in XNAT loses it at their next sign-in
+>   unless they are in `scout-admin`. Local accounts such as `admin` never change,
+>   and neither do the two accounts XNAT runs its own work as: its primary
+>   administrator (background tasks) and its received-file user (incoming DICOM).
+>
+> To give another XNAT role, add a pair to `xnat_openid_role_mappings`, on top of
+> Scout's own `xnat-admin` to `Administrator`: a role on Keycloak's `xnat` client,
+> which the realm creates, and the XNAT role it gives. Then grant the Keycloak role
+> to a group:
+>
+> ```yaml
+> xnat_openid_role_mappings:
+>   - { keycloak_role: xnat-privileged, xnat_role: Privileged }
+> ```
+>
+> `xnat_role` must match an XNAT role exactly; the plugin warns at startup if XNAT
+> doesn't define it. Role sync logs to `openid.log` in XNAT's logs folder; after a
+> deploy, check it for lines starting `Role sync`.
+>
+> **Before upgrading to openid plugin 2.0.0:** add everyone who should keep a
+> mapped role, such as today's Site Managers, to the matching Keycloak group. Deploy
+> the realm before XNAT: `make all` does this, or run `make install-auth` before
+> `make install-xnat`.
 
 ## How it deploys
 

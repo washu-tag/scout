@@ -1,0 +1,22 @@
+---
+# Each name is rendered into comma-joined `<claim path>:<role>=<role>` entries, so a
+# ',', ':', '=' or '.' in it would split or reshape one.
+- name: Validate xnat_openid_role_mappings
+  ansible.builtin.assert:
+    that:
+      - xnat_openid_role_mappings_all is sequence and xnat_openid_role_mappings_all is not string
+      - xnat_openid_role_mappings_all | length > 0
+      - xnat_openid_role_mappings_all | reject('mapping') | list | length == 0
+      - xnat_openid_role_mappings_all | map(attribute='keycloak_role', default='') | map('string')
+        | reject('match', '^[A-Za-z0-9_-]+$') | list | length == 0
+      - xnat_openid_role_mappings_all | map(attribute='xnat_role', default='') | map('string')
+        | reject('match', '^[A-Za-z0-9_-]+$') | list | length == 0
+      - "'xnat-access' not in (xnat_openid_role_mappings_all | map(attribute='keycloak_role', default='') | list)"
+    fail_msg: >-
+      Each xnat_openid_role_mappings entry must be a mapping with a keycloak_role
+      (a role on Keycloak's xnat client) and an xnat_role (the XNAT role it gives,
+      exactly as XNAT names it, e.g. Administrator), each a plain name of letters,
+      digits, '-' or '_', for example
+      {keycloak_role: xnat-privileged, xnat_role: Privileged}. xnat-access is the
+      role every XNAT user holds and can't be mapped.
+    quiet: true

@@ -18,6 +18,11 @@
       Example: openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
     quiet: true
 
+- name: Validate the XNAT role mappings the openid plugin renders
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: validate_xnat_role_mappings
+
 # Mirrors XNAT 1.10.1's hash-detection heuristic, including its [A-z] range.
 - name: Validate the first-boot administrator password
   ansible.builtin.assert:
