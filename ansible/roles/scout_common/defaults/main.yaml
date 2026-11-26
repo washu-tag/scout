@@ -317,6 +317,9 @@ keycloak_subdomain: keycloak
 enable_chat: false
 enable_hl7_listener: false
 enable_telepresence: false
+# In-app notices in the launchpad bell (ADR 0043): the launchpad gets a database
+# on the platform Postgres. launchpad_postgres_password is required when true.
+enable_notifications: false
 
 # When false, nothing XNAT is created (no namespace/deploy; the Keycloak realm
 # omits the xnat client + xnat-access role). keycloak_xnat_client_secret is only

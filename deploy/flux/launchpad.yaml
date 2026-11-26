@@ -18,6 +18,10 @@ spec:
     kind: OCIRepository
     name: scout-config
   postBuild:
+    # sq quotes the notice settings (see base/launchpad). Inline, so a site cannot
+    # redefine it.
+    substitute:
+      sq: "'"
     substituteFrom:
       - kind: ConfigMap
         name: cluster-vars

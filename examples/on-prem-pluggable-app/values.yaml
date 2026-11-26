@@ -50,6 +50,12 @@ launchpad:
   icon: puzzle
   tone: slate
 
+# Opt-in, for a site with launchpad notices on (enable_notifications): adds
+# sendNotifications to the fragment and registers the app as a notice sender
+# (templates/launchpad-notifications.yaml). send-notice.sh sends a test notice.
+notifications:
+  enabled: false
+
 ingress:
   enabled: true
   className: traefik

@@ -3,8 +3,11 @@
 # postBuild.substituteFrom. Run the kustomize-controller with
 # StrictPostBuildSubstitutions so a missing key fails the build; without it a missing
 # key renders empty. s3_sse_type, s3_username, minio_oidc_enabled, temporal_web_auth,
-# scheduled_ingest_enabled and scheduled_ingest_cron are the exceptions: they default
-# to NONE, minio, on, oidc, false and "0 6 * * *". Auto-derived from the
+# scheduled_ingest_enabled, scheduled_ingest_cron, enable_notifications,
+# launchpad_notification_disabled_senders and launchpad_notification_rate_limit are the
+# exceptions: they default to NONE, minio, on, oidc, false, "0 6 * * *", false, empty
+# and empty (the launchpad's 60).
+# Auto-derived from the
 # ${...} vars used across deploy/ and enforced by validate-deploy.yaml; regenerate
 # with the snippet in that workflow when bases add
 # or drop a substitution. Site-repo CI (Phase 4) and the staging reconciler
@@ -15,6 +18,7 @@ cnpg_operator_namespace
 db_port
 delta_lake_path
 deployer_name
+enable_notifications
 extractor_data_dir
 hive_metastore_endpoint
 hive_metastore_endpoint_readonly
@@ -50,6 +54,8 @@ keycloak_namespace
 keycloak_realm_name
 keycloak_realm_url
 lake_bucket
+launchpad_notification_disabled_senders
+launchpad_notification_rate_limit
 loki_admin_bucket
 loki_chunks_bucket
 loki_ruler_bucket

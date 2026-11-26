@@ -18,9 +18,8 @@ sends notices includes reviewing what it sends.
 :::
 
 :::{note}
-Some of what this guide describes depends on Scout changes that are not released yet.
-Each is marked **Not yet available**. Until then, notices work on a site whose
-operator has set them up by hand ([site settings](#site-settings)).
+Notices are off unless the site has turned them on ([site settings](#site-settings)).
+On a site without them, the launchpad has no Activity bell and its notices API answers `404`.
 :::
 
 ## What a notice holds
@@ -76,9 +75,9 @@ client that two registrations claim. The launchpad logs why, on lines starting
 `[notifications]`. Deleting the ConfigMap stops your sends; notices already sent stay
 until they expire.
 
-**Not yet available:** the launchpad chart does not watch for this label yet. Until it
-does, a site operator puts registrations in the directory named by
-`LAUNCHPAD_NOTIFICATION_SENDER_DIRS`.
+The [example Pluggable App](https://github.com/washu-tag/scout/tree/main/examples/on-prem-pluggable-app)
+registers itself this way when installed with `notifications.enabled=true`, and its
+`send-notice.sh` sends a test notice.
 
 ## Get a token
 
@@ -185,8 +184,12 @@ notice to remove it from their list. Read state is each person's own.
 
 ## Site settings
 
-Notices are off unless the launchpad has a database. With none, the launchpad has no
-Activity bell and its notices API answers `404`.
+A site operator turns notices on with `enable_notifications`, which gives the launchpad
+its database; {ref}`Launchpad Notices <launchpad-notices>`
+covers the database, HTTP/2 at the edge, and backups. The launchpad chart sets the
+variables below from those settings, the disabled senders and rate limit from
+`launchpad_notification_disabled_senders` and `launchpad_notification_rate_limit`. The
+delivery cap keeps its default unless a site sets it through the chart's `env`.
 
 | Environment variable                     | Default | Meaning                                                                                                   |
 | ---------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------- |
@@ -195,14 +198,6 @@ Activity bell and its notices API answers `404`.
 | `LAUNCHPAD_NOTIFICATION_DISABLED_SENDERS` | unset | Comma-separated client ids whose sends are refused and whose notices are hidden.                          |
 | `LAUNCHPAD_NOTIFICATION_RATE_LIMIT`      | `60`    | Calls per app per minute, across all launchpad replicas.                                                  |
 | `LAUNCHPAD_NOTIFICATION_MAX_DELIVERIES`  | `1000`  | People one notice may reach once its roles are expanded.                                                  |
-
-Point `LAUNCHPAD_DATABASE_URL` at Postgres itself, not at a transaction-pooling proxy:
-replicas tell each other about changes with `LISTEN`, which such a proxy can't carry.
-Browsers must reach the launchpad over HTTP/2: each open tab holds a stream, and over
-HTTP/1.1 a browser allows only six connections to a host across all its tabs.
-
-**Not yet available:** the launchpad chart, Ansible role and GitOps base don't provision
-the database or set these yet.
 
 ## Reference
 

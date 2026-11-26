@@ -60,3 +60,17 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+"true" when in-app notices are on (notifications.enabled, a bool or Flux's string), else "".
+*/}}
+{{- define "launchpad.notificationsEnabled" -}}
+{{- if eq (toString .Values.notifications.enabled) "true" }}true{{- end }}
+{{- end }}
+
+{{/*
+"true" when any discovery sidecar runs, so the pod needs its ServiceAccount token and ClusterRole.
+*/}}
+{{- define "launchpad.discovers" -}}
+{{- if or .Values.catalog.discovery.enabled (include "launchpad.notificationsEnabled" .) }}true{{- end }}
+{{- end }}

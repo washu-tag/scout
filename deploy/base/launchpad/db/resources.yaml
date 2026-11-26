@@ -1,0 +1,95 @@
+# The launchpad's role and database for in-app notices (ADR 0043), on-prem. While
+# enable_notifications is not true (true, True or TRUE, as YAML reads it) the Job exits at once, so a site that leaves
+# notices off gets no role and no database. A superuser Job rather than a CNPG managed
+# role and Database CR, which a flag can't leave out of the Cluster (ADR 0031: databases
+# added later are idempotent Jobs). Each run re-sets the role's password, so a rotated
+# launchpad_postgres_password lands when the Job is deleted and Flux recreates it.
+# Flux drops template quotes before substituting, so ${sq} keeps the env values strings.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: launchpad-db-init
+  namespace: '${postgres_cluster_namespace}'
+  annotations:
+    # force: Flux recreates the immutable Job when its spec changes, as turning
+    # enable_notifications on does.
+    kustomize.toolkit.fluxcd.io/force: 'Enabled'
+spec:
+  backoffLimit: 6
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: launchpad-db-init
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: psql
+          # Same image as the CNPG cluster (postgres_image[_tag]), so psql matches the server.
+          # renovate: datasource=docker depName=ghcr.io/cloudnative-pg/postgresql versioning=regex:^(?<major>\d+)\.(?<minor>\d+)-(?<compatibility>system-trixie)$
+          image: ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 26
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: ENABLED
+              value: ${sq}${enable_notifications:=false}${sq}
+            - name: HOME
+              value: /tmp
+            - name: PGHOST
+              value: '${postgres_host}'
+            - name: PGPORT
+              value: ${sq}${db_port}${sq}
+            - name: PGSSLMODE
+              value: require
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: superuser-secret
+                  key: username
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: superuser-secret
+                  key: password
+            - name: LAUNCHPAD_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: launchpad-db-owner
+                  key: password
+          command:
+            - sh
+            - -ec
+            - |
+              case "$$ENABLED" in
+                true | True | TRUE) ;;
+                *)
+                  echo "enable_notifications is off; nothing to provision"
+                  exit 0
+                  ;;
+              esac
+              if [ -z "$$LAUNCHPAD_PASSWORD" ]; then
+                echo "launchpad_postgres_password is empty" >&2
+                exit 1
+              fi
+              psql --no-psqlrc -v ON_ERROR_STOP=1 -v pw="$$LAUNCHPAD_PASSWORD" --dbname postgres <<'SQL'
+              SELECT 'CREATE ROLE launchpad LOGIN'
+              WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'launchpad')
+              \gexec
+              ALTER ROLE launchpad WITH LOGIN PASSWORD :'pw';
+              SELECT 'CREATE DATABASE launchpad OWNER launchpad'
+              WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'launchpad')
+              \gexec
+              SQL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

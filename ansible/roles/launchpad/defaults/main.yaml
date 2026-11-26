@@ -24,3 +24,13 @@ launchpad_trust_traefik_ca: false
 
 # Launchpad nextauth cookie secret, override from inventory for production
 launchpad_nextauth_secret: changeme-nextauth-secret
+
+# In-app notices (enable_notifications). The database and role are created on
+# the platform Postgres (db_host), which the URL must reach directly, not
+# through a transaction pooler. `launchpad_postgres_password` is required.
+launchpad_database: launchpad
+launchpad_postgres_user: launchpad
+# Comma-separated Keycloak client ids whose notices are refused and hidden.
+launchpad_notification_disabled_senders: ''
+# Sends and withdrawals each sender may make a minute. Empty keeps the default, 60.
+launchpad_notification_rate_limit: ''

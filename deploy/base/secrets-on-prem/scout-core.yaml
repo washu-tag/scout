@@ -176,3 +176,28 @@ metadata:
 type: Opaque
 stringData:
   secret: ${sq}${launchpad_nextauth_secret}${sq}
+---
+# In-app notices (ADR 0043). Both render empty, and nothing reads them, until
+# enable_notifications is "true" with launchpad_postgres_password set. The
+# launchpad-db-init Job (base/launchpad/db) creates the role from the first; the
+# launchpad connects with the second.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: launchpad-db-owner
+  namespace: ${postgres_cluster_namespace}
+  labels:
+    cnpg.io/reload: 'true'
+type: Opaque
+stringData:
+  username: launchpad
+  password: ${sq}${launchpad_postgres_password:=}${sq}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: launchpad-db-secret
+  namespace: ${scout_core_namespace}
+type: Opaque
+stringData:
+  url: ${sq}postgresql://launchpad:${launchpad_postgres_password:=}@${postgres_host}:${db_port}/launchpad?sslmode=no-verify${sq}
