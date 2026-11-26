@@ -176,14 +176,17 @@ describe('validateDocument', () => {
           { id: 'a', title: 'A', layout: 'cards' },
           { id: 'b', title: 'B', layout: 'tiles' },
           { id: 'c', title: 'C', layout: 'rows' },
+          { id: 'd', title: 'D', layout: 'carousel' },
         ],
       }),
       SOURCE,
     );
     assert.deepStrictEqual(
       result.groups.map((g) => g.maxColumns),
-      [3, 2, 1],
+      [3, 2, 1, 3],
     );
+    assert.strictEqual(result.groups[3].layout, 'carousel');
+    assert.deepStrictEqual(result.diagnostics, []);
   });
 
   it('drops an invalid footerLink but keeps the group', () => {
