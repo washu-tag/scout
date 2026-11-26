@@ -58,6 +58,11 @@ persistentConfig:
   tool_server_connections: []
   default_model_id: ''
   task_model_id: ''
+  # Task model for chats on openaiConnections models. Empty = skip.
+  task_model_external_id: ''
+  # true/false; null = skip.
+  enable_tags_generation: null
+  enable_follow_up_generation: null
   # OWUI's session JWT lifetime, e.g. '28800s'. Empty = skip.
   jwt_expires_in: ''
 
@@ -125,7 +130,18 @@ connectionSecretName: open-webui-connection-secrets
 #   models:
 #     - id: some-model
 #       params: {reasoning: {effort: high, summary: auto}}
-#       ui: {name: 'Scout Explorer (Some Model)', description: ''}
+#       ui:
+#         name: 'Scout Explorer (Some Model)'
+#         description: ''
+#         # Optional picker, saved per user per model and carries over to every later
+#         # chat with the model; an option's params merge into `params`.
+#         model_controls:
+#           reasoning:
+#             label: Effort
+#             default: medium
+#             options:  # a list, in picker order
+#               - {id: medium, label: Medium, params: {reasoning: {effort: medium}}}
+#               - {id: high, label: High, params: {reasoning: {effort: high}}}
 openaiConnections: []
 
 # Rendered only when a connection uses oauth2. Keep the schedule well under

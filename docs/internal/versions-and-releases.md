@@ -476,9 +476,7 @@ This section documents all files containing version strings. The Release Workflo
 | File | Field | Dev Value | Note |
 |------|-------|-----------|------|
 | `helm/hive-metastore/Chart.yaml` | `version` only | `0.0.0-dev` | `appVersion` tracks Hive version |
-| `helm/voila/Chart.yaml` | `version` only | `0.0.0-dev` | `appVersion` tracks Voila version |
 | `helm/open-webui-bootstrap/Chart.yaml` | `version` only | `0.0.0-dev` | `appVersion` is unused — chart orchestrates a Job against the runtime-discovered OWUI image |
-| `helm/voila/values.yaml` | `image.tag` | `latest` | Uses scout-notebook image (shared with JupyterHub singleuser) |
 | `helm/scout-dashboards/Chart.yaml` | `version` only | `0.0.0-dev` | `appVersion` is unused — chart orchestrates Superset asset imports |
 | `helm/keycloak-config-cli/Chart.yaml` | `version` only | `0.0.0-dev` | `appVersion` tracks the keycloak-config-cli version |
 | `helm/scout-opa/Chart.yaml` | `version` only | `0.0.0-dev` | `appVersion` is unused — chart deploys the upstream `openpolicyagent/opa` image, tagged from `values.yaml` |

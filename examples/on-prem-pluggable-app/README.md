@@ -29,6 +29,7 @@ All the components that make a Helm chart into a Pluggable App. For more on each
 | `templates/deployment.yaml`               | `prometheus.io/*` pod annotations | Has Prometheus scrape the app's `/metrics` |
 | `templates/networkpolicy.yaml`            | — | Admits Traefik, and Prometheus for scraping |
 | `templates/grafana-dashboard.yaml`        | `grafana_dashboard: "1"` | Adds the dashboard in `files/dashboard.json` to Grafana |
+| `templates/launchpad-notifications.yaml`  | `launchpad.scout.xnat.org/notifications: "true"` | Registers the app as a sender of launchpad notices (opt-in) |
 
 The rest of the stuff in the chart—`deployment.yaml`, `service.yaml`, `app-configmap.yaml`, `files/app.py`—is more or less an ordinary service, with the caveat that it's a service that isn't built into a docker image and it doesn't do anything interesting.
 
@@ -53,6 +54,18 @@ Prometheus scrapes any pod annotated with `prometheus.io/scrape: "true"`, at the
 ### The Grafana dashboard
 
 Grafana watches every namespace for ConfigMaps labelled `grafana_dashboard: "1"` and loads each data key as a dashboard in the `Scout` folder. `files/dashboard.json` is ordinary dashboard JSON as exported from Grafana. Its data key and `uid` are prefixed with the app's name so they can't collide with Scout's own dashboards or another app's. Deleting the ConfigMap removes the dashboard.
+
+### Launchpad notices (opt-in)
+
+On a site with launchpad notices on (`enable_notifications`), install the chart with `notifications.enabled=true`. The fragment then sets `sendNotifications: true`, which gives the app's client a service account that can send, and `templates/launchpad-notifications.yaml` registers the app as a sender whose links open on its own subdomain. See [Send Notices to the Scout Launchpad](https://washu-scout.readthedocs.io/en/latest/customize/launchpad-notifications.html).
+
+`send-notice.sh` sends a test notice as the app, to a username or to everyone holding one of its roles, and withdraws it. It is a dev aid, not part of the chart: it reads the app's client secret with `kubectl` and reaches the launchpad through a port-forward, so it needs `kubectl` access to the site, `curl` and `jq`.
+
+```bash
+./send-notice.sh your-scout-domain.org user alice
+./send-notice.sh your-scout-domain.org role example-app-admin   # every Scout admin
+./send-notice.sh your-scout-domain.org withdraw
+```
 
 ## Install
 

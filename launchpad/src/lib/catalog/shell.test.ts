@@ -189,6 +189,16 @@ describe('shellSections', () => {
       routableChips(blocks).map((chip) => chip.id),
       ['draft', 'mine', 'book'],
     );
+    // Each block's heading shows its link, routed or not, as the home page does.
+    assert.deepStrictEqual(
+      blocks.map((block) => block.footer?.text),
+      ['See all', undefined],
+    );
+    assert.strictEqual(blocks[0].footer?.chip, blocks[0].link);
+    assert.partialDeepStrictEqual(sections.find((section) => section.id === 'core')?.footer, {
+      text: 'Docs',
+      chip: { kind: 'external', href: '/docs' },
+    });
 
     // A group named like a chip routes its link at <group id>.link, leaving the chip its id.
     const named = catalogFrom({

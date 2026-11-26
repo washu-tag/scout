@@ -334,7 +334,7 @@ This works through Ansible's `combine` filter with `recursive=true`. Role defaul
 **Services supporting partial resource overrides:**
 - temporal, postgres, minio, hive, prometheus, grafana, loki
 - superset, superset_statsd, jupyter_hub, hl7log_extractor
-- redis_operator, redis_cluster_node, voila, orthanc, dcm4chee
+- redis_operator, redis_cluster_node, orthanc, dcm4chee
 - ollama, open_webui
 
 **Services NOT supporting partial overrides** (use flattened variables instead):
@@ -616,6 +616,61 @@ jupyter_profiles:
       extra_resource_limits:
         nvidia.com/gpu: '1'
 ```
+
+### VS Code and Coding Agents
+
+Every notebook server also runs VS Code in the browser
+([code-server](https://github.com/coder/code-server)) with the Claude Code and Codex
+coding agents. Each profile gets an **Interface** option, VS Code (the default),
+JupyterLab, or Terminal, that picks the page the server opens on. The choices are
+`jupyter_interfaces`. To change the default for one profile, override only the
+`default` flags in that profile:
+
+```yaml
+jupyter_profiles:
+  - '{{ jupyter_cpu_profile }}'
+  - display_name: 'GPU'
+    # ...
+    profile_options:
+      interface:
+        choices:
+          vscode:
+            default: false
+          jupyterlab:
+            default: true
+```
+
+Users bring their own LLM keys (see the user docs). To point everyone at a shared
+gateway, set it in inventory. A key in `jupyter_singleuser_environment` also replaces
+Scout's own value for that variable, such as `HF_HOME`. Its `ANTHROPIC_*` keys, other
+than credentials, are also written to Claude Code's managed settings, and
+`jupyter_codex_requirements` is mounted as Codex's `/etc/codex/requirements.toml`, so
+users cannot override the gateway:
+
+```yaml
+jupyter_singleuser_environment:
+  ANTHROPIC_BASE_URL: 'https://llm-gateway.example.org/anthropic'
+jupyter_codex_requirements: |
+  model_provider = "gateway"
+
+  [model_providers.gateway]
+  name = "LLM gateway"
+  base_url = "https://llm-gateway.example.org/v1"
+  env_key = "LLM_GATEWAY_KEY"
+  wire_api = "responses"
+```
+
+For VS Code chat, set `jupyter_vscode_chat_models`. The Scout extension merges it into
+each user's `chatLanguageModels.json` whenever VS Code starts, so model and URL changes
+reach existing users. Keep per-user values, such as key placeholders, in
+`jupyter_user_starter_files`.
+
+On air-gapped clusters, add the gateway domain to `squid_extra_allowed_domains` and
+make sure `jupyter_egress_allow_cidr` covers the staging node. Notebook pods reach it
+through Squid.
+
+VS Code needs a slightly looser Content Security Policy than the rest of Scout, so
+JupyterHub uses its own `jupyter-security-headers` middleware.
 
 ### Completely Replacing Default Profiles
 

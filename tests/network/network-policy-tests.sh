@@ -1,13 +1,11 @@
 #!/usr/bin/env bash
 # network-policy-tests.sh — Verify Scout NetworkPolicies are enforced
 #
-# Covers three policies:
+# Covers these policies:
 #   - trino-rw      (scout-extractor): write-path Trino, restricted to the
-#                   hl7-transformer + Voila pods on port 8080.
+#                   hl7-transformer pods on port 8080.
 #   - opa-trino     (scout-analytics): the AuthZ decision engine, restricted
 #                   to the trino-analytics coordinator on port 8181.
-#   - voila ingress (scout-analytics): only Traefik may reach voila:8866
-#                   directly; X-Trino-User impersonation trust depends on it.
 #
 # Spins up short-lived pods in different namespaces / with different labels
 # and confirms each can or can't reach its target. Runs all test pods in
@@ -40,9 +38,6 @@ TRINO_RW_PATH=/v1/info
 OPA_HOST=opa-trino.scout-analytics
 OPA_PORT=8181
 OPA_PATH=/health
-VOILA_HOST=voila.scout-analytics
-VOILA_PORT=8866
-VOILA_PATH=/
 REPORT_VIEWER_HOST=report-viewer.scout-analytics
 REPORT_VIEWER_PORT=8000
 REPORT_VIEWER_PATH=/healthz
@@ -53,8 +48,6 @@ REPORT_VIEWER_PATH=/healthz
 #                       trino-rw + its NetworkPolicy). Both smoke-test sides.
 #   opa-trino         — needs OPA + trino-analytics. Both smoke-test sides
 #                       (trino role deploys both).
-#   voila-ingress     — needs the voila Service to exist for the target URL
-#                       to resolve. Notebook side only.
 #   report-viewer-ingress — needs the report-viewer Service. Analytics side.
 INCLUDE_GROUPS=""
 
@@ -69,13 +62,12 @@ while [[ $# -gt 0 ]]; do
 Usage: $(basename "$0") [--include <groups>]
 
   --include <groups>   Comma-separated test groups to run (default: all).
-                       Available: trino-rw, opa-trino, voila-ingress,
-                       report-viewer-ingress.
+                       Available: trino-rw, opa-trino, report-viewer-ingress.
 
 Examples:
   $(basename "$0")
   $(basename "$0") --include trino-rw
-  $(basename "$0") --include trino-rw,opa-trino,voila-ingress,report-viewer-ingress
+  $(basename "$0") --include trino-rw,opa-trino,report-viewer-ingress
 EOF
       exit 0
       ;;
@@ -133,19 +125,14 @@ queue_test() {
   PATHS+=("${7:-$TRINO_RW_PATH}")
 }
 
-# trino-rw: only hl7-transformer and Voila may reach it on port 8080
+# trino-rw: only hl7-transformer may reach it on port 8080
 if include_group "trino-rw"; then
   queue_test nb-test               scout-analytics 000
   queue_test chat-test              scout-analytics 000 'app.kubernetes.io/name=open-webui'
   queue_test extractor-rando        scout-extractor 000
   queue_test transformer-impostor   scout-extractor 200 'app.kubernetes.io/name=hl7-transformer'
-  # Positive Voila → trino-rw check: trino-rw's NetworkPolicy explicitly
-  # allow-lists voila-labeled pods in scout-analytics for the reviewer-
-  # annotation write path. Catches regressions where the allow rule gets
-  # dropped without updating Voila's connect_rw() callers. Test is
-  # synthetic (curl pod with voila label) so it doesn't require the
-  # voila Deployment to be present.
-  queue_test voila-rw-impostor      scout-analytics 200 'app.kubernetes.io/name=voila'
+  # The retired Voilà playbooks' allowance is gone.
+  queue_test voila-rw-impostor      scout-analytics 000 'app.kubernetes.io/name=voila'
 fi
 
 # opa-trino: only the trino-analytics coordinator may reach the decision API
@@ -153,16 +140,6 @@ if include_group "opa-trino"; then
   queue_test opa-coordinator-ok    scout-analytics 200 'app.kubernetes.io/name=trino,app.kubernetes.io/component=coordinator' "$OPA_HOST" "$OPA_PORT" "$OPA_PATH"
   queue_test opa-analytics-rando   scout-analytics 000 '' "$OPA_HOST" "$OPA_PORT" "$OPA_PATH"
   queue_test opa-extractor-rando   scout-extractor 000 '' "$OPA_HOST" "$OPA_PORT" "$OPA_PATH"
-fi
-
-# voila ingress (port 8866).
-# Voila's X-Trino-User impersonation trust model depends on the ingress
-# NetworkPolicy: only Traefik should reach Voila directly. A random
-# in-cluster pod hitting :8866 could forge X-Auth-Request-Preferred-Username
-# headers and bypass per-user AuthZ.
-if include_group "voila-ingress"; then
-  queue_test voila-bypass-attack    scout-analytics 000 ''                                "$VOILA_HOST" "$VOILA_PORT" "$VOILA_PATH"
-  queue_test voila-traefik-allowed  kube-system     200 'app.kubernetes.io/name=traefik'  "$VOILA_HOST" "$VOILA_PORT" "$VOILA_PATH"
 fi
 
 # report-viewer ingress (port 8000).

@@ -8,7 +8,7 @@ server:
       # Cluster-wide max memory = workers × worker_heap × per_node_fraction
       maxMemory: "{{ trino_worker_max_heap | multiply_memory(trino_worker_count * trino_per_node_query_memory_fraction) }}B"
     # JWT-only: user JWTs from Jupyter, service-principal JWTs from
-    # Superset/Voila/report-viewer (ADR 0022).
+    # Superset/report-viewer (ADR 0022).
     authenticationType: JWT
     https:
       enabled: true
@@ -141,7 +141,7 @@ worker:
 # traffic only. The chart's networkPolicy support auto-allows Trino-pod-to-
 # Trino-pod traffic when enabled — we just declare the external allowances:
 #   - 8443 (HTTPS, JWT-authenticated): from any pod in the same namespace
-#     (Superset, Jupyter, Voila, MCP).
+#     (Superset, Jupyter, MCP).
 #   - 5556 (JMX exporter): from Prometheus in the monitoring namespace.
 #
 # Port 8080 is intentionally absent from these rules. It stays reachable

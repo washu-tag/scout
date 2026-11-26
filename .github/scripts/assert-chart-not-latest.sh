@@ -8,16 +8,10 @@
 # asserts it for the chart defaults, which `verify_clean` never sees.
 #
 # Usage: assert-chart-not-latest.sh <packaged-chart.tgz> <chart-name>
-#
-# voila is exempt: it deploys the Scout scout-notebook image but its appVersion
-# is Voila's own version, so its image tag can't fall back to appVersion (and
-# `helm package` can't `--set` values); stamping it is a separate cleanup.
 set -euo pipefail
 
 TGZ="${1:?usage: $0 <packaged-chart.tgz> <chart-name>}"
 NAME="${2:?usage: $0 <packaged-chart.tgz> <chart-name>}"
-
-[ "$NAME" = "voila" ] && exit 0
 
 # The bad set is stamp_config.py's _BAD_TAGS (latest, 0.0.0) plus the chart
 # tree's 0.0.0-dev placeholder, so a chart added to a stamped group but not wired

@@ -1,6 +1,6 @@
 .PHONY: all deps setup-k3s config-traefik install-helm install-k3s clone-scout install-gpu-op \
     install-postgres install-valkey install-auth install-lake install-trino install-superset install-orchestrator \
-    install-extractor install-hl7-listener install-monitor install-jupyter install-launchpad install-voila \
+    install-extractor install-hl7-listener install-monitor install-jupyter install-launchpad remove-voila \
     install-report-viewer install-staging install-xnat install-data-generator install-telepresence install-pluggable-apps verify-node echo
 
 # Variables
@@ -102,7 +102,7 @@ install-launchpad:
 install-xnat:
 	$(ANSIBLE_CMD) playbooks/xnat.yaml
 
-install-voila:
+remove-voila:
 	$(ANSIBLE_CMD) playbooks/voila.yaml
 
 install-report-viewer:

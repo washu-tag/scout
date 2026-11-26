@@ -72,6 +72,7 @@ which needs `apiVersion: launchpad.scout.xnat.org/v1alpha2`.
 | `badge`          | no       | —         | `{text, tone}`: a short status beside the title, such as "Draft". `text` max 24 characters; `tone` as above, default `slate`.                   |
 | `newTab`         | no       | `true`    | Open a `url` destination in a new tab. Other destinations open inside the launchpad — see [links](#links).                                       |
 | `sandbox`        | no       | `false`   | Open the framed app in a sandbox that can't open popups or navigate the launchpad window. For apps that render untrusted content, such as chat. |
+| `crossOriginClipboard` | no | `false` | Let the framed app use the clipboard and fullscreen on any Scout subdomain its frame moves to, not only its own. For apps that redirect to per-user subdomains, such as JupyterHub. |
 | `group`          | no       | `more`    | Which section the chip renders in.                                                                                                               |
 | `weight`         | no       | `100`     | Lower renders first; ties break by title, then id.                                                                                               |
 | `audience`       | no       | `user`    | `user` (any authenticated user) or `admin`. This is display filtering only — your service must still enforce its own access.                     |
@@ -147,7 +148,9 @@ with the launchpad's own pages if it uses the same page gutter, measured on its 
 width: 16px, 24px from 768px wide, and 32px from 1024px, around content at most 80rem
 wide, 88rem from 1536px, with 2rem above the page's first line. Inside the launchpad
 the frame is the window less the rail, and the launchpad's pages switch at the same
-frame widths. A service doesn't need to know whether it is framed to get this right.
+frame widths. Below 640px the rail folds into a menu button above the frame, which
+then takes the window's full width. A service doesn't need to know whether it is
+framed to get this right.
 
 Links into your service that arrive from outside Scout, such as a bookmark or a link
 someone shared, open inside the launchpad at the same page, and so does a new tab or
@@ -237,12 +240,12 @@ groups:
 | `description` | no       | `""`                           | Section subtitle, max 200 characters.                                                               |
 | `icon`        | no       | `folder`                       | Small icon beside the heading.                                                                      |
 | `weight`      | no       | `100`                          | Section order on the page.                                                                          |
-| `layout`      | no       | `cards`                        | `cards` (large), `rows` (compact list with arrows), or `tiles` (compact grid).                      |
-| `maxColumns`  | no       | `cards` 3, `tiles` 2, `rows` 1 | Rendered columns = `min(visible chips, maxColumns)`.                                                |
+| `layout`      | no       | `cards`                        | `cards` (large), `carousel` (large cards in one row that scrolls sideways, with arrow buttons), `rows` (compact list with arrows), or `tiles` (compact grid). A launchpad from before `carousel` shows `cards` with a diagnostic. |
+| `maxColumns`  | no       | `cards` and `carousel` 3, `tiles` 2, `rows` 1 | Rendered columns = `min(visible chips, maxColumns)`; for `carousel`, the cards shown across before the row scrolls. |
 | `width`       | no       | `full`                         | Consecutive `half` groups pair side by side; an unpaired `half` renders full.                       |
 | `audience`    | no       | `user`                         | A group also hides automatically whenever it has no visible chips.                                  |
 | `railMenu`    | no       | —                              | Another group's id: the rail lists this group in that group's menu, under its own heading, rather than as its own entry. Ignored when that group isn't shown. |
-| `footerLink`  | no       | —                              | A link in the section heading: `{text, url}`, opened in a new tab, or `{text, link}` with a chip destination (see [links](#links)), so a Scout service opens inside the launchpad under the section's rail entry. A launchpad from before `link` drops a `{text, link}` footerLink with a diagnostic. |
+| `footerLink`  | no       | —                              | A link in the section heading, and beside the group's heading in a rail menu: `{text, url}`, opened in a new tab, or `{text, link}` with a chip destination (see [links](#links)), so a Scout service opens inside the launchpad under the section's rail entry. A launchpad from before `link` drops a `{text, link}` footerLink with a diagnostic. |
 
 Several documents may define the same group id (two services can both put chips in
 `imaging` and both ship the definition). The launchpad's own catalog wins a definition

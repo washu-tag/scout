@@ -15,7 +15,7 @@ import os
 from pathlib import Path
 
 import pytest
-from conftest import HOSTNAME, fragment_text
+from conftest import HOSTNAME, fragment_text, with_fields
 
 from scout_keycloak_fragment_reconciler import translate
 from scout_keycloak_fragment_reconciler.fragment import parse
@@ -82,6 +82,14 @@ class TestScoutDecidesNotTheApp:
         assert client["directAccessGrantsEnabled"] is False
         assert client["serviceAccountsEnabled"] is False
         assert client["standardFlowEnabled"] is True
+
+    def test_send_notifications_turns_on_only_the_service_account(self):
+        plain = rendered(fragment_text())["client"]
+        sender = rendered(with_fields("    sendNotifications: true"))["client"]
+        assert sender["serviceAccountsEnabled"] is True
+        changed = {k for k in plain if plain[k] != sender[k]}
+        assert changed == {"serviceAccountsEnabled"}
+        assert translate.NOTIFICATIONS_SCOPE not in sender["defaultClientScopes"]
 
     def test_the_scope_sets_match_the_base_realm(self):
         client = rendered(fragment_text())["client"]

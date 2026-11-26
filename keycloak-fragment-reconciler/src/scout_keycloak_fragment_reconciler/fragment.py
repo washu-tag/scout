@@ -5,9 +5,11 @@ describing a Keycloak client: a fragment says what the app is and what its users
 need, and Scout decides which Keycloak objects that becomes. There is no syntax
 for protocol mappers, `fullScopeAllowed`, service accounts, PKCE, or the login
 flow -- those live in `translate`. `clientScopes` is the one scope list, and it
-may only name scopes the site offers. A field a fragment cannot vary is a field
-it does not have; the browser code flow with PKCE `S256` is the only shape Scout
-issues, so there is nothing to say about either.
+may only name scopes the site offers. `sendNotifications` names a capability
+rather than a service account, and Scout decides what it becomes. A field a
+fragment cannot vary is a field it does not have; the browser code flow with
+PKCE `S256` is the only shape Scout issues, so there is nothing to say about
+either.
 
 Unknown fields are rejected rather than ignored, unlike launchpad chips (ADR
 0034): a chip that drops a key renders a slightly wrong tile, but a fragment
@@ -21,7 +23,14 @@ import urllib.parse
 from collections.abc import Collection
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StrictBool,
+    ValidationError,
+    model_validator,
+)
 
 from . import yamlio
 
@@ -97,6 +106,8 @@ class ClientSpec(BaseModel):
     grants: dict[str, list[str]] = Field(default_factory=dict)
     # Optional client scopes, each one the site offers.
     client_scopes: list[Name] = Field(default_factory=list, alias="clientScopes")
+    # The app sends launchpad notices as its own client (ADR 0043).
+    send_notifications: StrictBool = Field(False, alias="sendNotifications")
 
     @property
     def app_origin(self) -> str:

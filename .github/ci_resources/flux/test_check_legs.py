@@ -33,6 +33,7 @@ def test_both_current_legs_select_their_exact_dependency_closure(graph):
         "superset-server",
         "superset-dashboards",
         "launchpad-frame-location",
+        "launchpad-db",
     }
     assert set(legs.LEGS["auth"]["entrypoints"]) <= auth
     assert {

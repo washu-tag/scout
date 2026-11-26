@@ -93,8 +93,6 @@
           trustForwardHeader: true
           # Copied from oauth2-proxy's /oauth2/auth response onto the upstream
           # request (and overwriting any client-supplied value of the same name).
-          # Voila reads X-Auth-Request-Preferred-Username for X-Trino-User
-          # impersonation (ADR 0022); voila_runtime captures it per-request.
           authResponseHeaders:
             - X-Auth-Request-Preferred-Username
 

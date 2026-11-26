@@ -94,6 +94,7 @@ See also the example pluggable app: https://github.com/washu-tag/scout/tree/main
 | `secretRef` | `name`, and optionally `key`, of the Secret holding your credential. |
 | `grants` | How you map Scout's user groups (`scout-user` and `scout-admin`) to your app's role vocabulary. The roles must exist in the `roles` section above. |
 | `clientScopes` | Optional. Keycloak client scopes your app needs in order to call another Scout service as the signed-in user, for example `[xnat-audience]`. Each must be one your site offers; see [Calling another Scout service as the user](#calling-another-scout-service-as-the-user). |
+| `sendNotifications` | Optional, `true` or `false` (the default). Lets your app send notices to the launchpad bell as its own client; see [Sending launchpad notices](#sending-launchpad-notices). |
 
 A bit more on `roles` and `grants`, since this is an important piece to understand if you are going to get auth right. When a Scout user gets authorized by an admin to use the platform, they will be added to `scout-user` to give them basic access, or `scout-admin` to give them admin access. As of writing those are the _only_ groups and only levels of permission Scout recognizes. In the `grants` section of the Fragment is where you can express something like "When a user is in `scout-user`, they should get these roles in my app: `[...]`". Those roles are the only thing you will see in the tokens that your service gets on user requests; you won't see `scout-user` or `scout-admin`, you'll see the roles that those two groups map to.
 
@@ -193,7 +194,7 @@ The Fragment syntax is deliberately a subset of what Keycloak's clients can conf
 | Authorization code flow only | No implicit flow |
 | PKCE `S256` required | Send a code challenge — most libraries do by default ([RFC 7636](https://datatracker.ietf.org/doc/html/rfc7636)) |
 | No direct access grants | You cannot get a token with a username and password; see [testing](#5-test-and-troubleshoot) |
-| No service accounts | No `client_credentials` grant for machine-to-machine calls |
+| No service accounts, except for `sendNotifications` | No `client_credentials` grant for machine-to-machine calls, other than [sending launchpad notices](#sending-launchpad-notices) |
 | Sees only its own roles | Your login tokens name your roles and no other service's; a token for another service comes from [token exchange](#calling-another-scout-service-as-the-user) |
 
 ## 4. Read the token and act on roles
@@ -268,6 +269,18 @@ The user still needs to be allowed into the other service. For XNAT that means h
 
 Instead of token exchange, your app can instead request an offered scope at login by adding it to the scopes your OIDC library asks for. That makes every login token a credential for the other service as well as yours, which is a mild security concern, so we recommend an explicit token exchange.
 
+### Sending launchpad notices
+
+To put notices under the launchpad bell, set `sendNotifications: true` on your client:
+
+```yaml
+        sendNotifications: true
+```
+
+Scout then turns on your client's service account and links the `launchpad-notifications` client scope to your client as an optional scope. Your app gets a send token from the `client_credentials` grant by asking for that scope (`scope=launchpad-notifications`). The token carries the launchpad's send role and is addressed to the launchpad. Your users' login tokens don't ask for the scope, so they can't send. Don't add it to the scopes your OIDC library asks for at login.
+
+The service account holds no roles of its own, so this grants nothing beyond sending. Registering your app as a sender, the token request and the send API are in [Send Notices to the Scout Launchpad](launchpad-notifications.md).
+
 ## 5. Test and troubleshoot
 
 ### Was the fragment applied?
@@ -311,6 +324,9 @@ The error statuses will be re-published every time the Reconciler resyncs and ch
 | `FragmentInvalid` naming `clientScopes` | Your site does not offer that scope, possibly because the service is not installed |
 | Token exchange refused: audience not available | The exchange request sent `audience` without the matching `scope` |
 | XNAT refuses an exchanged token | The user lacks XNAT access, or has never signed in to XNAT through the browser |
+| `unauthorized_client` from the `client_credentials` grant | `sendNotifications` is not `true` in your fragment, or the fragment has not been applied yet |
+| Launchpad answers `403 missing_role` | Your token request did not ask for `scope=launchpad-notifications` |
+| `FragmentFailed` naming `launchpad-notifications` | The site's base realm predates notices; the operator re-applies the realm |
 
 ### Removal
 

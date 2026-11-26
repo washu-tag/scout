@@ -41,7 +41,7 @@ gammaSchemaAccess: default
 
 # Built-in dashboard bundles to install. Each name corresponds to a
 # subdirectory under files/analytics/{charts,dashboards,datasets/Scout_Data_Lake}/.
-# Available built-ins: core, quality, followup, patients.
+# Available built-ins: core, quality, patients.
 #
 # Adding a new built-in bundle is a matter of dropping files into a new
 # subdirectory under each kind and adding its name here — no template
