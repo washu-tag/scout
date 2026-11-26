@@ -28,9 +28,10 @@
 /* Screens with room to spare get the roomier home spacing. */
 @custom-variant tall (@media (min-height: 900px));
 
-/* The page gutter and width at 768px, 1024px and 1536px of the content area beside the 72px
-   rail, the widths a framed app measures as its own (ADR 0042), so launchpad pages and framed
-   apps change at the same window sizes. */
+/* Phone width (640px or less), and the page gutter and width at 768px, 1024px and 1536px, of
+   the content area beside the 72px rail, the widths a framed app measures as its own (ADR 0042),
+   so launchpad pages and framed apps change at the same window sizes. */
+@custom-variant content-phone (@media (max-width: 712px));
 @custom-variant content-md (@media (min-width: 840px));
 @custom-variant content-lg (@media (min-width: 1096px));
 @custom-variant content-2xl (@media (min-width: 1608px));
