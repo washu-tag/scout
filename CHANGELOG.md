@@ -1,5 +1,43 @@
 # Changelog
 
+## [6.0.0](https://github.com/washu-tag/scout/compare/v5.3.0...v6.0.0) (2026-11-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* enable_playbooks no longer deploys anything, so a site that ran Voilà loses Research Cohorting, RADS, Clinical Follow-up Monitoring and Quality Metrics. The followup dashboard bundle is gone.  The SDK no longer reads KEYCLOAK_VOILA_SVC_CLIENT_ID or X_AUTH_REQUEST_PREFERRED_USERNAME; outside JupyterHub it raises for want of an identity source.
+
+### Features
+
+* a Scout logo that reads in light and dark ([#995](https://github.com/washu-tag/scout/issues/995)) ([a5c2124](https://github.com/washu-tag/scout/commit/a5c21248610a12b16f69384731751576498c129e))
+* **chat:** effort picker, external task model, fewer background tasks ([#1047](https://github.com/washu-tag/scout/issues/1047)) ([9b18cfc](https://github.com/washu-tag/scout/commit/9b18cfc828b469b0bbc994f9df033ac99c67ce29))
+* follow the OS color scheme in Grafana and JupyterLab ([#996](https://github.com/washu-tag/scout/issues/996)) ([95ec49a](https://github.com/washu-tag/scout/commit/95ec49ade9b35f99936056426440b1fbb6890acb))
+* **jupyter:** add vs code and coding agents to notebook servers ([#1017](https://github.com/washu-tag/scout/issues/1017)) ([7810d63](https://github.com/washu-tag/scout/commit/7810d63159d3e967ed9260c9badb69062a5f9dc4))
+* **keycloak:** apps can send launchpad notices through their fragments ([#1028](https://github.com/washu-tag/scout/issues/1028)) ([fd9e00f](https://github.com/washu-tag/scout/commit/fd9e00f41b848584c0a45a84a28ff660ec19b6c1))
+* **launchpad:** chips for named users, and a status badge ([#1001](https://github.com/washu-tag/scout/issues/1001)) ([788504b](https://github.com/washu-tag/scout/commit/788504b53164bf03ec1f641155c5f87ba73c8e38))
+* **launchpad:** collapse the rail into a menu on narrow screens ([#1031](https://github.com/washu-tag/scout/issues/1031)) ([d4ff3ca](https://github.com/washu-tag/scout/commit/d4ff3ca6d75031d78d67fd49301fe4a67e4bb78a))
+* **launchpad:** in-app notices with a bell in the rail ([#1026](https://github.com/washu-tag/scout/issues/1026)) ([4349975](https://github.com/washu-tag/scout/commit/4349975fc4d6d5af4db266ed4fd837d9770e730d))
+* **launchpad:** one app bar on launchpad pages, and an app bar standard for apps ([#1036](https://github.com/washu-tag/scout/issues/1036)) ([f5e93d4](https://github.com/washu-tag/scout/commit/f5e93d441106cdd1abd2ef05c6aa3df9fdb0dc3c))
+* **launchpad:** open hosts no chip owns and launchpad app addresses inside the launchpad ([#1044](https://github.com/washu-tag/scout/issues/1044)) ([74e5a2c](https://github.com/washu-tag/scout/commit/74e5a2c3407b6650ed17cc636fdba1bf2fd9e82f))
+* **launchpad:** open Scout services inside the launchpad ([#997](https://github.com/washu-tag/scout/issues/997)) ([9f1e73f](https://github.com/washu-tag/scout/commit/9f1e73ff743fc2e94b2f3ecca4418d52861c41cf))
+* **launchpad:** provision in-app notices on both deploy lanes ([#1029](https://github.com/washu-tag/scout/issues/1029)) ([f6fc97d](https://github.com/washu-tag/scout/commit/f6fc97dd531eaf60b020daab6325ce594233f189))
+* remove the Voilà playbooks, the follow-up dashboard bundle, and SDK support for voila token ([#1040](https://github.com/washu-tag/scout/issues/1040)) ([311126f](https://github.com/washu-tag/scout/commit/311126f4cdcdd00606c167d8618331406a202f50))
+* **temporal:** make the scheduled ingest opt-in ([#1007](https://github.com/washu-tag/scout/issues/1007)) ([b7bfca5](https://github.com/washu-tag/scout/commit/b7bfca5904fa8c3d79e203f751a83b81c544a8af))
+* **xnat:** declare DICOM SCP receivers in inventory ([#993](https://github.com/washu-tag/scout/issues/993)) ([d6cbde8](https://github.com/washu-tag/scout/commit/d6cbde86756dad33c632ad16694162f7a556d6db))
+* **xnat:** give XNAT its own role-owned Postgres cluster ([#1015](https://github.com/washu-tag/scout/issues/1015)) ([8863a7c](https://github.com/washu-tag/scout/commit/8863a7cd6e5043a06fb03b2cbd01f148f137a424))
+* **xnat:** XNAT chart 5.0.1, and migrating the chart's database ([#1023](https://github.com/washu-tag/scout/issues/1023)) ([d3c01af](https://github.com/washu-tag/scout/commit/d3c01af21f88d831a7324e1d75a91481773372a1))
+
+
+### Bug Fixes
+
+* "See all" reopens its list, and sign-in pages show Scout's icon ([#1019](https://github.com/washu-tag/scout/issues/1019)) ([3ad7802](https://github.com/washu-tag/scout/commit/3ad7802b8abc8d95f9e0beb9fc46b92fada3b0b2))
+* **hl7-transformer:** ignore the JLine less-pager ReDoS that Spark bundles ([#1033](https://github.com/washu-tag/scout/issues/1033)) ([de228b4](https://github.com/washu-tag/scout/commit/de228b4a0f6cd52a9bdcabe89b27abcdd76b9ff7))
+* **launchpad:** "See all" no longer flashes the page it last showed ([#1024](https://github.com/washu-tag/scout/issues/1024)) ([70585c1](https://github.com/washu-tag/scout/commit/70585c119c50e530253f494f880154e651a5bccf))
+* **launchpad:** one sign-in when Scout's session has ended ([#1039](https://github.com/washu-tag/scout/issues/1039)) ([4adc470](https://github.com/washu-tag/scout/commit/4adc470432dad9248abfd83e39975efd8038719d))
+* **launchpad:** rail menus as disclosures that stay on screen ([#1042](https://github.com/washu-tag/scout/issues/1042)) ([1af6ca8](https://github.com/washu-tag/scout/commit/1af6ca80605d1759bb666444c844cad60269fac3)), closes [#1013](https://github.com/washu-tag/scout/issues/1013)
+* take Debian's zstd fix in report-viewer and the fragment reconciler (CVE-2026-124851) ([3e052d2](https://github.com/washu-tag/scout/commit/3e052d201f0cc57fe160013622e2e66b541d9fcf))
+* **traefik:** stop allowing WebSockets to any host ([#994](https://github.com/washu-tag/scout/issues/994)) ([91154c6](https://github.com/washu-tag/scout/commit/91154c6762cef2e30ebf5b6ae8920267d68a1d3e))
+
 ## [5.3.0](https://github.com/washu-tag/scout/compare/v5.2.0...v5.3.0) (2026-11-16)
 
 
