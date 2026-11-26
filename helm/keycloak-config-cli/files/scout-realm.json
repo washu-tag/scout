@@ -789,32 +789,6 @@
         ]
       },
       {
-        "name": "voila_svc",
-        "description": "Service principal for Voila playbooks impersonating the OIDC-authenticated user via X-Trino-User",
-        "enabled": true,
-        "fullScopeAllowed": false,
-        "clientId": "voila_svc",
-        "clientAuthenticatorType": "client-secret",
-        "secret": "$(env:voila_svc)",
-        "serviceAccountsEnabled": true,
-        "standardFlowEnabled": false,
-        "directAccessGrantsEnabled": false,
-        "publicClient": false,
-        "protocol": "openid-connect",
-        "attributes": {
-          "access.token.lifespan": "{{ .Values.lifespans.trinoServiceToken }}"
-        },
-        "defaultClientScopes": [
-          "web-origins",
-          "acr",
-          "profile",
-          "roles",
-          "basic",
-          "email",
-          "trino-audience"
-        ]
-      },
-      {
         "name": "report_viewer_svc",
         "description": "Service principal for report-viewer impersonating the chat/iframe user via X-Trino-User",
         "enabled": true,

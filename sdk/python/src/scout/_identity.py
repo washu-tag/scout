@@ -1,25 +1,12 @@
-"""Resolve the identity the scout SDK uses against Trino.
+"""Resolve the bearer the scout SDK sends to Trino.
 
-Two modes, auto-detected from environment:
+The user's own Keycloak access token, passed through from JupyterHub (needs
+JUPYTERHUB_API_TOKEN in the environment). The Hub holds the token in
+auth_state; the spawned kernel fetches it via the Hub API (GET /users/<user>)
+using its own JUPYTERHUB_API_TOKEN plus the admin:auth_state!user scope granted
+by the role override. No X-Trino-User: Trino reads identity from the JWT.
 
-  Voila (service-principal impersonation, ADR 0022)
-    Set when KEYCLOAK_VOILA_SVC_CLIENT_ID is present. The kernel never
-    sees the end-user's bearer token; the Voila runtime (voila_runtime,
-    shipped with the Voila chart) threads only the preferred_username
-    into the kernel env as
-    X_AUTH_REQUEST_PREFERRED_USERNAME (sourced from oauth2-proxy's
-    X-Auth-Request-Preferred-Username response header). We mint a
-    voila_svc client_credentials JWT and tell Trino to evaluate AuthZ
-    against the impersonated user via X-Trino-User.
-
-  Jupyter (user-token pass-through)
-    Set when JUPYTERHUB_API_TOKEN is present. The Hub holds the user's
-    Keycloak access token in auth_state; the spawned kernel fetches it
-    via the Hub API (GET /users/<user>) using its own JUPYTERHUB_API_TOKEN
-    plus the admin:auth_state!user scope granted by the role override.
-    No X-Trino-User - Trino reads identity from the JWT's sub claim.
-
-Both providers refresh themselves transparently on near-expiry.
+The provider refreshes the token transparently on near-expiry.
 """
 
 import base64
@@ -38,7 +25,7 @@ _REFRESH_BEFORE_EXPIRY_FRACTION = 0.2  # refresh once <20% of the token's life r
 _REFRESH_BEFORE_EXPIRY_SECONDS = 60  # fixed fallback when the token carries no iat
 
 # Optional override; tests set this to inject a fake provider.
-_override_provider: Callable[[], tuple[str, str | None]] | None = None
+_override_provider: Callable[[], str] | None = None
 
 
 def _is_near_expiry(token: str) -> bool:
@@ -68,47 +55,6 @@ def _is_near_expiry(token: str) -> bool:
     else:
         buffer = _REFRESH_BEFORE_EXPIRY_SECONDS
     return time.time() >= exp - buffer
-
-
-class _VoilaSvcProvider:
-    """voila_svc client_credentials token, cached in-process. The
-    impersonation user comes from X_AUTH_REQUEST_PREFERRED_USERNAME,
-    which the Voila runtime (voila_runtime) injected per-request."""
-
-    def __init__(self) -> None:
-        self._token: str | None = None
-        self._lock = threading.Lock()
-
-    def _mint(self) -> str:
-        # No verify=: Scout points KEYCLOAK_TOKEN_URL at the internal
-        # in-cluster Keycloak (keycloak_internal_token_url, plain HTTP), so
-        # there's no TLS on this hop. If a deployment overrides it with an
-        # HTTPS endpoint, requests falls back to the system CA bundle
-        # (TRINO_CA_CERT is Trino-specific and deliberately not reused here).
-        response = requests.post(
-            os.environ["KEYCLOAK_TOKEN_URL"],
-            data={
-                "grant_type": "client_credentials",
-                "client_id": os.environ["KEYCLOAK_VOILA_SVC_CLIENT_ID"],
-                "client_secret": os.environ["KEYCLOAK_VOILA_SVC_CLIENT_SECRET"],
-            },
-            timeout=10,
-        )
-        response.raise_for_status()
-        return response.json()["access_token"]
-
-    def __call__(self) -> tuple[str, str | None]:
-        with self._lock:
-            if not self._token or _is_near_expiry(self._token):
-                self._token = self._mint()
-        user = os.environ.get("X_AUTH_REQUEST_PREFERRED_USERNAME", "") or "anonymous"
-        return self._token, user
-
-    def invalidate(self) -> None:
-        """Drop the cached token so the next call re-mints. Called by the
-        query layer's reactive retry after Trino rejects the bearer."""
-        with self._lock:
-            self._token = None
 
 
 class _JupyterHubUserProvider:
@@ -160,11 +106,11 @@ class _JupyterHubUserProvider:
             )
         return access_token
 
-    def __call__(self) -> tuple[str, str | None]:
+    def __call__(self) -> str:
         with self._lock:
             if not self._token or _is_near_expiry(self._token):
                 self._token = self._fetch()
-        return self._token, None
+        return self._token
 
     def invalidate(self) -> None:
         """Drop the cached token so the next call re-fetches from the Hub.
@@ -175,7 +121,7 @@ class _JupyterHubUserProvider:
             self._token = None
 
 
-_singleton: Callable[[], tuple[str, str | None]] | None = None
+_singleton: Callable[[], str] | None = None
 
 
 def invalidate() -> None:
@@ -186,37 +132,29 @@ def invalidate() -> None:
         provider.invalidate()
 
 
-def _resolve_provider() -> Callable[[], tuple[str, str | None]]:
+def _resolve_provider() -> Callable[[], str]:
     global _singleton
     if _override_provider is not None:
         return _override_provider
     if _singleton is not None:
         return _singleton
-    if "KEYCLOAK_VOILA_SVC_CLIENT_ID" in os.environ:
-        _singleton = _VoilaSvcProvider()
-    elif "JUPYTERHUB_API_TOKEN" in os.environ:
-        _singleton = _JupyterHubUserProvider()
-    else:
+    if "JUPYTERHUB_API_TOKEN" not in os.environ:
         raise RuntimeError(
-            "scout: no identity source detected. Expected either "
-            "KEYCLOAK_VOILA_SVC_CLIENT_ID (Voila) or JUPYTERHUB_API_TOKEN "
-            "(Jupyter) in the environment."
+            "scout: no identity source detected. Expected JUPYTERHUB_API_TOKEN "
+            "(a JupyterHub notebook) in the environment."
         )
+    _singleton = _JupyterHubUserProvider()
     return _singleton
 
 
-def resolve_identity() -> tuple[str, str | None]:
-    """Return (bearer_token, impersonation_user_or_None) for the current env."""
+def resolve_identity() -> str:
+    """Return the bearer token for the current env."""
     return _resolve_provider()()
 
 
 def resolve_audit_user() -> str:
-    """Best-effort username for trino-rw audit logging. Never raises;
-    falls back to 'anonymous' (trino-rw has no auth - see
-    feedback_trino_rw_failopen)."""
-    voila_user = os.environ.get("X_AUTH_REQUEST_PREFERRED_USERNAME", "")
-    if voila_user:
-        return voila_user
+    """Best-effort username: the JupyterHub user. Never raises; falls back to
+    'anonymous'."""
     hub_user = os.environ.get("JUPYTERHUB_USER")
     if hub_user:
         return hub_user

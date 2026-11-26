@@ -33,7 +33,6 @@ const protectedServices = [
   { name: 'Temporal', url: `https://temporal.${hostname}/` },
   { name: 'MinIO', url: `https://minio.${hostname}/` },
   { name: 'Open WebUI', url: `https://chat.${hostname}/` },
-  { name: 'Playbooks', url: `https://playbooks.${hostname}/` },
   { name: 'Nonexistent Service', url: `https://nonexistent.${hostname}/` },
   // Deep service paths to verify inner pages are also blocked, not just root URLs
   { name: 'Superset SQL Lab', url: `https://superset.${hostname}/sqllab/` },
@@ -41,10 +40,6 @@ const protectedServices = [
   { name: 'Grafana Dashboards', url: `https://grafana.${hostname}/dashboards` },
   { name: 'Temporal Workflows', url: `https://temporal.${hostname}/namespaces/default/workflows` },
   { name: 'MinIO Browser', url: `https://minio.${hostname}/browser/lake/hl7` },
-  {
-    name: 'Playbooks Notebook',
-    url: `https://playbooks.${hostname}/voila/render/cohort/Cohort.ipynb`,
-  },
 ];
 
 test.describe('Unauthorized User', () => {

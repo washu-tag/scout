@@ -83,7 +83,6 @@ jobs:
       scout-dashboards-chart: ${{ steps.plan.outputs.scout-dashboards-chart }}
       scout-opa-chart: ${{ steps.plan.outputs.scout-opa-chart }}
       temporal-bootstrap-chart: ${{ steps.plan.outputs.temporal-bootstrap-chart }}
-      voila-chart: ${{ steps.plan.outputs.voila-chart }}
       version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -188,8 +187,6 @@ jobs:
             temporal-bootstrap-chart:
               - 'helm/temporal-bootstrap/**'
               - 'ansible/group_vars/all/versions.yaml'
-            voila-chart:
-              - 'helm/voila/**'
       - name: 'Mint build version'
         id: version
         shell: bash
@@ -471,9 +468,6 @@ jobs:
       - name: 'Contract tests: scout SDK vs trino-python-client'
         shell: bash
         run: cd sdk/python && pytest tests_contract/ -v
-      - name: 'Unit tests: Voila chart helpers'
-        shell: bash
-        run: pip install 'pyjwt[crypto]>=2.14,<3' && cd helm/voila && PYTHONPATH=files pytest tests/ -v
       - name: 'Install OPA'
         shell: bash
         # Pinned to the deployed OPA image (opa_image_tag in versions.yaml):
@@ -1145,13 +1139,12 @@ jobs:
   # runner into DiskPressure during chatbot's ollama+open-webui pulls, so each
   # side deploys only what it tests. Both install common infra (k3s, traefik,
   # postgres, valkey, auth, lake, trino, launchpad); trino on both so
-  # jupyter/voila and chat/superset each query a real coordinator.
+  # jupyter and chat/superset each query a real coordinator.
   #   analytics  -> superset, chatbot       (+ data-authz, trino-rw netpol)
-  #   notebooks  -> voila, jupyter, monitor (+ full netpol incl. voila-ingress)
+  #   notebooks  -> jupyter, monitor        (+ trino-rw and opa-trino netpol)
   # data-authz seed+run is analytics-only (needs superset+chatbot for the full
   # OPA -> Trino-JWT -> row-filter pipeline). auth-curl + NetworkPolicy run on
-  # both, each --include-filtered to what it deploys (notebooks adds voila-ingress,
-  # which needs the voila Service to resolve its target URL).
+  # both, each --include-filtered to what it deploys.
   # Playbook names assume PR #409 splits analytics.yaml into trino.yaml + superset.yaml;
   # update matrix.playbooks if naming lands differently.
   # smoke-test's `name:` is explicit so the per-side checks stay
@@ -1185,10 +1178,10 @@ jobs:
             minio_sso: true
           - side: notebooks
             # testuser.jupyter is the per-user singleuser pod ingress
-            subdomains: jupyter,grafana,keycloak,auth,playbooks,testuser.jupyter
+            subdomains: jupyter,grafana,keycloak,auth,testuser.jupyter
             san_extra: ',DNS:*.jupyter.scout.test'
-            playbooks: k3s traefik postgres valkey auth+lake trino voila+jupyter+monitor+launchpad
-            netpol_include: '--include trino-rw,opa-trino,voila-ingress'
+            playbooks: k3s traefik postgres valkey auth+lake trino jupyter+monitor+launchpad
+            netpol_include: '--include trino-rw,opa-trino'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: 'Generate TLS certificates and configure /etc/hosts'
@@ -1328,8 +1321,6 @@ jobs:
             sudo -E kubectl rollout status deployment/report-viewer -n scout-analytics --timeout=180s
           fi
           if [ "$SIDE" = "notebooks" ]; then
-            echo "=== Checking Voila ==="
-            sudo -E kubectl rollout status deployment/voila -n scout-analytics --timeout=180s
             echo "=== Checking Prometheus ==="
             sudo -E kubectl rollout status deployment/prometheus-server -n scout-monitoring --timeout=180s
             echo "=== Checking Grafana ==="
@@ -1459,9 +1450,7 @@ jobs:
           name: playwright-report-${{ matrix.side }}
           path: tests/auth/playwright-report/
           retention-days: 7
-      # Analytics filters to trino-rw (voila not deployed there, so the
-      # Traefik->voila allow-path test would 000 on a missing Service); notebooks
-      # runs the full suite.
+      # Each side includes the policy groups for what it deploys (matrix.netpol_include).
       # TODO: add jupyter-singleuser egress tests once the JupyterHub singleuser
       # pod-selector labels are settled.
       - name: 'NetworkPolicy tests'
@@ -1610,10 +1599,6 @@ jobs:
           - chart-name: temporal-bootstrap
             chart-dir: helm/temporal-bootstrap
             changed: temporal-bootstrap-chart
-          - chart-name: voila
-            image-name: scout-notebook
-            chart-dir: helm/voila
-            changed: voila-chart
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:

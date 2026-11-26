@@ -429,7 +429,7 @@ prometheus_resources:
     memory: 4Gi
 ```
 
-**Services supporting partial overrides:** temporal, postgres, minio, hive, prometheus, grafana, loki, superset, superset_statsd, jupyter_hub, hl7log_extractor, redis_operator, redis_cluster_node, voila, orthanc, dcm4chee, ollama, open_webui, cassandra_system_logger, data_generator, xnat_postgres
+**Services supporting partial overrides:** temporal, postgres, minio, hive, prometheus, grafana, loki, superset, superset_statsd, jupyter_hub, hl7log_extractor, redis_operator, redis_cluster_node, orthanc, dcm4chee, ollama, open_webui, cassandra_system_logger, data_generator, xnat_postgres
 
 **Services NOT supporting partial overrides** (use flattened variables instead): Trino coordinator/worker, Cassandra (main container), Elasticsearch, HL7 Transformer. These services use individual variables (e.g., `cassandra_max_heap`, `trino_worker_cpu_limit`) because JVM heap sizes drive memory calculations with different multipliers for requests vs limits. Note: Cassandra's system logger sidecar (Vector) does support partial overrides via `cassandra_system_logger_resources`.
 
@@ -854,11 +854,9 @@ two additional dashboards are opt-in per inventory.
 # ships. Add bundle names to install more.
 #   core      - Scout main dashboard (default)
 #   quality   - Quality & TAT dashboard
-#   followup  - Follow-up Detection dashboard
 scout_dashboard_bundles:
   - core
   - quality
-  - followup
 ```
 
 Removing a bundle stops **new** installs from receiving its assets, but
