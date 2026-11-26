@@ -14,7 +14,6 @@ import {
   chipTarget,
   currentChip,
   deepPath,
-  embeddedChip,
   frameUrl,
   isChipOrigin,
   isCurrentChip,
@@ -22,16 +21,20 @@ import {
   openRequest,
   railSections,
   recentApps,
+  shellApp,
   shellLocation,
   shellPath,
   type ShellSection,
 } from '@/lib/catalog/shell';
+import type { Origin } from '@/lib/catalog/assemble';
 import { TONES, type ToneName } from '@/lib/catalog/tones';
 import type { RenderChip } from '@/lib/catalog/types';
 import { edgeSessionGone, sessionGate, sessionRecovery } from '@/lib/sessionRecovery';
 
 interface ShellClientProps {
   sections: ShellSection[];
+  origin: Origin;
+  unframed: string[];
   environment: string;
   docsUrl: string;
   notices: boolean;
@@ -158,6 +161,8 @@ function Spinner() {
 
 export default function ShellClient({
   sections,
+  origin,
+  unframed,
   environment,
   docsUrl,
   notices,
@@ -187,7 +192,11 @@ export default function ShellClient({
   const appId = pathname.startsWith('/app/')
     ? decodeURIComponent(pathname.split('/')[2] ?? '')
     : null;
-  const active = appId ? embeddedChip(sections, appId) : undefined;
+  const appFor = useCallback(
+    (id: string) => shellApp(sections, id, origin, unframed),
+    [sections, origin, unframed],
+  );
+  const active = appId ? appFor(appId) : undefined;
   const headingLink = active ? isHeadingLink(sections, active.id) : false;
 
   // The rail's chips come from the layout, which client navigation doesn't re-render,
@@ -414,7 +423,7 @@ export default function ShellClient({
       if (type !== 'scout:location' && type !== 'scout:leaving') return;
       for (const [id, frame] of frames.current) {
         if (frame.contentWindow !== event.source) continue;
-        const chip = embeddedChip(sections, id);
+        const chip = appFor(id);
         if (!chip || !isChipOrigin(chip, event.origin)) return;
         const address = shellLocation(chip, event.data.href);
         if (!address) return;
@@ -429,7 +438,7 @@ export default function ShellClient({
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [sections, openInShell]);
+  }, [sections, openInShell, appFor]);
 
   // Going to a heading link's own address takes its frame back to the link's page, wherever
   // the person had gone in it since. Decided while rendering, so the spinner covers the frame
@@ -453,10 +462,10 @@ export default function ShellClient({
   useEffect(() => {
     if (!reloading) return;
     const frame = frames.current.get(reloading);
-    const chip = embeddedChip(sections, reloading);
+    const chip = appFor(reloading);
     if (frame && chip && frame.getAttribute('src') === chip.href) frame.src = chip.href;
     setReloading(null);
-  }, [reloading, sections]);
+  }, [reloading, appFor]);
 
   const activeLocation = active ? locations[active.id] : undefined;
   useEffect(() => {

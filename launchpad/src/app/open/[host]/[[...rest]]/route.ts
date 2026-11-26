@@ -1,9 +1,10 @@
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { authOptions } from '@/lib/auth';
-import { requestModel, requestOrigin } from '@/lib/catalog/request';
+import { requestModel, requestOrigin, unframedHosts } from '@/lib/catalog/request';
 import {
   chipForUrl,
+  hostAppFor,
   openTarget,
   shellLocation,
   shellPath,
@@ -31,6 +32,10 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // Scout services open only inside the launchpad, so a URL no app owns goes home.
-  return new NextResponse(null, { status: 307, headers: { Location: '/' } });
+  // Scout services open only inside the launchpad: a host no chip owns opens as a host app.
+  const app = hostAppFor(target, origin, unframedHosts());
+  return new NextResponse(null, {
+    status: 307,
+    headers: { Location: (app && shellLocation(app, target.href)) ?? '/' },
+  });
 }

@@ -25,6 +25,18 @@ export async function requestOrigin(): Promise<Origin> {
   }
 }
 
+// Hosts the launchpad never frames as a host app: Keycloak and the edge's oauth2-proxy,
+// whose sign-in pages refuse to render in a frame.
+export function unframedHosts(): string[] {
+  return [process.env.KEYCLOAK_ISSUER, process.env.OAUTH2_PROXY_SIGN_OUT_URL].flatMap((value) => {
+    try {
+      return value ? [new URL(value).host.toLowerCase()] : [];
+    } catch {
+      return [];
+    }
+  });
+}
+
 // The catalog as this request's viewer sees it: audience-filtered, links
 // resolved against the request host.
 // `anyAudience` keeps admin-only chips, for matching a URL to its app before the user has

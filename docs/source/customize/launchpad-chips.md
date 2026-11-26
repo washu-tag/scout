@@ -155,8 +155,10 @@ someone shared, open inside the launchpad at the same page, and so does a new ta
 window that another Scout service opens. The edge sends top-level `GET` page loads
 from anywhere but your own host to
 `https://<launchpad host>/open/<service host>/<path>`, and the launchpad frames the
-chip on that host whose path matches best; a URL no chip owns goes to the launchpad's
-home page. Frame loads, form posts, fetch and XHR, and navigation within your own host
+chip on that host whose path matches best. A URL on a single-label Scout subdomain that no
+chip owns opens in a frame of its own, sandboxed like a chip with `sandbox: true`, with no
+rail entry; any other URL, and Keycloak's and the sign-in proxy's hosts, go to the
+launchpad's home page. Frame loads, form posts, fetch and XHR, and navigation within your own host
 reach your service directly. A new tab your service opens to its own host isn't
 redirected; to send it into the launchpad too, have a page that finds itself outside a
 frame (`window.parent === window`) go to `https://<launchpad host>/open/<its host><its
@@ -208,7 +210,9 @@ window.top.postMessage(
 ```
 
 The launchpad opens the page in the chip that owns it and answers the sender with
-`{ type: 'scout:opened', href }`. It accepts the request from any frame, nested ones
+`{ type: 'scout:opened', href }`. `href` can also be the launchpad's own address for a
+chip's page, `https://scout.example.edu/app/<chip id>/<path>`, so you can link to
+another service by its chip id without knowing its host. It accepts the request from any frame, nested ones
 included, whose origin is the launchpad's or a single-label subdomain of its host,
 except a chip with `sandbox: true`, and ignores pages no chip owns. Without an answer,
 open the page as you otherwise would. This also works from a page your service shows

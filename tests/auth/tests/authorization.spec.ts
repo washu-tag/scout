@@ -168,14 +168,12 @@ test.describe('Authorized Non-Admin User', () => {
     expect(response.status()).toBe(403);
   });
 
-  test('Nonexistent subdomain redirects to Launchpad', async ({ page }) => {
+  test('Nonexistent subdomain opens inside the Launchpad', async ({ page }) => {
     const url = `https://nonexistent.${hostname}/`;
     await signInToScout(page, url, authorizedUser);
 
-    // The catch-all ingress redirect-to-launchpad middleware rewrites
-    // unknown subdomains to the root hostname, so the user should land
-    // on Launchpad after the redirect chain settles.
-    await page.waitForURL(`https://${hostname}/`, { timeout: 30000 });
+    // The launchpad opens a host no chip owns as a host app, whether or not anything serves it.
+    await page.waitForURL(`https://${hostname}/app/~nonexistent`, { timeout: 30000 });
     const response = await page.reload({ waitUntil: 'domcontentloaded' });
     expect(response?.status()).toBe(200);
   });
