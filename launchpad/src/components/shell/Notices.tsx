@@ -7,7 +7,7 @@ import type { ListedNotice, Summary } from '@/lib/notifications/store';
 import { subdomainUrl } from '@/lib/subdomainUrl';
 
 const PANEL =
-  'fixed bottom-3 left-[76px] z-30 flex max-h-[min(36rem,calc(100vh-1.5rem))] w-96 max-w-[calc(100vw-88px)] flex-col rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900';
+  'fixed bottom-3 left-[76px] z-30 flex max-h-[min(36rem,calc(100vh-1.5rem))] w-96 max-w-[calc(100vw-88px)] flex-col rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900 max-sm:left-2 max-sm:right-2 max-sm:w-auto max-sm:max-w-none';
 const NOTE = 'px-2.5 py-6 text-center text-sm text-slate-500 dark:text-slate-400';
 
 // The reader's counts, kept current over the notices stream (ADR 0043). The
