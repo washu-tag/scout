@@ -435,33 +435,43 @@ xnat_plugins_default:
           # someone with no XNAT account is refused rather than silently provisioning
           # one; they sign in through the browser once first.
           openid.keycloak.bearer.forceUserCreate: 'false'
-          # Keep XNAT roles in step with Keycloak roles at each sign-in, browser or API.
+          # Keep XNAT roles in step with Keycloak at each sign-in (xnat_openid_role_mappings_all).
           openid.keycloak.roleSync.enabled: 'true'
-          openid.keycloak.roleSync.mappings: "{{ xnat_openid_role_mappings_all | join(',') }}"
-          openid.keycloak.idToken.roleSync.mappings: "{{ (xnat_openid_id_token_role_mappings + xnat_openid_role_mappings_all) | join(',') }}"
+          # Browser sign-in reads them from groups in XNAT's ID token:
+          #   groups:xnat-admin=Administrator
+          openid.keycloak.idToken.roleSync.mappings: "{% for m in xnat_openid_role_mappings_all %}groups:{{ m.keycloak_role }}={{ m.xnat_role }}{{ ',' if not loop.last }}{% endfor %}"
+          # API calls read them from resource_access.xnat.roles, never groups, which every
+          # Scout client fills with its own roles:
+          #   resource_access.xnat.roles:xnat-admin=Administrator
+          openid.keycloak.bearer.roleSync.mappings: "{% for m in xnat_openid_role_mappings_all %}resource_access.xnat.roles:{{ m.keycloak_role }}={{ m.xnat_role }}{{ ',' if not loop.last }}{% endfor %}"
           # Skip the login page when the user already has a Keycloak session (prompt=none).
           openid.keycloak.autoLogin: 'true'
           # Log out through oauth2-proxy, as the other Scout services do: it clears the edge
-          # session and ends the Keycloak one.
+          # session and ends the Keycloak one. With a plugin older than 2.0.0, which ignores
+          # session.onInvalid below, XNAT's idle timeout also lands here, which is why the
+          # xnat role pins that timeout to the SSO lifetime (prefs-override.ini).
           openid.keycloak.logoutUri: '{{ oauth2_proxy_signout_url }}'
           # An expired XNAT session (idle timeout included) signs in again through Keycloak
-          # rather than signing out of Scout.
+          # rather than signing out of Scout. Needs openid plugin 2.0.0 or later.
           openid.keycloak.session.onInvalid: reauth
 
 # Combined list the xnat role's templates/tasks iterate. xnat_plugins is
 # operator-supplied (defaulted to [] inline here).
 xnat_plugins_all: '{{ xnat_plugins_default + (xnat_plugins | default([])) }}'
 
-# Keycloak roles the openid plugin maps to XNAT roles at each sign-in, each
-# `<claim path>:<token role>=<XNAT role>`. Access tokens carry the xnat client's
-# roles in resource_access.xnat.roles. Every client puts its own roles in
-# `groups`, so that claim is read only from XNAT's own ID token. Sites add their
-# own with xnat_openid_role_mappings.
+# Role sync pairs (openid plugin 2.0.0 or later): a role on Keycloak's xnat client,
+# which the realm creates, and the XNAT role it gives. Sites add pairs in inventory,
+# on top of these defaults:
+#
+#   xnat_openid_role_mappings:
+#     - { keycloak_role: xnat-privileged, xnat_role: Privileged }
+#
+# That adds groups:xnat-privileged=Privileged (browser) and
+# resource_access.xnat.roles:xnat-privileged=Privileged (API).
 xnat_openid_role_mappings_default:
-  - resource_access.xnat.roles:xnat-admin=Administrator
-xnat_openid_id_token_role_mappings:
-  - groups:xnat-admin=Administrator
-xnat_openid_role_mappings_all: '{{ xnat_openid_role_mappings_default + (xnat_openid_role_mappings | default([])) }}'
+  - keycloak_role: xnat-admin
+    xnat_role: Administrator
+xnat_openid_role_mappings_all: '{{ xnat_openid_role_mappings_default + (xnat_openid_role_mappings | default([], true)) }}'
 
 # Distinct repo URLs for coordinate-resolved plugins. Consumed by the xnat role
 # (plugins.<name>.mavenUrl) and the Nexus role (proxy members, air-gapped). Projects ONLY

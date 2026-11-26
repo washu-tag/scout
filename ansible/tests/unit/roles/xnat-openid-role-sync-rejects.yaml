@@ -1,0 +1,26 @@
+---
+- name: Validate {{ _bad_mappings }}
+  block:
+    - name: Run the production validation
+      ansible.builtin.include_role:
+        name: scout_common
+        tasks_from: validate_xnat_role_mappings
+      vars:
+        xnat_openid_role_mappings: '{{ _bad_mappings }}'
+
+    - name: Flag the mapping as wrongly accepted
+      ansible.builtin.set_fact:
+        _wrongly_accepted: '{{ _bad_mappings }}'
+  rescue:
+    - name: Require the validation's own message
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - ansible_failed_result.msg is search('xnat_openid_role_mappings entry must be a mapping')
+
+- name: Require the mapping to be rejected
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - _wrongly_accepted is not defined
+    fail_msg: 'accepted a malformed mapping: {{ _wrongly_accepted | default("") }}'

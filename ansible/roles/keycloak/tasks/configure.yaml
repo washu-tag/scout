@@ -16,6 +16,12 @@
     quiet: true
   when: enable_xnat | default(false) | bool
 
+- name: Validate the XNAT role mappings the realm renders
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: validate_xnat_role_mappings
+  when: enable_xnat | default(false) | bool
+
 - name: Assemble the Keycloak client secrets
   no_log: true
   ansible.builtin.set_fact:

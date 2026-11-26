@@ -70,6 +70,9 @@ lifespans:
   trinoServiceToken: '14400'
 # Provision the XNAT client, role, and group binding.
 enableXnat: 'false'
+# Extra roles on the xnat client, each created and put in scope for API calls;
+# xnat-access and xnat-admin always exist.
+xnatRoles: []
 # Identity providers (creds come via envFrom; see required-secrets.md). The browser
 # flow redirects to defaultProvider (an enabled IdP); empty shows the login page with every IdP.
 github:

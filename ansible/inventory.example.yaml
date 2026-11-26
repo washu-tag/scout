@@ -410,6 +410,13 @@ k3s_cluster:
     # xnat_postgres_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     # xnat_admin_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     #
+    # Extra XNAT roles for role sync (ADDITIVE: scout-admin -> Administrator stays).
+    # Each pairs a role on Keycloak's xnat client, which the realm creates, with the
+    # XNAT role it gives; grant the Keycloak role to a group. See
+    # ansible/roles/xnat/README.md.
+    # xnat_openid_role_mappings:
+    #   - { keycloak_role: xnat-privileged, xnat_role: Privileged }
+    #
     # XNAT's Postgres cluster. Role defaults are sized for dev; a production
     # starting point (storage can't be enlarged later on local-path):
     # xnat_postgres_storage_size: 50Gi
