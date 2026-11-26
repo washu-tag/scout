@@ -32,6 +32,8 @@ def commonsCompressVersion = "1.28.0"
 // its internal Jackson under software.amazon.awssdk.thirdparty, so it
 // doesn't conflict with Keycloak's bundled Jackson.
 def awsSdkVersion = "2.55.15"
+// AWS JDBC Wrapper for opt-in RDS IAM database auth (deploy/required-secrets.md).
+def awsJdbcWrapperVersion = "4.0.1"
 def junitVersion = "6.1.3"
 def mockitoVersion = "5.24.0"
 
@@ -64,6 +66,7 @@ dependencies {
         exclude group: "software.amazon.awssdk", module: "netty-nio-client"
         exclude group: "software.amazon.awssdk", module: "apache-client"
     }
+    runtimeOnly("software.amazon.jdbc:aws-advanced-jdbc-wrapper:${awsJdbcWrapperVersion}")
 
     compileOnly("org.projectlombok:lombok:1.18.48")
     annotationProcessor("org.projectlombok:lombok:1.18.48")
@@ -76,7 +79,7 @@ dependencies {
     testImplementation("org.mockito:mockito-core:${mockitoVersion}")
 }
 
-// Copy all runtime-classpath deps (commons-compress + AWS SDK) into
+// Copy all runtime-classpath deps (commons-compress, AWS SDK, JDBC wrapper) into
 // build/libs/ so the Dockerfile's
 // `COPY .../build/libs/*.jar /opt/keycloak/providers/` step picks them up
 // alongside our own jar. Keycloak's own libs are compileOnly above, so
