@@ -19,10 +19,11 @@
     fail_msg: >-
       Postgres cluster {{ xnat_postgres_cluster_name }} in namespace {{ xnat_namespace }}
       was created by the XNAT chart, and the next Helm upgrade would delete it. The role
-      now runs XNAT's database itself, so this XNAT has to be wiped and redeployed:
+      now runs XNAT's database itself, so this XNAT has to be migrated (role README,
+      "Migrating the chart's database") or wiped and redeployed:
       `helm -n {{ xnat_namespace }} uninstall {{ xnat_helm_release_name }}`, then
       `kubectl -n {{ xnat_namespace }} delete pvc --all`, then run `make install-xnat` again.
-      This deletes all XNAT data.
+      Wiping deletes all XNAT data.
     quiet: true
 
 - name: Create the XNAT Postgres cluster

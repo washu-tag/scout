@@ -459,9 +459,9 @@ class Reconciler:
             roles, new_roles = self._reconcile_roles(uuid, spec)
             self._reconcile_mappers(uuid, spec)
             self._reconcile_tier_edges(uuid, spec, roles=roles, new_roles=new_roles)
-            self._reconcile_client_scopes(
-                uuid, spec, linked=client.get("optionalClientScopes") or []
-            )
+            linked = client.get("optionalClientScopes") or []
+            self._reconcile_client_scopes(uuid, spec, linked=linked)
+            self._reconcile_notifications(uuid, spec, linked=linked)
         except KeycloakError as exc:
             level = log.warning if exc.retryable else log.error
             level("applying %s failed: %s", spec.client_id, exc)
@@ -716,6 +716,43 @@ class Reconciler:
                 partial(self.admin.add_optional_client_scope, uuid, ids[name]),
             )
 
+    def _reconcile_notifications(
+        self, uuid: str, spec: ClientSpec, *, linked: list[str]
+    ) -> None:
+        """Last, because the scope is what lets the app send (ADR 0043).
+
+        The service account is already on or off by here, from the client
+        representation; without this scope its token carries nothing the
+        launchpad accepts. The scope belongs to the base realm, so it is only
+        ever linked or unlinked, the way an offered scope is. Its absence is a
+        precondition we do not own, like a missing tier role: on a deploy that
+        brings the scope, the realm import may still be running, and its
+        arrival wakes no watch. So it is retried on `TIER_RETRY_SECONDS`.
+        """
+        name = translate.NOTIFICATIONS_SCOPE
+        want, have = spec.send_notifications, name in linked
+        if want == have:
+            return
+        ids = {s.get("name"): s.get("id") for s in self.admin.client_scopes()}
+        scope_id = ids.get(name)
+        if not want:
+            self._write(
+                f"remove scope {name} from {spec.client_id}",
+                partial(self.admin.remove_optional_client_scope, uuid, scope_id),
+            )
+            return
+        if not scope_id:
+            self._schedule_recheck(spec.client_id, TIER_RETRY_SECONDS)
+            raise KeycloakError(
+                404,
+                f"sendNotifications needs the realm's {name} client scope, which "
+                "the realm does not have; apply the base realm",
+            )
+        self._write(
+            f"add scope {name} to {spec.client_id}",
+            partial(self.admin.add_optional_client_scope, uuid, scope_id),
+        )
+
     # --- garbage collection ---------------------------------------------
 
     def _is_orphan(self, client_id: str, client: dict, snapshot: Snapshot) -> bool:
@@ -871,9 +908,11 @@ class Reconciler:
     def _schedule_recheck(self, key: str, seconds: float) -> None:
         """Book a one-shot pass, keeping the soonest if one is already booked.
 
-        Keyed by source for a witnessed deletion and by clientId for an orphan
-        mid-grace; the two cannot collide, because a clientId may not contain
-        the slash a source always has.
+        Keyed by source for a witnessed deletion, and by clientId for an orphan
+        mid-grace or a sender waiting on the notifications scope. A source
+        cannot collide with a clientId, because a clientId may not contain the
+        slash a source always has, and a client is never both an orphan and a
+        fragment's.
         """
         deadline = time.monotonic() + seconds
         existing = self._pending_recheck.get(key)
@@ -1030,7 +1069,9 @@ def next_wait(reconciler: Reconciler) -> float | None:
       rather than at the resync interval -- but never in a tight loop, because
       the failure is usually somebody else's deploy still running. This retry
       survives `resync_seconds: -1`: it is startup, not a resync, and a pass
-      that fails `check_tiers` reads nothing and concludes nothing.
+      that fails `check_tiers` reads nothing and concludes nothing. A sender
+      whose notifications scope is not in the realm yet books a re-check on
+      the same interval.
     - A grace period that has to expire. `witness_deletion` books a deadline
       past the grace period so a witnessed absence is re-confirmed from a fresh
       authoritative read rather than taken on the watch's word, and `collect`

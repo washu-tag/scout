@@ -1,0 +1,10 @@
+check_for_update_on_startup = false
+
+[analytics]
+enabled = false
+
+[feedback]
+enabled = false
+
+[features]
+daemon_auto_start = false

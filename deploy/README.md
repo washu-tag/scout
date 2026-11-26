@@ -118,7 +118,7 @@ oauth2-proxy, opa, trino (ro+rw), superset (+ dashboards), launchpad.
 
 Also shipped: launchpad, the aws ingress edge, and the on-prem Secret templates.
 Remaining components: jupyter, report-viewer, monitoring, and the feature Components
-(chat/voila/xnat/data-generator/gpu).
+(chat/xnat/data-generator/gpu).
 
 Done since the scaffold: the per-namespace foundation bases (`base/scout-*-foundation`,
 one owner per Namespace + shared HelmRepository) and the config-artifact publish job

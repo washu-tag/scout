@@ -46,7 +46,7 @@ trinoCaCert: |
 {% endif %}
 
 # Trino is HTTPS-only (ADR 0022); mount the cert-manager-managed
-# trino-tls Secret directly. Same pattern as superset, jupyter, voila.
+# trino-tls Secret directly. Same pattern as superset and jupyter.
 # Same namespace as Trino (scout-analytics), so kubelet picks up CA
 # rotations on the next pod start without any Ansible loop.
 trustedCaSecret:

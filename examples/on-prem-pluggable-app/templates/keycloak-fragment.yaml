@@ -38,3 +38,8 @@ data:
         # offers the scope, i.e. one running XNAT; elsewhere the whole fragment
         # is rejected.
         # clientScopes: [xnat-audience]
+        {{- if .Values.notifications.enabled }}
+        # A service account whose client-credentials token, asked for with
+        # scope=launchpad-notifications, can send launchpad notices.
+        sendNotifications: true
+        {{- end }}

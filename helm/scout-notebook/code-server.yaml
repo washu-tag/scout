@@ -1,0 +1,4 @@
+disable-workspace-trust: true
+disable-telemetry: true
+disable-update-check: true
+disable-getting-started-override: true

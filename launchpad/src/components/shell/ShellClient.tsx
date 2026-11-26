@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signIn, signOut } from 'next-auth/react';
-import { FaBook, FaMoon, FaSignOutAlt, FaSun } from 'react-icons/fa';
-import { HiOutlineExternalLink } from 'react-icons/hi';
+import { FaBars, FaBook, FaMoon, FaSignOutAlt, FaSun, FaTimes } from 'react-icons/fa';
+import { HiArrowRight, HiOutlineExternalLink } from 'react-icons/hi';
 import { ChipIcon } from '@/components/catalog/CatalogSections';
 import { ChipAnchor } from '@/components/shell/ChipAnchor';
+import { NoticeBell, NoticesPanel, useNoticeSummary } from '@/components/shell/Notices';
 import { DEFAULT_ICON, ICONS } from '@/lib/catalog/icons';
 import {
   chipTarget,
@@ -33,10 +34,12 @@ interface ShellClientProps {
   sections: ShellSection[];
   environment: string;
   docsUrl: string;
+  notices: boolean;
   children: React.ReactNode;
 }
 
 const ACCOUNT_MENU = '@account';
+const NOTICES_MENU = '@notices';
 const SESSION_CHECK_MS = 60_000;
 const RECOVERY_KEY = 'scout-shell-session-recovery';
 const RECOVERY_BACKOFF_MS = 60_000;
@@ -45,15 +48,20 @@ const MAX_OPEN_APPS = 3;
 // A sandboxed app keeps scripts, its own origin, forms, dialogs and downloads, but
 // can't open popups or navigate the launchpad window.
 const FRAME_SANDBOX = 'allow-scripts allow-same-origin allow-forms allow-modals allow-downloads';
+const FRAME_ALLOW = 'clipboard-read; clipboard-write; fullscreen';
+// Chrome ignores wildcard origins here, so an app whose frame moves to per-user
+// subdomains needs '*'; the CSP's frame-src still keeps it on Scout's subdomains.
+const CROSS_ORIGIN_FRAME_ALLOW = 'clipboard-read *; clipboard-write *; fullscreen *';
 
 const MENU =
-  'fixed left-[76px] z-30 w-80 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-900';
+  'fixed left-[76px] z-30 w-80 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-900 max-sm:left-2 max-sm:right-2 max-sm:w-auto';
 const MENU_ITEM =
-  'flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm text-slate-700 no-underline hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer';
+  'flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm text-slate-700 no-underline hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer max-sm:min-h-11';
 const MENU_ICON = 'text-base text-slate-500 dark:text-slate-400';
+const MENU_MARGIN = 12;
 
 function railItemClass(highlighted: boolean) {
-  return `flex w-16 flex-col items-center gap-1 rounded-xl px-1 py-1.5 no-underline transition-colors cursor-pointer ${
+  return `flex w-16 flex-col items-center gap-1 rounded-xl px-1 py-1.5 no-underline transition-colors cursor-pointer max-sm:w-full max-sm:flex-row max-sm:gap-3 max-sm:px-2 ${
     highlighted ? 'bg-slate-100 dark:bg-slate-800' : 'hover:bg-slate-100 dark:hover:bg-slate-800'
   }`;
 }
@@ -115,7 +123,7 @@ function RailLabel({
         {icon}
       </span>
       <span
-        className={`line-clamp-2 w-full break-words text-center text-[11px] font-medium leading-tight ${
+        className={`line-clamp-2 w-full break-words text-center text-[11px] font-medium leading-tight max-sm:flex-1 max-sm:text-left max-sm:text-sm ${
           active ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'
         }`}
       >
@@ -135,6 +143,7 @@ export default function ShellClient({
   sections,
   environment,
   docsUrl,
+  notices,
   children,
 }: ShellClientProps) {
   const pathname = usePathname();
@@ -151,6 +160,9 @@ export default function ShellClient({
     setEnded(true);
   }, []);
   const [menu, setMenu] = useState<{ id: string; top: number } | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
+  const drawerButtonRef = useRef<HTMLButtonElement>(null);
   const [dark, setDark] = useState(false);
 
   const appId = pathname.startsWith('/app/')
@@ -264,6 +276,11 @@ export default function ShellClient({
     else if (gate === 'verify') checkSession();
   }, [gate, checkSession]);
 
+  const [noticeSummary, setNoticeSummary] = useNoticeSummary(
+    notices && !skipAuth && !ended && Boolean(lastSession.current),
+    checkSession,
+  );
+
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState === 'visible') checkSession();
@@ -284,6 +301,26 @@ export default function ShellClient({
     document.documentElement.classList.toggle('dark', prefersDark);
   }, []);
 
+  // Opens a Scout page in the frame of the app that owns it, for `scout:open` and
+  // for notices; false when the sender may not ask or no app owns the page.
+  const openInShell = useCallback(
+    (origin: string, target: unknown): boolean => {
+      const request = openRequest(sections, new URL(window.location.href), origin, target);
+      if (!request) return false;
+      const { chip, address, href } = request;
+      // React won't reload a frame whose src is unchanged, wherever the user has since gone.
+      const frame = frames.current.get(chip.id);
+      if (frame?.getAttribute('src') === href) frame.src = href;
+      setLocations((current) => ({ ...current, [chip.id]: address }));
+      setOpened((current) =>
+        current.map((entry) => (entry.chip.id === chip.id ? { ...entry, src: href } : entry)),
+      );
+      router.push(address);
+      return true;
+    },
+    [sections, router],
+  );
+
   // Apps report their own address with a `scout:location` message, and where a
   // navigation is headed with `scout:leaving`. Only the app's own frame, from the
   // chip's origin, is believed; content an app nests inside its frame has a
@@ -294,22 +331,7 @@ export default function ShellClient({
     const onMessage = (event: MessageEvent) => {
       const type = event.data?.type;
       if (type === 'scout:open') {
-        const request = openRequest(
-          sections,
-          new URL(window.location.href),
-          event.origin,
-          event.data.href,
-        );
-        if (!request) return;
-        const { chip, address, href } = request;
-        // React won't reload a frame whose src is unchanged, wherever the user has since gone.
-        const frame = frames.current.get(chip.id);
-        if (frame?.getAttribute('src') === href) frame.src = href;
-        setLocations((current) => ({ ...current, [chip.id]: address }));
-        setOpened((current) =>
-          current.map((entry) => (entry.chip.id === chip.id ? { ...entry, src: href } : entry)),
-        );
-        router.push(address);
+        if (!openInShell(event.origin, event.data.href)) return;
         (event.source as Window | null)?.postMessage(
           { type: 'scout:opened', href: event.data.href },
           event.origin,
@@ -334,7 +356,7 @@ export default function ShellClient({
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [sections, router]);
+  }, [sections, openInShell]);
 
   // Going to a heading link's own address takes its frame back to the link's page, wherever
   // the person had gone in it since. Decided while rendering, so the spinner covers the frame
@@ -391,6 +413,55 @@ export default function ShellClient({
     };
   }, [menuOpen]);
 
+  // A section menu starts level with its rail button and moves up as far as it must to fit the
+  // window; one taller than the window scrolls.
+  const sectionMenu = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const element = sectionMenu.current;
+    if (!element || !menu) return;
+    const place = () => {
+      element.style.maxHeight = `${window.innerHeight - 2 * MENU_MARGIN}px`;
+      const lowest = window.innerHeight - MENU_MARGIN - element.offsetHeight;
+      element.style.top = `${Math.max(MENU_MARGIN, Math.min(menu.top, lowest))}px`;
+    };
+    place();
+    window.addEventListener('resize', place);
+    return () => window.removeEventListener('resize', place);
+  }, [menu]);
+
+  // Escape with a section menu open closes only that menu (its own handler does).
+  const sectionMenuOpen = useRef(false);
+  useEffect(() => {
+    sectionMenuOpen.current = menuOpen;
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const button = drawerButtonRef.current;
+    [...(navRef.current?.querySelectorAll<HTMLElement>('a, button') ?? [])]
+      .find((element) => element.getClientRects().length > 0)
+      ?.focus();
+    const close = () => {
+      setMenu(null);
+      setDrawerOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !sectionMenuOpen.current) close();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    window.addEventListener('popstate', close);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('popstate', close);
+      button?.focus();
+    };
+  }, [drawerOpen]);
+
+  const closeMenus = () => {
+    setMenu(null);
+    setDrawerOpen(false);
+  };
+
   const toggleMenu = (id: string, event: React.MouseEvent<HTMLElement>) => {
     const top = event.currentTarget.getBoundingClientRect().top;
     setMenu((current) => (current?.id === id ? null : { id, top }));
@@ -438,7 +509,7 @@ export default function ShellClient({
       <ChipAnchor
         key={chip.id}
         chip={chip}
-        onClick={() => setMenu(null)}
+        onClick={closeMenus}
         title={chip.description || chip.title}
         aria-current={current ? 'page' : undefined}
         className={railItemClass(current)}
@@ -484,19 +555,55 @@ export default function ShellClient({
   };
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-slate-50 dark:bg-slate-950">
+    <div className="flex h-dvh w-full overflow-hidden bg-slate-50 dark:bg-slate-950 max-sm:flex-col">
       <div ref={railRef} className="flex-shrink-0">
+        <div className="flex h-12 items-center gap-1 border-b border-slate-200 bg-white px-1 dark:border-slate-800 dark:bg-slate-900 sm:hidden">
+          <button
+            ref={drawerButtonRef}
+            type="button"
+            aria-label="Menu"
+            aria-expanded={drawerOpen}
+            aria-controls="scout-nav"
+            onClick={() => {
+              setMenu(null);
+              setDrawerOpen((open) => !open);
+            }}
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-lg text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
+          >
+            {drawerOpen ? <FaTimes /> : <FaBars />}
+          </button>
+          <Link
+            href="/"
+            title="Scout home"
+            aria-label="Scout home"
+            aria-current={pathname === '/' ? 'page' : undefined}
+            onClick={closeMenus}
+            className="flex h-11 min-w-0 items-center gap-2 rounded-lg px-1 no-underline hover:opacity-80 transition-opacity"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/scout.svg" alt="" className="h-8 w-8 block dark:hidden" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/scout-dark.svg" alt="" className="h-8 w-8 hidden dark:block" />
+            <span className="truncate text-xs text-slate-400 dark:text-slate-500">
+              {environment}
+            </span>
+          </Link>
+        </div>
         <nav
+          id="scout-nav"
+          ref={navRef}
           aria-label="Scout"
-          className="flex h-full w-[72px] flex-col items-center gap-1 overflow-y-auto border-r border-slate-200 bg-white py-3 dark:border-slate-800 dark:bg-slate-900"
+          className={`flex h-full w-[72px] flex-col items-center gap-1 overflow-y-auto border-r [scrollbar-width:none] [&::-webkit-scrollbar]:hidden border-slate-200 bg-white py-3 dark:border-slate-800 dark:bg-slate-900 max-sm:fixed max-sm:top-12 max-sm:bottom-0 max-sm:left-0 max-sm:z-30 max-sm:h-auto max-sm:w-72 max-sm:items-stretch max-sm:px-3 max-sm:shadow-xl ${
+            drawerOpen ? '' : 'max-sm:hidden'
+          }`}
         >
           <Link
             href="/"
             title="Scout home"
             aria-label="Scout home"
             aria-current={pathname === '/' ? 'page' : undefined}
-            onClick={() => setMenu(null)}
-            className="mb-2 flex flex-col items-center gap-1 rounded-md no-underline hover:opacity-80 transition-opacity"
+            onClick={closeMenus}
+            className="mb-2 flex flex-col items-center gap-1 rounded-md no-underline hover:opacity-80 transition-opacity max-sm:hidden"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/scout.svg" alt="" className="h-9 w-9 block dark:hidden" />
@@ -508,7 +615,7 @@ export default function ShellClient({
           </Link>
 
           {primary && (
-            <div className="flex w-full flex-col items-center gap-1 border-t border-slate-200 pt-2 dark:border-slate-800">
+            <div className="flex w-full flex-col items-center gap-1 border-t border-slate-200 pt-2 dark:border-slate-800 max-sm:border-t-0 max-sm:pt-0">
               {primary.chips.length === 1
                 ? sectionChip(primary)
                 : primary.chips.map((chip) => railChip(chip))}
@@ -531,7 +638,26 @@ export default function ShellClient({
               ),
           )}
 
-          <div className="mt-auto flex w-full flex-col items-center border-t border-slate-200 pt-2 dark:border-slate-800">
+          <div className="mt-auto flex w-full flex-col items-center gap-1 border-t border-slate-200 pt-2 dark:border-slate-800">
+            {notices && (
+              <button
+                type="button"
+                aria-haspopup="dialog"
+                aria-expanded={menu?.id === NOTICES_MENU}
+                aria-label={
+                  noticeSummary?.unseen ? `Activity, ${noticeSummary.unseen} new` : 'Activity'
+                }
+                title="Activity"
+                onClick={(event) => toggleMenu(NOTICES_MENU, event)}
+                className={railItemClass(menu?.id === NOTICES_MENU)}
+              >
+                <RailLabel
+                  icon={<NoticeBell unseen={noticeSummary?.unseen ?? 0} />}
+                  label="Activity"
+                  active={menu?.id === NOTICES_MENU}
+                />
+              </button>
+            )}
             <button
               type="button"
               aria-haspopup="menu"
@@ -555,10 +681,10 @@ export default function ShellClient({
 
         {openSection && menu && (
           <div
+            ref={sectionMenu}
             role="menu"
             aria-label={openSection.title}
-            className={MENU}
-            style={{ top: menu.top }}
+            className={`${MENU} overflow-y-auto overscroll-contain [scrollbar-color:var(--color-slate-300)_transparent] [scrollbar-width:thin] dark:[scrollbar-color:var(--color-slate-600)_transparent]`}
           >
             {menuBlocks(openSection).map((block, index) => (
               <div
@@ -569,9 +695,23 @@ export default function ShellClient({
                   index > 0 ? 'mt-1 border-t border-slate-200 pt-1 dark:border-slate-700' : ''
                 }
               >
-                <p className="px-2.5 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                  {block.title}
-                </p>
+                <div className="sticky -top-1.5 z-10 flex items-baseline justify-between gap-3 bg-white px-2.5 pb-1 pt-1.5 dark:bg-slate-900">
+                  <p className="min-w-0 truncate text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                    {block.title}
+                  </p>
+                  {block.footer && (
+                    <ChipAnchor
+                      chip={block.footer.chip}
+                      role="menuitem"
+                      onClick={closeMenus}
+                      aria-current={isCurrent(block.footer.chip) ? 'page' : undefined}
+                      className="inline-flex flex-shrink-0 items-center gap-1 text-xs font-medium text-indigo-700 no-underline hover:text-indigo-900 dark:text-indigo-300 dark:hover:text-indigo-200"
+                    >
+                      {block.footer.text}
+                      <HiArrowRight />
+                    </ChipAnchor>
+                  )}
+                </div>
                 {block.chips.map((chip) => {
                   const tone = TONES[chip.tone];
                   const current = isCurrent(chip);
@@ -580,7 +720,7 @@ export default function ShellClient({
                       key={chip.id}
                       chip={chip}
                       role="menuitem"
-                      onClick={() => setMenu(null)}
+                      onClick={closeMenus}
                       aria-current={current ? 'page' : undefined}
                       className={`${MENU_ITEM} ${current ? 'bg-slate-100 dark:bg-slate-800' : ''}`}
                     >
@@ -611,6 +751,15 @@ export default function ShellClient({
           </div>
         )}
 
+        {menu?.id === NOTICES_MENU && (
+          <NoticesPanel
+            summary={noticeSummary}
+            onSummary={setNoticeSummary}
+            onOpen={(href) => openInShell(window.location.origin, href)}
+            onClose={closeMenus}
+          />
+        )}
+
         {menu?.id === ACCOUNT_MENU && (
           <div role="menu" aria-label="Account" className={`${MENU} bottom-3`}>
             <div className="mb-1 border-b border-slate-200 px-2.5 pb-2 pt-1 dark:border-slate-700">
@@ -635,7 +784,7 @@ export default function ShellClient({
               href={docsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => setMenu(null)}
+              onClick={closeMenus}
               className={MENU_ITEM}
             >
               <FaBook className={MENU_ICON} />
@@ -649,6 +798,14 @@ export default function ShellClient({
         )}
       </div>
 
+      {drawerOpen && (
+        <div
+          aria-hidden="true"
+          onClick={closeMenus}
+          className="fixed inset-x-0 top-12 bottom-0 z-20 bg-slate-900/30 sm:hidden"
+        />
+      )}
+
       <main className="relative flex-1 overflow-hidden">
         {opened.map(({ chip, src }) => (
           <iframe
@@ -660,7 +817,7 @@ export default function ShellClient({
             src={src}
             title={chip.title}
             sandbox={chip.sandbox ? FRAME_SANDBOX : undefined}
-            allow="clipboard-read; clipboard-write; fullscreen"
+            allow={chip.crossOriginClipboard ? CROSS_ORIGIN_FRAME_ALLOW : FRAME_ALLOW}
             aria-hidden={chip.id !== active?.id}
             onLoad={() => {
               const next = leaving.current.get(chip.id);

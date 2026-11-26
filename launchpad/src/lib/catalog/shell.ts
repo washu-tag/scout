@@ -1,4 +1,4 @@
-import type { Audience, RenderChip, RenderModel } from './types';
+import type { Audience, RenderChip, RenderFooterLink, RenderModel } from './types';
 
 export interface ShellSection {
   id: string;
@@ -11,6 +11,8 @@ export interface ShellSection {
   nested?: ShellSection[];
   // The section heading's link, when it opens a Scout service: routed like a chip, not listed.
   link?: RenderChip;
+  // The section heading's link as the home page shows it, routed or not.
+  footer?: RenderFooterLink;
 }
 
 export interface ChipTarget {
@@ -33,9 +35,18 @@ export function shellSections(model: RenderModel): ShellSection[] {
       return true;
     });
     if (chips.length > 0) {
-      const { id, title, icon, audience, railMenu } = group;
-      const link = group.footerLink?.chip.kind === 'service' ? group.footerLink.chip : undefined;
-      sections.push({ id, title, icon, audience, railMenu, chips, ...(link ? { link } : {}) });
+      const { id, title, icon, audience, railMenu, footerLink: footer } = group;
+      const link = footer?.chip.kind === 'service' ? footer.chip : undefined;
+      sections.push({
+        id,
+        title,
+        icon,
+        audience,
+        railMenu,
+        chips,
+        ...(link ? { link } : {}),
+        ...(footer ? { footer } : {}),
+      });
     }
   }
   return sections;

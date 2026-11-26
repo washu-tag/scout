@@ -1,7 +1,7 @@
 import type { ToneName } from './tones';
 
 export type Audience = 'user' | 'admin';
-export type GroupLayout = 'cards' | 'rows' | 'tiles';
+export type GroupLayout = 'cards' | 'carousel' | 'rows' | 'tiles';
 export type GroupWidth = 'full' | 'half';
 
 export interface ChipLink {
@@ -39,6 +39,7 @@ export interface Chip {
   link: ChipLink;
   newTab: boolean;
   sandbox: boolean;
+  crossOriginClipboard: boolean;
   group: string;
   weight: number;
   audience: Audience;
@@ -103,6 +104,7 @@ export interface RenderChip {
   href: string;
   newTab: boolean;
   sandbox: boolean;
+  crossOriginClipboard: boolean;
 }
 
 export interface RenderGroup {

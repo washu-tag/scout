@@ -29,11 +29,15 @@ _REPO = Path(__file__).resolve().parents[2]
 DEFAULT_REQUIRED = _REPO / "deploy" / "required-secret-values.txt"
 
 # One set for every value, safe in the single-quoted templates, the realm JSON and the
-# sourced config.env. The superset chart pastes URL_VALUES into redis:// and
-# postgresql:// URLs, so those also leave out + / =.
+# sourced config.env. The superset chart and the launchpad-db-secret template paste
+# URL_VALUES into redis:// and postgresql:// URLs, so those also leave out + / =.
 SAFE_CHARS = re.compile(r"[A-Za-z0-9._~+/=-]+")
 URL_CHARS = re.compile(r"[A-Za-z0-9._~-]+")
-URL_VALUES = {"valkey_password", "superset_postgres_password"}
+URL_VALUES = {
+    "valkey_password",
+    "superset_postgres_password",
+    "launchpad_postgres_password",
+}
 
 # ansible/inventory.example.yaml placeholders, never real credentials (its generated
 # values are $(openssl ...) commands, caught by prefix).

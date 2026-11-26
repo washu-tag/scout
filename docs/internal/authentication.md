@@ -58,7 +58,6 @@ Scout services are accessed via subdomains. Each ingress is configured in Traefi
 | `temporal.{server_hostname}` | Temporal workflow UI | Yes |
 | `minio.{server_hostname}` | MinIO console | Yes |
 | `chat.{server_hostname}` | Open WebUI (optional) | Yes |
-| `playbooks.{server_hostname}` | Voila Playbooks (optional) | Yes |
 | `auth.{server_hostname}` | OAuth2 Proxy | No* |
 | `keycloak.{server_hostname}` | Keycloak admin console | No* |
 | `*.{server_hostname}` | Catch-all | Yes (Redirect to Launchpad) |

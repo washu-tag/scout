@@ -125,6 +125,10 @@ minio_policies:
 # OIDC configuration
 minio_oidc_enabled: true
 
+# On envs where Traefik serves a self-signed cert (CI), MinIO needs to trust it
+# to reach Keycloak over HTTPS. Off on envs with public certs.
+minio_trust_traefik_ca: false
+
 # Wait times and retries
 minio_wait_retries: 60
 minio_wait_delay: 5

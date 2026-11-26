@@ -29,6 +29,11 @@ OPTIONAL_CLIENT_SCOPES = ["address", "phone", "organization", "offline_access"]
 
 ROLE_MAPPER_NAME = "client-roles"
 
+# The base realm's scope that carries the launchpad's notifications-send role
+# and audience (ADR 0043). Linked as optional, so only a token that asks for it
+# can send: the app's client-credentials token, not its users' login tokens.
+NOTIFICATIONS_SCOPE = "launchpad-notifications"
+
 
 def stamp(source: str) -> dict[str, str]:
     return {STAMP_ATTRIBUTE: "true", SOURCE_ATTRIBUTE: source}
@@ -77,7 +82,9 @@ def client_representation(spec: ClientSpec, *, secret: str, source: str) -> dict
         # app would otherwise be granting itself.
         "implicitFlowEnabled": False,
         "directAccessGrantsEnabled": False,
-        "serviceAccountsEnabled": False,
+        # Only for the client-credentials grant a notice sender needs. The
+        # service account holds no roles; sending comes from NOTIFICATIONS_SCOPE.
+        "serviceAccountsEnabled": spec.send_notifications,
         "redirectUris": list(spec.redirect_uris),
         # The origin, not the URL: see `ClientSpec.app_origin`.
         "webOrigins": [spec.app_origin],

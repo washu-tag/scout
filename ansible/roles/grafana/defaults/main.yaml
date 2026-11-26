@@ -15,6 +15,10 @@ grafana_storage_class: ''
 # Login form is disabled so this account is not user-accessible.
 grafana_admin_password: ''
 
+# On envs where Traefik serves a self-signed cert (CI), Grafana needs to trust
+# it to reach Keycloak over HTTPS. Off on envs with public certs.
+grafana_trust_traefik_ca: false
+
 # Alert configuration
 grafana_alerts_enabled: true
 grafana_alert_contact_point: slack # email or slack

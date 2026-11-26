@@ -1,11 +1,7 @@
 """Scout platform SDK.
 
-Public API for querying Scout's data lake from notebooks and playbooks.
-Identity is detected from the runtime context (JupyterHub or Voila).
-
-Read-only by design. Write paths (e.g. reviewer annotations) are
-playbook-runtime helpers shipped with the Voila chart, not part of this
-package.
+Public API for querying Scout's data lake from JupyterHub notebooks, as the
+signed-in user. Read-only by design.
 
 Usage:
 
@@ -29,9 +25,9 @@ from ._query import connect, query
 
 
 def current_user() -> str | None:
-    """Return the OIDC-authed user's preferred_username, or None if no
-    identity is available in the current context (Voila preheat,
-    misconfigured deployment, etc.)."""
+    """Return the JupyterHub user's name, or None if no identity is
+    available in the current context (outside JupyterHub, a misconfigured
+    deployment)."""
     user = resolve_audit_user()
     return None if user == "anonymous" else user
 

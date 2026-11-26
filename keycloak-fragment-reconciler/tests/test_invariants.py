@@ -803,6 +803,135 @@ class TestClientScopes:
         assert SCOPE not in self.scopes(kc)
 
 
+SENDS = "    sendNotifications: true"
+
+
+class TestSendNotifications:
+    """sendNotifications becomes a service account and the base realm's
+    notifications scope, linked as optional and last. Nothing else, and no
+    user or role-mapping write: the scope carries the send role."""
+
+    @pytest.fixture
+    def missing_scope(self, settings, k8s, kc) -> Reconciler:
+        k8s.add_fragment(with_fields(SENDS))
+        return Reconciler(settings, k8s, kc)
+
+    @pytest.fixture
+    def sender(self, missing_scope, kc) -> Reconciler:
+        kc.add_scope(translate.NOTIFICATIONS_SCOPE)
+        return missing_scope
+
+    @staticmethod
+    def client(kc) -> dict:
+        return kc._rep(next(iter(kc.clients)))
+
+    def test_the_service_account_and_the_scope_come_last(self, sender, kc):
+        sender.reconcile_once()
+        assert kc.writes[-1] == f"add_scope:{translate.NOTIFICATIONS_SCOPE}"
+        assert all(w.startswith("add_edge") for w in kc.writes[-3:-1])
+        client = self.client(kc)
+        assert client["serviceAccountsEnabled"] is True
+        assert translate.NOTIFICATIONS_SCOPE in client["optionalClientScopes"]
+        assert translate.NOTIFICATIONS_SCOPE not in client["defaultClientScopes"]
+
+    def test_a_steady_pass_writes_nothing_and_reads_no_scopes(self, sender, kc):
+        sender.reconcile_once()
+        after_first, lookups = list(kc.writes), kc.calls["client_scopes"]
+        sender.reconcile_once()
+        assert kc.writes == after_first
+        assert kc.calls["client_scopes"] == lookups
+
+    def test_a_plain_fragment_has_no_service_account_and_reads_no_scopes(
+        self, reconciler, kc
+    ):
+        kc.add_scope(translate.NOTIFICATIONS_SCOPE)
+        reconciler.reconcile_once()
+        assert self.client(kc)["serviceAccountsEnabled"] is False
+        assert kc.calls["client_scopes"] == 0
+
+    def test_an_existing_client_gains_it_when_its_fragment_asks(
+        self, reconciler, kc, k8s
+    ):
+        kc.add_scope(translate.NOTIFICATIONS_SCOPE)
+        reconciler.reconcile_once()
+        k8s.add_fragment(with_fields(SENDS))
+        reconciler.reconcile_once()
+        assert kc.writes[-2:] == [
+            "update_client:hello",
+            f"add_scope:{translate.NOTIFICATIONS_SCOPE}",
+        ]
+
+    def test_dropping_it_removes_both(self, sender, kc, k8s):
+        sender.reconcile_once()
+        k8s.add_fragment(fragment_text())
+        sender.reconcile_once()
+        assert kc.writes[-2:] == [
+            "update_client:hello",
+            f"remove_scope:{translate.NOTIFICATIONS_SCOPE}",
+        ]
+        client = self.client(kc)
+        assert client["serviceAccountsEnabled"] is False
+        assert translate.NOTIFICATIONS_SCOPE not in client["optionalClientScopes"]
+
+    def test_a_scope_removed_by_hand_is_put_back(self, sender, kc):
+        sender.reconcile_once()
+        kc.optional_scopes[next(iter(kc.clients))].remove(translate.NOTIFICATIONS_SCOPE)
+        sender.reconcile_once()
+        assert kc.writes[-1:] == [f"add_scope:{translate.NOTIFICATIONS_SCOPE}"]
+
+    def test_a_service_account_turned_off_by_hand_is_turned_back_on(self, sender, kc):
+        sender.reconcile_once()
+        kc.clients[next(iter(kc.clients))]["serviceAccountsEnabled"] = False
+        sender.reconcile_once()
+        assert kc.writes[-1:] == ["update_client:hello"]
+        assert self.client(kc)["serviceAccountsEnabled"] is True
+
+    def test_a_realm_without_the_scope_fails_after_the_grants(self, missing_scope, kc):
+        """Without the scope the service account's token carries nothing the
+        launchpad accepts, so the app can do less, never more."""
+        missing_scope.reconcile_once()
+        outcome = next(o for o in missing_scope.snapshot.outcomes)
+        assert outcome.status == FAILED
+        assert translate.NOTIFICATIONS_SCOPE in outcome.detail
+        assert kc.edges("scout-user") == {"hello-user"}
+
+    def test_a_realm_without_the_scope_yet_is_retried_soon(self, settings, k8s, kc):
+        """The scope arrives with a realm import, which wakes no watch, so the
+        failed pass books its own retry, even with no periodic resync."""
+        settings.resync_seconds = -1
+        k8s.add_fragment(with_fields(SENDS))
+        reconciler = Reconciler(settings, k8s, kc)
+        reconciler.reconcile_once()
+        wait = core.next_wait(reconciler)
+        assert wait is not None and wait <= core.TIER_RETRY_SECONDS
+
+        kc.add_scope(translate.NOTIFICATIONS_SCOPE)
+        reconciler.reconcile_once()
+        assert kc.writes[-1] == f"add_scope:{translate.NOTIFICATIONS_SCOPE}"
+
+    def test_offered_scopes_never_touch_it(self, settings, k8s, kc):
+        settings.offered_client_scopes = [SCOPE]
+        kc.add_scope(SCOPE)
+        kc.add_scope(translate.NOTIFICATIONS_SCOPE)
+        k8s.add_fragment(with_fields(SENDS))
+        reconciler = Reconciler(settings, k8s, kc)
+        reconciler.reconcile_once()
+        reconciler.reconcile_once()
+        assert not [w for w in kc.writes if w.startswith("remove_scope")]
+        assert translate.NOTIFICATIONS_SCOPE in self.client(kc)["optionalClientScopes"]
+
+    def test_dry_run_identifies_it_without_writing(self, sender, kc):
+        sender.reconcile_once()
+        linked = kc.optional_scopes[next(iter(kc.clients))]
+        linked.remove(translate.NOTIFICATIONS_SCOPE)
+        sender.settings.dry_run = True
+        attempts, writes = sender.write_attempts, list(kc.writes)
+        sender.reconcile_once()
+        assert sender.write_attempts == attempts + 1
+        assert kc.writes == writes
+        assert translate.NOTIFICATIONS_SCOPE not in linked
+
+
 class TestOneWaySecretFlow:
     """Secret to Keycloak only. Never generated, never written back."""
 

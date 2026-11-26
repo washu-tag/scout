@@ -38,6 +38,7 @@ describe('validateDocument', () => {
       tone: 'indigo',
       newTab: true,
       sandbox: false,
+      crossOriginClipboard: false,
       group: 'more',
       weight: 100,
       audience: 'user',
@@ -175,14 +176,17 @@ describe('validateDocument', () => {
           { id: 'a', title: 'A', layout: 'cards' },
           { id: 'b', title: 'B', layout: 'tiles' },
           { id: 'c', title: 'C', layout: 'rows' },
+          { id: 'd', title: 'D', layout: 'carousel' },
         ],
       }),
       SOURCE,
     );
     assert.deepStrictEqual(
       result.groups.map((g) => g.maxColumns),
-      [3, 2, 1],
+      [3, 2, 1, 3],
     );
+    assert.strictEqual(result.groups[3].layout, 'carousel');
+    assert.deepStrictEqual(result.diagnostics, []);
   });
 
   it('drops an invalid footerLink but keeps the group', () => {
@@ -229,6 +233,20 @@ describe('validateDocument', () => {
       const result = validateDocument(doc({ chips: [chip({ sandbox })] }), SOURCE);
       assert.strictEqual(result.chips.length, 0, JSON.stringify(sandbox));
       assert.match(result.diagnostics[0].message, /chip skipped/);
+    }
+  });
+
+  it('keeps a crossOriginClipboard request and turns an invalid one off, keeping the chip', () => {
+    assert.strictEqual(
+      validateDocument(doc({ chips: [chip({ crossOriginClipboard: true })] }), SOURCE).chips[0]
+        .crossOriginClipboard,
+      true,
+    );
+    for (const crossOriginClipboard of ['yes', 1]) {
+      const result = validateDocument(doc({ chips: [chip({ crossOriginClipboard })] }), SOURCE);
+      assert.strictEqual(result.chips.length, 1, JSON.stringify(crossOriginClipboard));
+      assert.strictEqual(result.chips[0].crossOriginClipboard, false);
+      assert.strictEqual(result.diagnostics.length, 1);
     }
   });
 

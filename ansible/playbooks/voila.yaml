@@ -1,11 +1,9 @@
 ---
-- name: Install Voilà Playbooks
+# Not gated on enable_playbooks, so a site that ran Voilà is cleaned up even after the
+# flag leaves its inventory; elsewhere it finds nothing to remove.
+- name: Remove the retired Voilà playbooks
   hosts: server
   gather_facts: false
-  pre_tasks:
-    - name: Skip if voila playbook is not enabled
-      ansible.builtin.meta: end_play
-      when: not (enable_playbooks | default(false) | bool)
   environment: '{{ cluster_k8s_environment }}'
   roles:
     - role: voila

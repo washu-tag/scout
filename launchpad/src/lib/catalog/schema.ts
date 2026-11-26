@@ -92,6 +92,7 @@ const chipBase = {
   link: linkSchema,
   newTab: z.boolean(),
   sandbox: z.boolean(),
+  crossOriginClipboard: z.boolean(),
   group: idSchema,
   weight: z.number(),
   audience: audienceSchema,
@@ -105,7 +106,7 @@ const groupBase = {
   description: z.string().trim(),
   icon: z.enum(ICON_NAMES as [string, ...string[]], { error: 'unknown icon name' }),
   weight: z.number(),
-  layout: z.enum(['cards', 'rows', 'tiles']),
+  layout: z.enum(['cards', 'carousel', 'rows', 'tiles']),
   maxColumns: z.number().int().min(1).max(4),
   width: z.enum(['full', 'half']),
   audience: audienceSchema,
@@ -143,6 +144,7 @@ const CHIP_FALLBACKS = {
   tone: DEFAULT_TONE,
   newTab: true,
   sandbox: false,
+  crossOriginClipboard: false,
   group: DEFAULT_GROUP,
   weight: 100,
   audience: 'user',
@@ -223,6 +225,11 @@ const chipSchema = z.object({
   // Fails closed like audience: an invalid value rejects the chip rather than
   // dropping the sandbox.
   sandbox: chipBase.sandbox.default(CHIP_FALLBACKS.sandbox),
+  crossOriginClipboard: caught(
+    'crossOriginClipboard',
+    chipBase.crossOriginClipboard,
+    CHIP_FALLBACKS.crossOriginClipboard,
+  ),
   group: caught('group', chipBase.group, CHIP_FALLBACKS.group),
   weight: caught('weight', chipBase.weight, CHIP_FALLBACKS.weight),
   // Visibility fails closed: no .catch() here, so an invalid value rejects
@@ -459,6 +466,7 @@ export function validateDocument(input: unknown, source: string, sourceRank = 0)
 export function defaultColumns(layout: GroupLayout): number {
   switch (layout) {
     case 'cards':
+    case 'carousel':
       return 3;
     case 'tiles':
       return 2;

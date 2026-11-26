@@ -18,7 +18,7 @@
 #     Renovate-tracked value in ansible/group_vars/all/versions.yaml, or the
 #     VERSION file CI tags the image with. Their Chart.yaml carries a
 #     non-resolving 0.0.0-dev placeholder so a stale literal can never ship.
-#   - Everything else (voila, dcm4chee, orthanc, open-webui-bootstrap) keeps the
+#   - Everything else (dcm4chee, orthanc, open-webui-bootstrap) keeps the
 #     appVersion its Chart.yaml declares: no output, no --app-version flag.
 #
 # This is the one place that maps a chart to its appVersion source; ci.yaml,
