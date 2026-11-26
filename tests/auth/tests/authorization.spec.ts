@@ -22,9 +22,6 @@ function isDeployed(url: string): boolean {
   return deployed.includes(host.slice(0, -(hostname.length + 1)));
 }
 
-// AUTH_TEST_SKIP (comma-separated test keys) skips tests the environment can't support.
-const skipped = process.env.AUTH_TEST_SKIP?.split(',').map((key) => key.trim()) ?? [];
-
 // Unauthorized user, no scout-user group membership, 403 Access Pending everywhere
 
 const protectedServices = [
@@ -123,15 +120,19 @@ test.describe('Authorized Non-Admin User', () => {
   test('MinIO denies access', async ({ page }) => {
     const url = `https://minio.${hostname}/`;
     test.skip(!isDeployed(url), 'not deployed');
-    test.skip(skipped.includes('minio'), 'MinIO console has no SSO button (AUTH_TEST_SKIP)');
     await signInToScout(page, url, authorizedUser);
 
-    // Trigger MinIO SSO via the login page's SSO button (use loose selector, not exact text)
+    // MinIO refuses the SSO login because the user's ID token has no policy claim
     const minio = await openInFrame(page, url);
-    await minio.locator('button:has-text("Login")').click({ timeout: 15000 });
-    await page.waitForLoadState('networkidle', { timeout: 60000 });
+    const login = page.waitForResponse(
+      (resp) => resp.url() === `https://minio.${hostname}/api/v1/login/oauth2/auth`,
+      { timeout: 60000 },
+    );
+    await minio.getByRole('button', { name: /SSO/ }).click({ timeout: 15000 });
+    const refused = await login;
+    expect(refused.ok()).toBe(false);
+    expect(await refused.text()).toMatch(/policy claim missing/i);
 
-    // After SSO, MinIO API should reject users without policy claim
     const response = await page.request.get(`https://minio.${hostname}/api/v1/buckets`);
     expect(response.status()).toBe(403);
   });
@@ -139,10 +140,6 @@ test.describe('Authorized Non-Admin User', () => {
   test('Grafana datasources API returns 403', async ({ page }) => {
     const url = `https://grafana.${hostname}/`;
     test.skip(!isDeployed(url), 'not deployed');
-    test.skip(
-      skipped.includes('grafana-api'),
-      "Grafana doesn't trust Keycloak's certificate (AUTH_TEST_SKIP)",
-    );
     await signInToScout(page, url, authorizedUser);
 
     // Grafana allows entry to the UI but gives the user no permissions, so we hit the
