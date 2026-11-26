@@ -7,6 +7,8 @@
 # Secrets seeded by CI/site (Phase 3) or ESO (Phase 4):
 #   launchpad-keycloak-secret  key `client-secret` (OIDC client secret)
 #   launchpad-nextauth-secret  key `secret`        (next-auth cookie secret)
+#   launchpad-db-secret        key `url`           (notices database, only read
+#                                                   while enable_notifications is "true")
 #
 # Ingress is mode-selected (ADR 0035) via the launchpad-edge-${service_mode}
 # ConfigMap (edge.yaml).
@@ -55,6 +57,15 @@ spec:
           repository: quay.io/kiwigrid/k8s-sidecar
           # renovate: datasource=docker depName=quay.io/kiwigrid/k8s-sidecar
           tag: '2.11.2'
+    # In-app notices (ADR 0043), off unless the site sets enable_notifications.
+    notifications:
+      enabled: '${enable_notifications:=false}'
+      database:
+        existingSecret: launchpad-db-secret
+      # Flux drops template quotes before substituting, so ${sq} keeps a client id such
+      # as off or 0123 a string.
+      disabledSenders: ${sq}${launchpad_notification_disabled_senders:=}${sq}
+      rateLimit: ${sq}${launchpad_notification_rate_limit:=}${sq}
     scoutEnv: '${scout_env}'
     deployerName: '${deployer_name}'
     docsUrl: '${scout_docs_url}'

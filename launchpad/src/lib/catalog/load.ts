@@ -41,7 +41,7 @@ interface CatalogFile {
   rank: number;
 }
 
-interface DirScan {
+export interface DirScan {
   // YAML documents to read, in deterministic dir-then-name order.
   files: CatalogFile[];
   // Unreadable directories and non-YAML keys.
@@ -58,7 +58,7 @@ function errorMessage(err: unknown): string {
 
 // One walk serves both the signature and the read list, so the change
 // detector and the parser cannot disagree about which files count.
-async function scanDirs(dirs: string[]): Promise<DirScan> {
+export async function scanDirs(dirs: string[], kind = 'catalog'): Promise<DirScan> {
   const scan: DirScan = { files: [], diagnostics: [], signature: '', readableDirs: 0 };
   const parts: string[] = [];
   for (const [rank, dir] of dirs.entries()) {
@@ -69,7 +69,7 @@ async function scanDirs(dirs: string[]): Promise<DirScan> {
       parts.push(`${dir}:absent`);
       scan.diagnostics.push({
         source: path.basename(dir),
-        message: `catalog directory ${dir} is not readable: ${errorMessage(err)}`,
+        message: `${kind} directory ${dir} is not readable: ${errorMessage(err)}`,
       });
       continue;
     }
@@ -98,7 +98,7 @@ async function scanDirs(dirs: string[]): Promise<DirScan> {
       if (!YAML_FILE_RE.test(name)) {
         scan.diagnostics.push({
           source,
-          message: 'not a .yaml/.yml key; skipped (catalog documents must be YAML)',
+          message: `not a .yaml/.yml key; skipped (${kind} documents must be YAML)`,
         });
         continue;
       }

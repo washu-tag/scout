@@ -1,8 +1,7 @@
 # oauth2-proxy Traefik forwardAuth Middlewares (moved here from base/oauth2-proxy so
 # the shared base applies on aws, which has no Traefik CRDs). ADR 0035 on-prem edge.
 ---
-# forwardAuth gate. authResponseHeaders copies preferred-username upstream
-# (Voila -> X-Trino-User, ADR 0022).
+# forwardAuth gate. authResponseHeaders copies preferred-username upstream.
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:

@@ -34,17 +34,14 @@ files/analytics/
 ├── charts/
 │   ├── core/         # 10 charts on the Scout main dashboard
 │   ├── quality/      #  8 charts on the Quality & TAT dashboard
-│   ├── followup/     # 13 charts on the Follow-up Detection dashboard
 │   └── patients/     # 12 charts on the Patients dashboard
 ├── dashboards/
 │   ├── core/
 │   ├── quality/
-│   ├── followup/
 │   └── patients/
 └── datasets/
     └── Scout_Data_Lake/
         ├── core/         # reports_latest, reports_dx, reports (raw scale)
-        ├── followup/     # reports_followup, confusion_matrix_grid
         └── patients/     # patients_longitudinal, reports_dx_epic_view, patient_cohort_events
 ```
 
@@ -52,7 +49,7 @@ files/analytics/
 
 ```yaml
 bundles:
-  enabled: [core, patients]   # add quality, followup to install more
+  enabled: [core, patients]   # add quality to install it too
 ```
 
 The chart's templates iterate the list and `.Files.Glob` only the matching
@@ -100,9 +97,8 @@ checksum/config annotation changes, Helm replaces the Job under
 
 ### Why bundles instead of one big import?
 
-The Quality & TAT and Follow-up Detection dashboards include experimental
-features and depend on data products (TAT calculations, the follow-up
-classifier) not every Scout site runs, so they're opt-in. The Scout core and
+The Quality & TAT dashboard includes experimental features and depends on a
+data product (TAT calculations) not every Scout site runs, so it's opt-in. The Scout core and
 Patients dashboards ship by default — Patients reads the patient-resolved
 Epic-MPI views, which the transformer creates in standard deploys.
 

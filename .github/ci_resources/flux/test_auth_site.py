@@ -215,8 +215,11 @@ def test_real_flux_patches_keep_auth_and_dependency_controls(prepared, tmp_path)
     rendered = {}
 
     def build(doc, base, label):
-        doc["spec"].setdefault("postBuild", {})["substitute"] = {
-            k: str(v) for k, v in values.items()
+        post_build = doc["spec"].setdefault("postBuild", {})
+        # As in Flux, a root's own inline values take precedence over cluster-vars.
+        post_build["substitute"] = {
+            **{k: str(v) for k, v in values.items()},
+            **post_build.get("substitute", {}),
         }
         file = tmp_path / f"{label}.yaml"
         file.write_text(yaml.safe_dump(doc))

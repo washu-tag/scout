@@ -1,8 +1,6 @@
-"""Unit tests for the SDK's top-level query/connect/current_user surface.
-
-Covers both identity modes: Voila (voila_svc JWT mint + caching, X-Trino-User
-impersonation) and Jupyter (Hub-API access-token pass-through with no
-impersonation), plus the anonymous fail-safe.
+"""Unit tests for the SDK's top-level query/connect/current_user surface: the
+JupyterHub access-token pass-through (no impersonation), its caching and
+refresh, and the anonymous fail-safe.
 """
 
 import logging
@@ -18,7 +16,6 @@ from conftest import (
     pandas_stub,
     requests_stub,
     set_hub_auth_state,
-    set_token_response,
     sqlalchemy_stub,
     trino_dbapi_stub,
 )
@@ -29,23 +26,16 @@ def _connect_kwargs():
     return trino_dbapi_stub.connect.call_args.kwargs
 
 
-def _use_jupyter_env(monkeypatch):
-    """Flip the autouse Voila env over to the Jupyter provider: drop the
-    voila_svc client id and supply the Hub API vars the kernel would have."""
-    monkeypatch.delenv("KEYCLOAK_VOILA_SVC_CLIENT_ID", raising=False)
-    monkeypatch.setenv("JUPYTERHUB_API_TOKEN", "hub-tok")
-    monkeypatch.setenv("JUPYTERHUB_API_URL", "http://hub:8081/hub/api")
-    monkeypatch.setenv("JUPYTERHUB_USER", "alice")
-
-
-def test_connect_impersonates_forwarded_user(monkeypatch):
-    monkeypatch.setenv("X_AUTH_REQUEST_PREFERRED_USERNAME", "alice")
-    set_token_response()
+def test_connect_passes_the_users_token_without_impersonation():
+    set_hub_auth_state()
 
     scout.connect()
 
     kwargs = _connect_kwargs()
-    assert kwargs["user"] == "alice"
+    # No X-Trino-User: connect() omits `user` so the trino client sends no
+    # impersonation header and Trino reads identity from the JWT principal. A
+    # stray user here would become an impersonation attempt.
+    assert "user" not in kwargs
     # SDK uses a dynamic JWT auth that re-fetches per request; assert on type
     # rather than equality with a static-token JWTAuthentication.
     assert isinstance(kwargs["auth"], _query._DynamicJWTAuthentication)
@@ -55,57 +45,27 @@ def test_connect_impersonates_forwarded_user(monkeypatch):
     assert kwargs["verify"] == "/etc/trino-ca/ca.crt"
 
 
-def test_connect_falls_back_to_anonymous_when_no_user(monkeypatch):
-    # No X_AUTH_REQUEST_PREFERRED_USERNAME in env -> anonymous (OPA clamps rows).
-    set_token_response()
-
-    scout.connect()
-
-    assert _connect_kwargs()["user"] == "anonymous"
-
-
-def test_token_is_minted_with_client_credentials(monkeypatch):
-    monkeypatch.setenv("X_AUTH_REQUEST_PREFERRED_USERNAME", "bob")
-    set_token_response()
-
-    # connect() resolves the provider but doesn't mint until the auth's
-    # callable is invoked. Call it directly to drive the mint.
-    scout.connect()
-    provider = _identity._resolve_provider()
-    provider()
-
-    assert requests_stub.post.call_count == 1
-    url = requests_stub.post.call_args.args[0]
-    data = requests_stub.post.call_args.kwargs["data"]
-    assert url == "https://keycloak.test/token"
-    assert data["grant_type"] == "client_credentials"
-    assert data["client_id"] == "voila_svc"
-    assert data["client_secret"] == "svc-secret"
-
-
-def test_token_is_cached_across_calls(monkeypatch):
-    monkeypatch.setenv("X_AUTH_REQUEST_PREFERRED_USERNAME", "alice")
-    set_token_response(expires_in=3600)
+def test_token_is_cached_across_calls():
+    set_hub_auth_state(expires_in=3600)
 
     provider = _identity._resolve_provider()
     provider()
     provider()
     provider()
 
-    # One mint, reused until ~expiry-60s elapses.
-    assert requests_stub.post.call_count == 1
+    # One Hub fetch, reused until near expiry.
+    assert requests_stub.get.call_count == 1
 
 
-def test_token_refreshes_after_expiry(monkeypatch):
-    monkeypatch.setenv("X_AUTH_REQUEST_PREFERRED_USERNAME", "alice")
+def test_token_refreshes_after_expiry():
     # expires_in below the refresh-before window -> immediately considered stale.
-    set_token_response(expires_in=1)
+    set_hub_auth_state(expires_in=1)
 
     provider = _identity._resolve_provider()
     provider()
     provider()
 
-    assert requests_stub.post.call_count == 2
+    assert requests_stub.get.call_count == 2
 
 
 def test_auth_session_pins_ca_against_env_bundle_override():
@@ -116,7 +76,7 @@ def test_auth_session_pins_ca_against_env_bundle_override():
     # lacks Trino's CA.
     import types
 
-    auth = _query._DynamicJWTAuthentication(lambda: ("tok", None))
+    auth = _query._DynamicJWTAuthentication(lambda: "tok")
     session = types.SimpleNamespace(trust_env=True, auth=None)
 
     auth.set_http_session(session)
@@ -144,8 +104,8 @@ def test_is_unauthorized_excludes_403_and_non_auth_errors():
     assert not _query._is_unauthorized(ValueError("table not found"))
 
 
-def test_with_auth_retry_invalidates_and_retries_once_on_401(monkeypatch):
-    set_token_response()
+def test_with_auth_retry_invalidates_and_retries_once_on_401():
+    set_hub_auth_state()
     provider = _identity._resolve_provider()
     provider()  # prime the cached bearer
     assert provider._token is not None
@@ -163,8 +123,8 @@ def test_with_auth_retry_invalidates_and_retries_once_on_401(monkeypatch):
     assert provider._token is None  # cache was invalidated between attempts
 
 
-def test_with_auth_retry_does_not_retry_on_403(monkeypatch):
-    set_token_response()
+def test_with_auth_retry_does_not_retry_on_403():
+    set_hub_auth_state()
     provider = _identity._resolve_provider()
     provider()
     assert provider._token is not None
@@ -193,62 +153,38 @@ def test_with_auth_retry_passes_non_auth_errors_through_without_retry():
     assert len(calls) == 1  # no retry
 
 
-def test_provider_invalidate_forces_remint(monkeypatch):
-    monkeypatch.setenv("X_AUTH_REQUEST_PREFERRED_USERNAME", "alice")
-    set_token_response(expires_in=3600)
+def test_provider_invalidate_forces_refetch():
+    set_hub_auth_state(expires_in=3600)
     provider = _identity._resolve_provider()
     provider()
     provider()
-    assert requests_stub.post.call_count == 1  # cached
+    assert requests_stub.get.call_count == 1  # cached
 
     _identity.invalidate()
     provider()
-    assert requests_stub.post.call_count == 2  # re-minted after invalidate
+    assert requests_stub.get.call_count == 2  # re-fetched after invalidate
 
 
-def test_jupyter_passthrough_omits_impersonation_user(monkeypatch):
-    _use_jupyter_env(monkeypatch)
-    set_hub_auth_state()
-
-    scout.connect()
-
-    kwargs = _connect_kwargs()
-    # No X-Trino-User on the Jupyter path: connect() omits `user` so the trino
-    # client sends no impersonation header and Trino reads identity from the
-    # JWT principal. A stray user here would become an impersonation attempt.
-    assert "user" not in kwargs
-    assert isinstance(kwargs["auth"], _query._DynamicJWTAuthentication)
-
-
-def test_jupyter_bearer_is_user_token_fetched_from_hub(monkeypatch):
-    _use_jupyter_env(monkeypatch)
+def test_bearer_is_user_token_fetched_from_hub():
     token = set_hub_auth_state()
 
-    bearer, user = _identity._resolve_provider()()
+    bearer = _identity._resolve_provider()()
 
     assert bearer == token
-    assert user is None  # pass-through, not impersonation
     # Fetches the owning user's record with the kernel's own Hub API token.
     call = requests_stub.get.call_args
     assert call.args[0] == "http://hub:8081/hub/api/users/alice"
     assert call.kwargs["headers"]["Authorization"] == "token hub-tok"
 
 
-def test_jupyter_raises_when_auth_state_has_no_token(monkeypatch):
-    _use_jupyter_env(monkeypatch)
+def test_raises_when_auth_state_has_no_token():
     set_hub_auth_state(include_token=False)
 
     with pytest.raises(RuntimeError, match="auth_state has no access_token"):
         _identity._resolve_provider()()
 
 
-def test_current_user_returns_voila_username(monkeypatch):
-    monkeypatch.setenv("X_AUTH_REQUEST_PREFERRED_USERNAME", "dave")
-    monkeypatch.setenv("JUPYTERHUB_USER", "hub-user")
-    assert scout.current_user() == "dave"
-
-
-def test_current_user_falls_back_to_hub_user(monkeypatch):
+def test_current_user_is_the_hub_user(monkeypatch):
     monkeypatch.setenv("JUPYTERHUB_USER", "hub-user")
     assert scout.current_user() == "hub-user"
 
@@ -256,6 +192,7 @@ def test_current_user_falls_back_to_hub_user(monkeypatch):
 def test_current_user_none_when_no_identity(monkeypatch):
     # The public current_user() returns None for "anonymous" so callers can
     # distinguish "no identity" from a real user named anonymous.
+    monkeypatch.delenv("JUPYTERHUB_USER")
     assert scout.current_user() is None
 
 
@@ -309,7 +246,7 @@ def test_dynamic_bearer_auth_stamps_bearer_and_refetches_each_request():
     import types
 
     tokens = iter(["tok-1", "tok-2"])
-    auth = _query._DynamicBearerAuth(lambda: (next(tokens), None))
+    auth = _query._DynamicBearerAuth(lambda: next(tokens))
 
     first = types.SimpleNamespace(headers={})
     auth(first)
@@ -325,10 +262,10 @@ def test_dynamic_bearer_auth_stamps_bearer_and_refetches_each_request():
 # --- reactive retry: exactly once, and only through query()'s real path ---
 
 
-def test_with_auth_retry_gives_up_after_one_retry_on_persistent_401(monkeypatch):
+def test_with_auth_retry_gives_up_after_one_retry_on_persistent_401():
     # ADR 0024: retry EXACTLY once. A bearer rejected twice (e.g. the Hub keeps
     # handing back an already-stale token) must surface, not loop.
-    set_token_response()
+    set_hub_auth_state()
     provider = _identity._resolve_provider()
     provider()  # prime the cached bearer
 
@@ -343,11 +280,10 @@ def test_with_auth_retry_gives_up_after_one_retry_on_persistent_401(monkeypatch)
     assert len(calls) == 2  # initial attempt + one retry, then give up
 
 
-def test_get_engine_is_cached_across_calls(monkeypatch):
+def test_get_engine_is_cached_across_calls():
     # One long-lived engine (ADR 0024): the dynamic bearer refreshes per
     # request, so the engine is never disposed/rebuilt on rotation.
-    monkeypatch.setenv("X_AUTH_REQUEST_PREFERRED_USERNAME", "alice")
-    set_token_response()
+    set_hub_auth_state()
 
     first = _query._get_engine()
     second = _query._get_engine()
@@ -356,12 +292,11 @@ def test_get_engine_is_cached_across_calls(monkeypatch):
     assert sqlalchemy_stub.create_engine.call_count == 1
 
 
-def test_query_runs_through_engine_and_self_heals_on_401(monkeypatch):
+def test_query_runs_through_engine_and_self_heals_on_401():
     # End-to-end: query() builds the cached engine and wraps pd.read_sql in the
     # reactive 401 retry, so a bearer rejected in-flight self-heals instead of
     # surfacing to the notebook.
-    monkeypatch.setenv("X_AUTH_REQUEST_PREFERRED_USERNAME", "alice")
-    set_token_response()
+    set_hub_auth_state()
 
     attempts = []
 
@@ -377,30 +312,29 @@ def test_query_runs_through_engine_and_self_heals_on_401(monkeypatch):
     assert len(attempts) == 2  # failed once (401), retried, succeeded
 
 
-# --- single-flight: concurrent first calls mint one token, not N ---
+# --- single-flight: concurrent first calls fetch one token, not N ---
 
 
-def test_voila_provider_mints_once_under_concurrent_first_calls(monkeypatch):
+def test_provider_fetches_once_under_concurrent_first_calls():
     # The per-provider lock (ADR 0024) collapses a burst of first-time callers
-    # into a single mint. Without it, threads that all observe _token is None
-    # would each mint.
+    # into a single Hub fetch. Without it, threads that all observe _token is
+    # None would each fetch.
     import threading
     import time
     from unittest.mock import MagicMock
 
-    monkeypatch.setenv("X_AUTH_REQUEST_PREFERRED_USERNAME", "alice")
-
-    def slow_mint(*args, **kwargs):
+    def slow_fetch(*args, **kwargs):
         time.sleep(0.02)  # widen the window a missing lock would expose
         response = MagicMock()
+        token = jwt_with_claims({"exp": int(time.time()) + 3600})
         response.json.return_value = {
-            "access_token": jwt_with_claims({"exp": int(time.time()) + 3600}),
-            "expires_in": 3600,
+            "name": "alice",
+            "auth_state": {"access_token": token},
         }
         response.raise_for_status.return_value = None
         return response
 
-    requests_stub.post.side_effect = slow_mint
+    requests_stub.get.side_effect = slow_fetch
 
     provider = _identity._resolve_provider()
     gate = threading.Event()
@@ -421,40 +355,37 @@ def test_voila_provider_mints_once_under_concurrent_first_calls(monkeypatch):
         t.join()
 
     assert not errors
-    assert requests_stub.post.call_count == 1
-    assert all(token == results[0][0] for token, _ in results)
+    assert requests_stub.get.call_count == 1
+    assert all(token == results[0] for token in results)
 
 
-# --- provider resolution + mint/fetch failure surfaces ---
+# --- provider resolution + fetch failure surfaces ---
 
 
 def test_resolve_provider_raises_when_no_identity_in_env(monkeypatch):
-    # Neither Voila nor Jupyter env present -> a clear configuration error.
-    monkeypatch.delenv("KEYCLOAK_VOILA_SVC_CLIENT_ID", raising=False)
-    # JUPYTERHUB_API_TOKEN is already absent (reset_state clears it).
+    # Outside JupyterHub -> a clear configuration error.
+    monkeypatch.delenv("JUPYTERHUB_API_TOKEN")
     with pytest.raises(RuntimeError, match="no identity source detected"):
         _identity._resolve_provider()
 
 
-def test_voila_mint_propagates_keycloak_failure(monkeypatch):
-    # If Keycloak rejects the client_credentials request, the error must surface
-    # via raise_for_status -- never yield an empty/None bearer.
+def test_hub_fetch_failure_propagates():
+    # If the Hub rejects the request, the error must surface via
+    # raise_for_status -- never yield an empty/None bearer.
     from unittest.mock import MagicMock
 
-    monkeypatch.setenv("X_AUTH_REQUEST_PREFERRED_USERNAME", "alice")
     response = MagicMock()
-    response.raise_for_status.side_effect = FakeHttpError("error 503: keycloak down")
-    requests_stub.post.return_value = response
+    response.raise_for_status.side_effect = FakeHttpError("error 503: hub down")
+    requests_stub.get.return_value = response
 
     provider = _identity._resolve_provider()
     with pytest.raises(FakeHttpError):
         provider()
 
 
-def test_jupyter_warns_once_when_hub_returns_near_expiry_token(monkeypatch, caplog):
+def test_warns_once_when_hub_returns_near_expiry_token(caplog):
     # The Hub controls refresh timing; if it hands back an already-stale token
     # we warn the user (once) to re-login rather than silently re-fetching.
-    _use_jupyter_env(monkeypatch)
     set_hub_auth_state(expires_in=1)  # near-expiry on arrival
 
     provider = _identity._resolve_provider()

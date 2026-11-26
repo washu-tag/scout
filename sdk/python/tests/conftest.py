@@ -21,9 +21,8 @@ def _stub(name):
     return module
 
 
-# --- requests: scout._identity.requests.post mints the voila_svc token ---
+# --- requests: scout._identity.requests.get fetches the user's token from the Hub ---
 requests_stub = _stub("requests")
-requests_stub.post = MagicMock(name="requests.post")
 requests_stub.get = MagicMock(name="requests.get")
 
 # requests.auth.AuthBase is the base class scout._query._DynamicBearerAuth
@@ -79,25 +78,20 @@ pandas_stub.read_sql = MagicMock(name="pandas.read_sql")
 @pytest.fixture(autouse=True)
 def reset_state(monkeypatch):
     """Each test starts with a fresh provider singleton, fresh mocks, and
-    the Keycloak/Trino env the SDK expects."""
+    the JupyterHub/Trino env the SDK expects."""
     from scout import _identity, _query
 
     _identity._singleton = None
     _identity._override_provider = None
     _query._engine = None
-    requests_stub.post.reset_mock(return_value=True, side_effect=True)
     requests_stub.get.reset_mock(return_value=True, side_effect=True)
     trino_dbapi_stub.connect.reset_mock(return_value=True, side_effect=True)
     sqlalchemy_stub.create_engine.reset_mock(return_value=True, side_effect=True)
     pandas_stub.read_sql.reset_mock(return_value=True, side_effect=True)
 
-    monkeypatch.delenv("X_AUTH_REQUEST_PREFERRED_USERNAME", raising=False)
-    monkeypatch.delenv("JUPYTERHUB_API_TOKEN", raising=False)
-    monkeypatch.delenv("JUPYTERHUB_API_URL", raising=False)
-    monkeypatch.delenv("JUPYTERHUB_USER", raising=False)
-    monkeypatch.setenv("KEYCLOAK_TOKEN_URL", "https://keycloak.test/token")
-    monkeypatch.setenv("KEYCLOAK_VOILA_SVC_CLIENT_ID", "voila_svc")
-    monkeypatch.setenv("KEYCLOAK_VOILA_SVC_CLIENT_SECRET", "svc-secret")
+    monkeypatch.setenv("JUPYTERHUB_API_TOKEN", "hub-tok")
+    monkeypatch.setenv("JUPYTERHUB_API_URL", "http://hub:8081/hub/api")
+    monkeypatch.setenv("JUPYTERHUB_USER", "alice")
     monkeypatch.setenv("TRINO_HOST", "trino.scout-analytics")
     monkeypatch.setenv("TRINO_PORT", "8443")
     monkeypatch.setenv("TRINO_SCHEME", "https")
@@ -136,36 +130,13 @@ def jwt_with_claims(claims):
     return f"header.{payload_b64}.signature"
 
 
-def set_token_response(access_token=None, expires_in=3600):
-    """Configure the stubbed Keycloak token endpoint to return a token.
-
-    `access_token` may be a short label ("tok-alice") for readability; this
-    helper wraps it as a JWT-shaped string with an `exp` claim so the SDK's
-    expiry check can decode it. Pass a real `header.payload.signature` to
-    override the wrapping."""
-    if access_token is None:
-        access_token = _jwt_with_exp(expires_in)
-    elif access_token.count(".") != 2:
-        # Embed the label in a JWT shape so _is_near_expiry can decode the exp.
-        access_token = _jwt_with_exp(expires_in)
-
-    response = MagicMock()
-    response.json.return_value = {
-        "access_token": access_token,
-        "expires_in": expires_in,
-    }
-    response.raise_for_status.return_value = None
-    requests_stub.post.return_value = response
-    return access_token
-
-
 def set_hub_auth_state(access_token=None, expires_in=3600, include_token=True):
     """Configure the stubbed JupyterHub `GET /users/<user>` response that the
     Jupyter provider reads the user's Keycloak access_token from.
 
-    Like set_token_response, wraps a label as a JWT-shaped string so the SDK's
-    expiry check can decode the `exp`. include_token=False omits access_token
-    to drive the missing-token error path."""
+    Wraps a label (or None) as a JWT-shaped string with an `exp` so the SDK's
+    expiry check can decode it. include_token=False omits access_token to drive
+    the missing-token error path."""
     if access_token is None or access_token.count(".") != 2:
         access_token = _jwt_with_exp(expires_in)
     auth_state = {"access_token": access_token} if include_token else {}

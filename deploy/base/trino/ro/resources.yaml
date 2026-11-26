@@ -107,7 +107,7 @@ spec:
           # = 2 x 2G x 0.3.
           maxMemory: '1.2GB'
         # JWT-only: user JWTs from Jupyter, service-principal JWTs from
-        # Superset/Voila/report-viewer.
+        # Superset/report-viewer.
         authenticationType: JWT
         https:
           enabled: true

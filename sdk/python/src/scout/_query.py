@@ -5,9 +5,8 @@ Backs the public surface (scout.query / scout.connect):
     import scout
     df = scout.query("SELECT count(*) FROM reports")
 
-Identity source is detected from the environment by scout._identity:
-  * Voila kernels -> voila_svc JWT + X-Trino-User impersonation
-  * Jupyter kernels -> user's Keycloak access token (no impersonation)
+The bearer is the notebook user's own Keycloak access token, from
+scout._identity; Trino reads the user from it.
 
 Use `:name` placeholders for parameters; SQLAlchemy expands them. For
 list values, prefer Trino's `contains(array, element)` over IN — the
@@ -35,8 +34,7 @@ class _DynamicBearerAuth(requests.auth.AuthBase):
         self._provider = provider
 
     def __call__(self, request):
-        token, _ = self._provider()
-        request.headers["Authorization"] = f"Bearer {token}"
+        request.headers["Authorization"] = f"Bearer {self._provider()}"
         return request
 
 
@@ -87,37 +85,26 @@ def _schema() -> str:
 
 
 def _auth_args(provider) -> dict[str, Any]:
-    """Auth + TLS + optional impersonation user, shared by connect() and the
-    cached engine.
+    """Auth + TLS, shared by connect() and the cached engine.
 
-    Whether `user` is set is the entire identity distinction:
-      * Voila    -> provider returns the impersonated username; we set it and
-                    the trino client sends it as X-Trino-User.
-      * Jupyter  -> provider returns None; we omit `user`. The trino client
-                    then emits no X-Trino-User (requests drops the None-valued
-                    header on its Session merge), so Trino derives the session
-                    user from the JWT principal (jwt.principal-field=
-                    preferred_username) instead.
-
-    Do NOT backfill a default user here: a stray X-Trino-User would turn the
-    Jupyter pass-through into an impersonation attempt by the JWT principal.
+    No `user`: the trino client then emits no X-Trino-User (requests drops the
+    None-valued header on its Session merge), so Trino derives the session user
+    from the JWT principal (jwt.principal-field=preferred_username). Don't add
+    one: a stray X-Trino-User would turn the pass-through into an impersonation
+    attempt by the JWT principal.
     """
-    _, user = provider()
-    args: dict[str, Any] = {
+    return {
         "auth": _DynamicJWTAuthentication(provider),
         "http_scheme": _trino_scheme(),
         "verify": _trino_verify(),
     }
-    if user:
-        args["user"] = user
-    return args
 
 
 def connect() -> trino.dbapi.Connection:
     """Return a Trino DB-API connection scoped to the current user.
 
     Drop-in for `trino.dbapi.connect(...)`. Pulls TRINO_* params from
-    env and attaches the right auth + impersonation header.
+    env and attaches the user's bearer.
 
     Auth is still refreshed proactively per request (the connection's
     bearer is re-fetched each call), but the reactive 401 retry that
@@ -186,9 +173,9 @@ def _with_auth_retry(run):
     (ADR 0024). Proactive refresh (the provider's near-expiry re-fetch plus
     the Hub's eager-rotation hook) prevents almost all expiries; this catches
     the residual -- clock skew against Trino's zero-skew JWT check, or a token
-    that expired in-flight. The retry re-fetches a fresh bearer (Voila
-    re-mints; Jupyter re-pulls from the Hub, which rotates), so a transient
-    401 self-heals instead of surfacing to the notebook. A 403 is an
+    that expired in-flight. The retry re-pulls a fresh bearer from the Hub,
+    which rotates it, so a transient 401 self-heals instead of surfacing to
+    the notebook. A 403 is an
     authorization denial, not a stale credential, so it is not retried."""
     try:
         return run()

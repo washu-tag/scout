@@ -77,8 +77,7 @@ spec:
         banner = "Continue with ${oauth_provider_name}"
         footer = "${server_hostname}" # passes the hostname to the sign_in template
         upstreams = ["static://200"]
-        # Emit X-Auth-Request-Preferred-Username so forwardAuth forwards it upstream
-        # (Voila -> X-Trino-User, ADR 0022).
+        # Emit X-Auth-Request-Preferred-Username so forwardAuth forwards it upstream.
         set_xauthrequest = true
     # Redis-backed sessions in shared Valkey; password via fixed-name
     # oauth2-proxy-redis Secret, standalone client to valkey.${valkey_namespace}.

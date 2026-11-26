@@ -21,6 +21,9 @@ grafana.ini:
     role_attribute_strict: true
     allow_assign_grafana_admin: true
     signout_redirect_url: '{{ oauth2_proxy_signout_url }}'
+{% if grafana_trust_traefik_ca | bool %}
+    tls_client_ca: /etc/secrets/trusted-ca/ca.crt
+{% endif %}
   database:
     wal: true
   security:
@@ -69,6 +72,14 @@ extraSecretMounts:
   - name: smtp-grafana
     mountPath: /etc/secrets/smtp-grafana
     secretName: smtp-grafana
+    readOnly: true
+    optional: false
+    subPath: ""
+{% endif %}
+{% if grafana_trust_traefik_ca | bool %}
+  - name: grafana-trusted-ca
+    mountPath: /etc/secrets/trusted-ca
+    secretName: grafana-trusted-ca
     readOnly: true
     optional: false
     subPath: ""

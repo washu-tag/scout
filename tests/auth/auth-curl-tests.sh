@@ -141,10 +141,6 @@ TESTS=(
   minio GET /browser/ 401 "MinIO browser UI"
   minio GET /browser/lake/hl7 401 "MinIO browser HL7 bucket"
 
-  # Voila (Playbooks)
-  playbooks GET / 401 "Playbooks root"
-  playbooks GET /voila/render/cohort/Cohort.ipynb 401 "Playbooks Voila render"
-
   # Keycloak (unprotected — must be accessible for OAuth flows)
   keycloak GET /realms/scout/.well-known/openid-configuration 200 "Keycloak OIDC discovery"
   keycloak GET /realms/scout 200 "Keycloak realm info"

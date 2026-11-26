@@ -59,6 +59,7 @@ data:
         icon: python
         tone: indigo
         link: { subdomain: jupyter }
+        crossOriginClipboard: true
         group: core
         weight: 30
       - id: admin-users

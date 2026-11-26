@@ -39,7 +39,9 @@ Inputs (from env, set by the Job spec):
 
 Inputs (from /app/config/, mounted from a ConfigMap the chart renders):
   persistent_config.json — dict with tool_server_connections / default_model_id
-                           / task_model_id / jwt_expires_in (any subset)
+                           / task_model_id / task_model_external_id
+                           / enable_tags_generation / enable_follow_up_generation
+                           / jwt_expires_in (any subset)
   filters.json           — list of filter-function specs; each entry's
                            `content_file` names a sibling file in /app/config/
                            whose contents are inlined as the filter `content`.
@@ -239,6 +241,30 @@ def push_persistent_config(token):
             token,
         )
         print(f'  task_model_id: {cfg["task_model_id"]}')
+
+    if cfg.get("task_model_external_id"):
+        get_merge_post(
+            "/api/v1/tasks/config",
+            "/api/v1/tasks/config/update",
+            "TASK_MODEL_EXTERNAL",
+            cfg["task_model_external_id"],
+            token,
+        )
+        print(f'  task_model_external_id: {cfg["task_model_external_id"]}')
+
+    for key, owui_key in (
+        ("enable_tags_generation", "ENABLE_TAGS_GENERATION"),
+        ("enable_follow_up_generation", "ENABLE_FOLLOW_UP_GENERATION"),
+    ):
+        if cfg.get(key) is not None:
+            get_merge_post(
+                "/api/v1/tasks/config",
+                "/api/v1/tasks/config/update",
+                owui_key,
+                bool(cfg[key]),
+                token,
+            )
+            print(f"  {key}: {cfg[key]}")
 
     # Cap OWUI's session JWT to the Keycloak SSO lifetime.
     if cfg.get("jwt_expires_in"):
@@ -495,6 +521,14 @@ def push_models(token):
         system_file = m.get("params", {}).pop("system_file", None)
         if system_file:
             m["params"]["system"] = load_text(system_file)
+
+        # Helm sorts map keys, so options come as a list to keep picker order.
+        for control in m.get("params", {}).get("model_controls", {}).values():
+            if isinstance(control.get("options"), list):
+                control["options"] = {
+                    o["id"]: {k: v for k, v in o.items() if k != "id"}
+                    for o in control["options"]
+                }
 
         model_id_q = urllib.parse.quote(m["id"], safe="")
         exists_code, _ = http(

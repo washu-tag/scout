@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { HiArrowRight, HiChevronRight, HiOutlineExclamation } from 'react-icons/hi';
+import React, { useEffect, useRef, useState } from 'react';
+import { HiArrowRight, HiChevronLeft, HiChevronRight, HiOutlineExclamation } from 'react-icons/hi';
 import { DEFAULT_ICON, ICONS } from '@/lib/catalog/icons';
 import { ChipBadge } from '@/components/catalog/ChipBadge';
 import { ChipAnchor } from '@/components/shell/ChipAnchor';
@@ -15,6 +15,15 @@ const CARD_COLS: Record<number, string> = {
   2: 'sm:grid-cols-2',
   3: 'md:grid-cols-3',
   4: 'sm:grid-cols-2 lg:grid-cols-4',
+};
+
+// Cards across a carousel before it scrolls, at CARD_COLS's breakpoints. Where one
+// card would fill the width, part of the next one shows.
+const CAROUSEL_COLS: Record<number, string> = {
+  1: '[--across:1]',
+  2: '[--across:1.15] sm:[--across:2]',
+  3: '[--across:1.15] md:[--across:3]',
+  4: '[--across:1.15] sm:[--across:2] lg:[--across:4]',
 };
 
 const TILE_COLS: Record<number, string> = {
@@ -129,6 +138,75 @@ const ChipTile = ({ chip }: { chip: RenderChip }) => {
   );
 };
 
+const ScrollButton = ({ back, onClick }: { back: boolean; onClick: () => void }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-label={back ? 'Scroll left' : 'Scroll right'}
+    className={`absolute top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full shadow-md sm:flex ${
+      back ? '-left-3' : '-right-3'
+    } ${SURFACE} text-slate-700 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white`}
+  >
+    {back ? <HiChevronLeft className="text-lg" /> : <HiChevronRight className="text-lg" />}
+  </button>
+);
+
+const ChipCarousel = ({ group, half }: { group: RenderGroup; half: boolean }) => {
+  const scroller = useRef<HTMLDivElement>(null);
+  const [edges, setEdges] = useState({ start: true, end: true });
+
+  useEffect(() => {
+    const element = scroller.current;
+    if (!element) return;
+    const measure = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = element;
+      setEdges({ start: scrollLeft <= 1, end: scrollLeft + clientWidth >= scrollWidth - 1 });
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    element.addEventListener('scroll', measure, { passive: true });
+    return () => {
+      observer.disconnect();
+      element.removeEventListener('scroll', measure);
+    };
+  }, [group.chips.length]);
+
+  const scrollBy = (direction: 1 | -1) => {
+    const element = scroller.current;
+    if (!element) return;
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    element.scrollBy({
+      left: direction * element.clientWidth,
+      behavior: still ? 'auto' : 'smooth',
+    });
+  };
+
+  const gap = half ? '0.75rem' : '1rem';
+  return (
+    <div className="relative">
+      <div
+        ref={scroller}
+        className={`-my-2 grid grid-flow-col snap-x snap-mandatory overflow-x-auto overscroll-x-contain py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+          CAROUSEL_COLS[half ? Math.min(group.columns, 2) : group.columns] ?? CAROUSEL_COLS[1]
+        }`}
+        style={{
+          gap,
+          gridAutoColumns: `calc((100% - (var(--across) - 1) * ${gap}) / var(--across))`,
+        }}
+      >
+        {group.chips.map((chip) => (
+          <div key={`${chip.source}:${chip.id}`} className="grid snap-start">
+            <ChipCard chip={chip} large={!half} />
+          </div>
+        ))}
+      </div>
+      {!edges.start && <ScrollButton back onClick={() => scrollBy(-1)} />}
+      {!edges.end && <ScrollButton back={false} onClick={() => scrollBy(1)} />}
+    </div>
+  );
+};
+
 const GroupSection = ({ group, half }: { group: RenderGroup; half: boolean }) => (
   <section className="flex min-w-0 flex-col gap-3">
     <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 pb-3 border-b border-slate-200 dark:border-slate-800">
@@ -160,6 +238,7 @@ const GroupSection = ({ group, half }: { group: RenderGroup; half: boolean }) =>
         ))}
       </div>
     )}
+    {group.layout === 'carousel' && <ChipCarousel group={group} half={half} />}
     {group.layout === 'rows' && (
       <div
         className={`flex flex-col overflow-hidden rounded-[14px] divide-y divide-slate-200 dark:divide-slate-800 ${SURFACE}`}

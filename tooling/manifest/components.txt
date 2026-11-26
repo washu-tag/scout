@@ -45,4 +45,3 @@ ghcr.io/washu-tag/charts/report-viewer
 ghcr.io/washu-tag/charts/scout-dashboards
 ghcr.io/washu-tag/charts/scout-opa
 ghcr.io/washu-tag/charts/temporal-bootstrap
-ghcr.io/washu-tag/charts/voila
