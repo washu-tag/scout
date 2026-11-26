@@ -5,7 +5,11 @@ from typing import Annotated
 from pydantic import Field, ValidationError, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
-from .translate import DEFAULT_CLIENT_SCOPES, OPTIONAL_CLIENT_SCOPES
+from .translate import (
+    DEFAULT_CLIENT_SCOPES,
+    NOTIFICATIONS_SCOPE,
+    OPTIONAL_CLIENT_SCOPES,
+)
 
 ENV_PREFIX = "KEYCLOAK_FRAGMENT_RECONCILER_"
 
@@ -109,6 +113,11 @@ class Settings(BaseSettings):
             raise ValueError(
                 f"{', '.join(base)} is given to every fragment client, so it "
                 "cannot be offered"
+            )
+        if NOTIFICATIONS_SCOPE in value:
+            raise ValueError(
+                f"{NOTIFICATIONS_SCOPE} comes with a fragment's sendNotifications, "
+                "so it cannot be offered"
             )
         return value
 

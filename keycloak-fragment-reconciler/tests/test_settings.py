@@ -144,6 +144,15 @@ class TestOfferedClientScopes:
         with pytest.raises(SystemExit, match="given to every fragment client"):
             RequiredSettings()
 
+    def test_the_notifications_scope_cannot_be_offered(self, env):
+        """Offered, it could be linked to a client with token exchange on,
+        which is a way to a user's token that can send."""
+        env(OFFERED_CLIENT_SCOPES="launchpad-notifications")
+        with pytest.raises(
+            SystemExit, match="comes with a fragment's sendNotifications"
+        ):
+            RequiredSettings()
+
 
 class TestEveryFieldIsReachable:
     """A field no lane renders is a setting no operator can set.

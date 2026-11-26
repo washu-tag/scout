@@ -20,8 +20,7 @@ sends notices includes reviewing what it sends.
 :::{note}
 Some of what this guide describes depends on Scout changes that are not released yet.
 Each is marked **Not yet available**. Until then, notices work on a site whose
-operator has set them up by hand ([site settings](#site-settings)), for users named
-by username.
+operator has set them up by hand ([site settings](#site-settings)).
 :::
 
 ## What a notice holds
@@ -83,24 +82,25 @@ does, a site operator puts registrations in the directory named by
 
 ## Get a token
 
-Your app sends as its own Keycloak client, with an access token from the
-client-credentials grant:
+Your app sends as its own Keycloak client. Set `sendNotifications: true` on the client
+in your [fragment](service-authentication.md#sending-launchpad-notices), and get an
+access token from the client-credentials grant, asking for the `launchpad-notifications`
+scope:
 
 ```bash
 curl -s https://keycloak.scout.example.edu/realms/scout/protocol/openid-connect/token \
   -d grant_type=client_credentials \
   -d client_id=my-service \
-  -d client_secret="$CLIENT_SECRET"
+  -d client_secret="$CLIENT_SECRET" \
+  -d scope=launchpad-notifications
 ```
 
-The token must hold the launchpad client's `notifications-send` role. The launchpad
-treats the client the token was issued to as the sender, so your app can only send as
-itself. Only a client-credentials token can send: a token Keycloak issues to one of your
-app's users is refused, even if it holds the role. Reuse a token until shortly before it
-expires.
-
-**Not yet available:** fragments can't ask for a service account or the send role yet.
-A fragment capability for notifications will add both.
+The scope is what puts the launchpad client's `notifications-send` role in the token;
+a token requested without it is refused with `403 missing_role`. The launchpad treats
+the client the token was issued to as the sender, so your app can only send as itself.
+Only a client-credentials token can send: a token Keycloak issues to one of your app's
+users is refused with `403 service_account_required`, even if it holds the role. Reuse
+a token until shortly before it expires.
 
 ## Send a notice
 
@@ -125,13 +125,11 @@ curl -s -X POST http://launchpad.scout-core.svc.cluster.local:3000/api/notificat
 
 `recipients.users` are Scout usernames. `recipients.roles` are role names of your own
 client, as in your fragment's `roles`; the launchpad delivers to everyone who holds the
-role when you send, directly or through a group. Someone who gets the role later
-doesn't see notices sent before, and someone who loses it keeps the notices they already
-have until you withdraw them or they expire. Each person gets the notice once, however
-many ways it reaches them.
-
-**Not yet available:** sending to a role needs a Keycloak extension that isn't
-released. Until it is, a send naming a role answers `503 role_lookup_unavailable`.
+role when you send, directly, through a group, or through a composite role such as a
+`grants` entry in your fragment. Disabled accounts are left out. Someone who gets the
+role later doesn't see notices sent before, and someone who loses it keeps the notices
+they already have until you withdraw them or they expire. Each person gets the notice
+once, however many ways it reaches them.
 
 A send answers `201` with the notice's id and how many people it reached:
 
@@ -171,7 +169,7 @@ nothing new.
 | ------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | 400    | `invalid_json`, `invalid_request`                                                | Fix the body. `message` names the field. Unknown fields are refused, so a misspelt key fails loudly.          |
 | 401    | `missing_token`, `invalid_token`                                                 | Send a fresh token from this realm.                                                                          |
-| 403    | `service_account_required`, `missing_role`, `unregistered_sender`, `sender_disabled` | The token was issued to a user rather than your client, your client lacks the send role, has no registration, or the site has turned your notices off. |
+| 403    | `service_account_required`, `missing_role`, `unregistered_sender`, `sender_disabled` | The token was issued to a user rather than your client, your token didn't ask for `scope=launchpad-notifications`, your client has no registration, or the site has turned your notices off. |
 | 413    | `too_large`                                                                      | Keep the body under 128 KiB.                                                                                 |
 | 422    | `unknown_category`, `link_not_allowed`, `unknown_role`, `too_many_recipients`, `already_expired` | Use a registered category and prefix, one of your own roles, fewer people, or a later expiry.       |
 | 429    | `rate_limited`                                                                   | Wait the `Retry-After` seconds. Each app may make 60 calls a minute by default.                              |
