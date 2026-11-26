@@ -1,0 +1,10 @@
+{#- The /xapi/anonymize/settings fields whose inventory value differs from XNAT's
+    current settings (_xnat_site_anon_current). Omitted fields stay as they are. #}
+{%- set changes = {} -%}
+{%- if xnat_site_anon_script and xnat_site_anon_script != _xnat_site_anon_current.sitewideAnonymizationScript -%}
+{%-   set _ = changes.update({'sitewideAnonymizationScript': xnat_site_anon_script}) -%}
+{%- endif -%}
+{%- if xnat_site_anon_enabled is not none and (xnat_site_anon_enabled | bool) != (_xnat_site_anon_current.enableSitewideAnonymizationScript | bool) -%}
+{%-   set _ = changes.update({'enableSitewideAnonymizationScript': xnat_site_anon_enabled | bool}) -%}
+{%- endif -%}
+{{ changes | to_json }}

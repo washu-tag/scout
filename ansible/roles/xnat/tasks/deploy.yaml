@@ -214,5 +214,9 @@
   ansible.builtin.include_tasks: configure_cs.yaml
   when: xnat_container_service | bool
 
+- name: Configure the site-wide anonymization script
+  ansible.builtin.include_tasks: configure_site_anon.yaml
+  when: xnat_site_anon_script | default('', true) | length > 0 or xnat_site_anon_enabled is not none
+
 - name: Configure the DICOM SCP receivers
   ansible.builtin.include_tasks: configure_dicom_scp.yaml

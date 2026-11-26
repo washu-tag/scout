@@ -1,0 +1,24 @@
+---
+- name: Wait for the XNAT REST API to answer
+  ansible.builtin.include_tasks: wait_for_api.yaml
+
+- name: Read the site-wide anonymization settings
+  ansible.builtin.include_tasks: xnat_api.yaml
+  vars:
+    _xnat_api_requests: [{ label: site anon settings, method: GET, path: /xapi/anonymize/settings }]
+
+- name: Plan the site-wide anonymization changes
+  vars:
+    _xnat_site_anon_current: "{{ _xnat_api_responses.results[0].stdout.split('\n', 1) | last | from_json }}"
+  ansible.builtin.set_fact:
+    _xnat_site_anon_changes: "{{ lookup('template', 'site-anon-changes.json.j2') | from_json }}"
+
+- name: Apply the site-wide anonymization changes
+  when: _xnat_site_anon_changes | length > 0
+  ansible.builtin.include_tasks: xnat_api.yaml
+  vars:
+    _xnat_api_requests:
+      - label: site anon settings
+        method: POST
+        path: /xapi/anonymize/settings
+        body: '{{ _xnat_site_anon_changes }}'

@@ -289,12 +289,29 @@ xnat_dicom_scp_receivers:
       customProcessing: true
 ```
 
+## Site-wide anonymization
+
+`xnat_site_anon_script` sets XNAT's site-wide DicomEdit script, which XNAT applies
+to every DICOM import, and `xnat_site_anon_enabled` turns it on or off. After each
+deploy, `tasks/configure_site_anon.yaml` compares them with XNAT's
+`/xapi/anonymize/settings` and writes only what differs. Either one left unset
+keeps XNAT's current value, so by default the role changes nothing.
+
+```yaml
+xnat_site_anon_enabled: true
+xnat_site_anon_script: |
+  version "6.1"
+  (0010,0010) := subject
+  (0010,0020) := session
+```
+
 ## Key variables
 
 See `defaults/main.yaml`. Commonly set in inventory: `enable_xnat`,
 `keycloak_xnat_client_secret`, `xnat_postgres_password`, `xnat_admin_password`,
 `xnat_site_id`, `xnat_admin_email`, `xnat_smtp_host`, `xnat_plugins`,
-`xnat_dicom_scp_receivers`, and the `xnat_postgres_*` sizing variables. Chart and
+`xnat_dicom_scp_receivers`, `xnat_site_anon_script`, and the `xnat_postgres_*`
+sizing variables. Chart and
 image versions are pinned in
 `group_vars/all/versions.yaml`.
 
