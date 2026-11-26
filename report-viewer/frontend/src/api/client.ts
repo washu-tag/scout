@@ -151,18 +151,23 @@ export function listSearchActions(searchId: string): Promise<ActionDescriptor[]>
 // client-side-filtered rows (the same set downloadCsv already exports),
 // so a filtered view and a backend-call action agree on what "these
 // studies" means - see routes/searches.py's invoke_search_action.
-// Omit (or pass undefined) for the full, unfiltered search.
+// Omit (or pass undefined) for the full, unfiltered search. `filters` is the
+// readable text of the filters behind visibleReportIds, passed on to the app.
 export function invokeSearchAction(
   searchId: string,
   actionId: string,
   visibleReportIds?: string[],
+  filters?: string[],
 ): Promise<{ url: string }> {
   return api<{ url: string }>(
     `/api/searches/${encodeURIComponent(searchId)}/actions/${encodeURIComponent(actionId)}/invoke`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ visible_report_ids: visibleReportIds ?? null }),
+      body: JSON.stringify({
+        visible_report_ids: visibleReportIds ?? null,
+        filters: filters ?? null,
+      }),
     },
   );
 }
@@ -226,6 +231,61 @@ export function anyFilterActive(f: FilterState): boolean {
     !!f.ev_positive_span ||
     !!f.ev_negative_span
   );
+}
+
+export const EV_CATEGORY_LABEL: Record<EvCategory, string> = {
+  text_and_code: 'text + diagnosis',
+  text: 'report text',
+  diagnosis_code: 'diagnosis',
+  unknown: 'unexplained',
+};
+
+/** Dialog filters as readable text, one clause per filter. */
+export function filterClauses(filters: FilterState): string[] {
+  const clauses: string[] = [];
+  if (filters.patient_age) {
+    const { min, max } = filters.patient_age;
+    if (min && max) clauses.push(`patient_age between ${min} and ${max}`);
+    else if (min) clauses.push(`patient_age >= ${min}`);
+    else if (max) clauses.push(`patient_age <= ${max}`);
+  }
+  if (filters.message_dt) {
+    const { min, max } = filters.message_dt;
+    if (min && max) clauses.push(`message_dt between ${min} and ${max}`);
+    else if (min) clauses.push(`message_dt >= ${min}`);
+    else if (max) clauses.push(`message_dt <= ${max}`);
+  }
+  if (filters.sex && filters.sex.length > 0) {
+    clauses.push(`sex in (${filters.sex.join(', ')})`);
+  }
+  if (filters.modality && filters.modality.length > 0) {
+    clauses.push(`modality in (${filters.modality.join(', ')})`);
+  }
+  for (const field of [
+    'service_name',
+    'epic_mrn',
+    'patient_mpi',
+    'accession_number',
+    'sending_facility',
+  ] as const) {
+    const value = filters[field]?.trim();
+    if (value) clauses.push(`${field} contains "${value}"`);
+  }
+  return clauses;
+}
+
+/** Evidence chip filters as readable text, one clause per filter. */
+export function evidenceFilterClauses(f: FilterState): string[] {
+  const clauses: string[] = [];
+  if (f.ev_source && f.ev_source.length > 0) {
+    clauses.push(`matched on (${f.ev_source.map((c) => EV_CATEGORY_LABEL[c]).join(', ')})`);
+  }
+  if (f.ev_has_negative !== undefined) {
+    clauses.push(f.ev_has_negative ? 'has a negated phrase' : 'has no negated phrase');
+  }
+  if (f.ev_positive_span) clauses.push(`matched phrase is "${f.ev_positive_span}"`);
+  if (f.ev_negative_span) clauses.push(`negated phrase is "${f.ev_negative_span}"`);
+  return clauses;
 }
 
 export interface ReportDetail {

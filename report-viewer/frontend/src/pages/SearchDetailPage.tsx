@@ -17,6 +17,8 @@ import {
   activeFilterCount,
   anyFilterActive,
   downloadCsv,
+  evidenceFilterClauses,
+  filterClauses,
   filterRows,
   friendlyError,
   getSearch,
@@ -436,6 +438,10 @@ export default function SearchDetailPage() {
         .map((row) => row.primary_report_identifier)
         .filter((id): id is string => typeof id === 'string'),
     [data],
+  );
+  const appliedFilterClauses = useMemo(
+    () => [...filterClauses(appliedFilters), ...evidenceFilterClauses(appliedFilters)],
+    [appliedFiltersKey],
   );
 
   return (
@@ -910,6 +916,7 @@ export default function SearchDetailPage() {
             <ActionsToolbar
               searchId={searchId}
               visibleReportIds={visibleReportIds}
+              filters={appliedFilterClauses}
               disabled={!rowsQ.data}
               availableWidth={actionsAvailableWidth}
               gapPx={toolbarGapPx}

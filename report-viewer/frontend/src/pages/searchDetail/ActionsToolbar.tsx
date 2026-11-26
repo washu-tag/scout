@@ -27,6 +27,7 @@ export function ActionsToolbar({
   actions,
   clientHandlers,
   visibleReportIds,
+  filters,
   disabled,
   availableWidth,
   gapPx,
@@ -38,6 +39,8 @@ export function ActionsToolbar({
   // values - forwarded to backend-call actions so a filtered view and the
   // action agree on scope (see api/client.ts's invokeSearchAction).
   visibleReportIds: string[];
+  // Readable text of the filters behind visibleReportIds.
+  filters: string[];
   // True while rows are still loading.
   disabled?: boolean;
   // Width budgeted for this component within the parent row - computed
@@ -112,7 +115,7 @@ export function ActionsToolbar({
     setInvokingId(action.id);
     setInvokeError(null);
     try {
-      const result = await invokeSearchAction(searchId, action.id, visibleReportIds);
+      const result = await invokeSearchAction(searchId, action.id, visibleReportIds, filters);
       await open(result.url);
     } catch (err) {
       setInvokeError(friendlyError(err, `running "${action.title}"`));

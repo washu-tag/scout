@@ -1,4 +1,4 @@
-import type { FilterState } from './api/client';
+import { filterClauses, type FilterState } from './api/client';
 
 let _chatOrigin = '';
 
@@ -24,37 +24,7 @@ export function submitChatPrompt(text: string): void {
 }
 
 export function buildFilterPrompt(searchId: string, filters: FilterState): string | null {
-  const clauses: string[] = [];
-  if (filters.patient_age) {
-    const { min, max } = filters.patient_age;
-    if (min && max) clauses.push(`patient_age between ${min} and ${max}`);
-    else if (min) clauses.push(`patient_age >= ${min}`);
-    else if (max) clauses.push(`patient_age <= ${max}`);
-  }
-  if (filters.message_dt) {
-    const { min, max } = filters.message_dt;
-    if (min && max) clauses.push(`message_dt between ${min} and ${max}`);
-    else if (min) clauses.push(`message_dt >= ${min}`);
-    else if (max) clauses.push(`message_dt <= ${max}`);
-  }
-  if (filters.sex && filters.sex.length > 0) {
-    clauses.push(`sex in (${filters.sex.join(', ')})`);
-  }
-  if (filters.modality && filters.modality.length > 0) {
-    clauses.push(`modality in (${filters.modality.join(', ')})`);
-  }
-  if (filters.service_name) {
-    clauses.push(`service_name contains "${filters.service_name}"`);
-  }
-  if (filters.epic_mrn) {
-    clauses.push(`epic_mrn contains "${filters.epic_mrn}"`);
-  }
-  if (filters.accession_number) {
-    clauses.push(`accession_number contains "${filters.accession_number}"`);
-  }
-  if (filters.sending_facility) {
-    clauses.push(`sending_facility contains "${filters.sending_facility}"`);
-  }
+  const clauses = filterClauses(filters);
   if (clauses.length === 0) return null;
   return `Refine search ${searchId}. Filter rows where ${clauses.join(', ')}.`;
 }
